@@ -23,8 +23,16 @@ import Compare from './pages/Compare';
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
+    const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!isConfigured) {
+      setConfigError('Erro de Configuração: As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram encontradas no painel de Settings.');
+      setLoading(false);
+      return;
+    }
+
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -42,8 +50,20 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#020617]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (configError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#020617] p-6 text-center">
+        <div className="card p-8 border border-red-500/20 bg-red-950/10">
+          <h2 className="text-xl font-bold text-red-500 mb-4">Erro de Configuração</h2>
+          <p className="text-slate-300">{configError}</p>
+          <p className="text-slate-400 mt-4 text-sm">Por favor, adicione as variáveis no menu Settings do AI Studio.</p>
+        </div>
       </div>
     );
   }
