@@ -51,6 +51,19 @@ export const financeService = {
     return res.json();
   },
 
+  async getRanking(category: string, type: string = 'ACAO'): Promise<any[]> {
+    const res = await fetch(`/api/ranking?category=${encodeURIComponent(category)}&type=${type}`);
+    if (!res.ok) throw new Error('Failed to fetch ranking');
+    return res.json();
+  },
+
+  async getScreener(filters: any, type: string = 'ACAO'): Promise<any[]> {
+    const params = new URLSearchParams({ type, ...filters });
+    const res = await fetch(`/api/screener?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch screener');
+    return res.json();
+  },
+
   async search(query: string): Promise<any[]> {
     const res = await fetch(`/api/search?q=${query}`);
     if (!res.ok) throw new Error('Failed to search');

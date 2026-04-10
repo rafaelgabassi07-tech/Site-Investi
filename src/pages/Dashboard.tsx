@@ -27,17 +27,18 @@ export default function Dashboard() {
   );
 
   const totalInvested = portfolio.reduce((acc, item) => acc + item.totalInvested, 0);
-  const totalCurrentValue = totalInvested * 1.05; // Mocking 5% gain
+  const totalCurrentValue = portfolio.reduce((acc, item) => acc + (item.currentValue || item.totalInvested), 0);
   const totalProfit = totalCurrentValue - totalInvested;
   const profitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
+  // Mocking historical data for now, but using real current value as the last point
   const chartData = [
-    { name: 'JAN', value: 4000 },
-    { name: 'FEV', value: 3000 },
-    { name: 'MAR', value: 5000 },
-    { name: 'ABR', value: 4500 },
-    { name: 'MAI', value: 6000 },
-    { name: 'JUN', value: 5500 },
+    { name: 'JAN', value: totalInvested * 0.8 },
+    { name: 'FEV', value: totalInvested * 0.85 },
+    { name: 'MAR', value: totalInvested * 0.9 },
+    { name: 'ABR', value: totalInvested * 0.95 },
+    { name: 'MAI', value: totalInvested },
+    { name: 'JUN', value: totalCurrentValue },
   ];
 
   const COLORS = ['#2563eb', '#06b6d4', '#10b981', '#8b5cf6', '#f59e0b'];
@@ -62,8 +63,8 @@ export default function Dashboard() {
           value={`R$ ${totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           icon={Wallet}
           color="blue"
-          trend="+R$ 1.240,00"
-          trendIcon={ArrowUpRight}
+          trend="Valor de custo"
+          trendIcon={Info}
           delay={0.1}
         />
         <StatCard 
@@ -71,7 +72,7 @@ export default function Dashboard() {
           value={`R$ ${totalCurrentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           icon={TrendingUp}
           color="emerald"
-          trend={`${profitPercentage.toFixed(2)}% total`}
+          trend={`${profitPercentage >= 0 ? '+' : ''}${profitPercentage.toFixed(2)}% total`}
           trendIcon={ArrowUpRight}
           delay={0.2}
         />
@@ -79,9 +80,9 @@ export default function Dashboard() {
           label="Lucro Total"
           value={`R$ ${totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           icon={PieChartIcon}
-          color="indigo"
-          trend="Baseado em cotações"
-          trendIcon={Info}
+          color={totalProfit >= 0 ? "indigo" : "red"}
+          trend={totalProfit >= 0 ? "Em alta" : "Em baixa"}
+          trendIcon={totalProfit >= 0 ? ArrowUpRight : Info}
           delay={0.3}
         />
       </div>

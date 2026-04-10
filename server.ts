@@ -10,112 +10,146 @@ import { NexusEngineUltra } from "./src/lib/nexus/engine.ts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+let serverPromise: Promise<{ app: express.Express, PORT: number }> | null = null;
 
-  app.use(cors());
-  app.use(express.json());
+export async function createServer() {
+  if (serverPromise) return serverPromise;
 
-  // API Routes
-  app.get("/api/asset/:ticker", async (req, res) => {
-    const { ticker } = req.params;
-    const { type } = req.query;
-    try {
-      const data = await NexusEngineUltra.fetchAtivo(ticker, (type as any) || 'ACAO');
-      res.json(data);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
+  serverPromise = (async () => {
+    const app = express();
+    const PORT = 3000;
 
-  app.get("/api/history/:ticker", async (req, res) => {
-    const { ticker } = req.params;
-    const { period } = req.query;
-    try {
-      const data = await NexusEngineUltra.fetchHistoricoGrafico(ticker, (period as any) || '1y');
-      res.json(data);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
+    app.use(cors());
+    app.use(express.json());
 
-  app.get("/api/dividends/:ticker", async (req, res) => {
-    const { ticker } = req.params;
-    try {
-      const data = await NexusEngineUltra.fetchDividends(ticker);
-      res.json(data);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.get("/api/search", async (req, res) => {
-    const { q } = req.query;
-    try {
-      const result = await NexusEngineUltra.searchTicker(q as string);
-      res.json(result);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.get("/api/news", async (req, res) => {
-    const { ticker } = req.query;
-    try {
-      const result = await NexusEngineUltra.fetchNews((ticker as string) || "IBOVESPA");
-      res.json(result);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.get("/api/market-stats", async (req, res) => {
-    const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD"];
-    try {
-      const results = await Promise.all(tickers.map(t => NexusEngineUltra.fetchAtivo(t, 'ACAO')));
-      const stats = results.map((r, idx) => ({
-        label: idx === 0 ? 'IBOVESPA' : idx === 1 ? 'S&P 500' : idx === 2 ? 'DÓLAR' : 'BITCOIN',
-        value: typeof r.results.precoAtual === 'number' ? r.results.precoAtual.toLocaleString('pt-BR') : r.results.precoAtual,
-        change: r.results.variacaoDay || '0.00%',
-        color: r.results.variacaoDay?.startsWith('-') ? 'red' : 'emerald'
-      }));
-      res.json(stats);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "custom", // Alterado para custom para controle total
-    });
-    app.use(vite.middlewares);
-
-    app.use('*', async (req, res, next) => {
-      const url = req.originalUrl;
+    // API Routes
+    app.get("/api/asset/:ticker", async (req, res) => {
+      const { ticker } = req.params;
+      const { type } = req.query;
       try {
-        let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
-        template = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-      } catch (e) {
-        vite.ssrFixStacktrace(e as Error);
-        next(e);
+        const data = await NexusEngineUltra.fetchAtivo(ticker, (type as any) || 'ACAO');
+        res.json(data);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
       }
     });
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    app.get("/api/history/:ticker", async (req, res) => {
+      const { ticker } = req.params;
+      const { period } = req.query;
+      try {
+        const data = await NexusEngineUltra.fetchHistoricoGrafico(ticker, (period as any) || '1y');
+        res.json(data);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    app.get("/api/dividends/:ticker", async (req, res) => {
+      const { ticker } = req.params;
+      try {
+        const data = await NexusEngineUltra.fetchDividends(ticker);
+        res.json(data);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    app.get("/api/search", async (req, res) => {
+      const { q } = req.query;
+      try {
+        const result = await NexusEngineUltra.searchTicker(q as string);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    app.get("/api/news", async (req, res) => {
+      const { ticker } = req.query;
+      try {
+        const result = await NexusEngineUltra.fetchNews((ticker as string) || "IBOVESPA");
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    app.get("/api/ranking", async (req, res) => {
+      const { category, type } = req.query;
+      try {
+        const result = await NexusEngineUltra.fetchRanking((category as string) || "Dividend Yield", (type as any) || "ACAO");
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    app.get("/api/screener", async (req, res) => {
+      const { type, ...filters } = req.query;
+      try {
+        const result = await NexusEngineUltra.screener(filters, (type as any) || "ACAO");
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    app.get("/api/market-stats", async (req, res) => {
+      const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD"];
+      try {
+        const results = await Promise.all(tickers.map(t => NexusEngineUltra.fetchAtivo(t, 'ACAO')));
+        const stats = results.map((r, idx) => ({
+          label: idx === 0 ? 'IBOVESPA' : idx === 1 ? 'S&P 500' : idx === 2 ? 'DÓLAR' : 'BITCOIN',
+          value: typeof r.results.precoAtual === 'number' ? r.results.precoAtual.toLocaleString('pt-BR') : r.results.precoAtual,
+          change: r.results.variacaoDay || '0.00%',
+          color: r.results.variacaoDay?.startsWith('-') ? 'red' : 'emerald'
+        }));
+        res.json(stats);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    // Vite middleware for development
+    if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "custom",
+      });
+      app.use(vite.middlewares);
+
+      app.use('*', async (req, res, next) => {
+        const url = req.originalUrl;
+        try {
+          let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+          template = await vite.transformIndexHtml(url, template);
+          res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+        } catch (e) {
+          vite.ssrFixStacktrace(e as Error);
+          next(e);
+        }
+      });
+    } else {
+      const distPath = path.join(process.cwd(), 'dist');
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+
+    return { app, PORT };
+  })();
+
+  return serverPromise;
+}
+
+if (!process.env.VERCEL) {
+  createServer().then(({ app, PORT }) => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   });
 }
 
-startServer();
+export default createServer;

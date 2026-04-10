@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper } from 'lucide-react';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -241,6 +241,37 @@ export default function Asset() {
             {results.about || `Informações detalhadas sobre ${assetData.ticker} estarão disponíveis em breve.`}
           </p>
         </div>
+
+        {/* Asset News */}
+        {assetData.news && assetData.news.length > 0 && (
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Newspaper size={20} className="text-blue-500" />
+              <h2 className="text-lg font-semibold text-white">Últimas Notícias</h2>
+            </div>
+            <div className="space-y-4">
+              {assetData.news.map((item: any, idx: number) => (
+                <a 
+                  key={idx} 
+                  href={item.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors border border-white/5 hover:border-blue-500/30 group"
+                >
+                  <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2">{item.title}</h3>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{item.source || 'Nexus News'}</span>
+                    {item.pubDate && (
+                      <span className="text-[10px] text-slate-500 uppercase tracking-widest">
+                        {new Date(item.pubDate).toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Dividends */}
         {dividends.length > 0 && (

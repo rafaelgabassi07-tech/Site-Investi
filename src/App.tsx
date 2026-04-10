@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Ranking from './pages/Ranking';
+import Screener from './pages/Screener';
 import Menu from './pages/Menu';
 import Dividends from './pages/Dividends';
 import Calculators from './pages/Calculators';
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="portfolio" element={<Portfolio />} />
           <Route path="search" element={<Search />} />
           <Route path="ranking" element={<Ranking />} />
+          <Route path="screener" element={<Screener />} />
           <Route path="menu" element={<Menu />} />
           <Route path="settings" element={<Settings />} />
           <Route path="news" element={<News />} />

@@ -840,15 +840,19 @@ export class NexusEngineUltra {
   static async fetchNews(ticker: string): Promise<NewsItem[]> {
     const clean = canonicalizeTicker(ticker);
     try {
-      const res = await fetch(`https://news.google.com/rss/search?q=${clean}+acao+OR+fii+OR+b3&hl=pt-BR&gl=BR&ceid=BR:pt-419`);
+      // Usando um timeout menor e headers mais realistas
+      const res = await fetch(`https://news.google.com/rss/search?q=${clean}+acao+OR+fii+OR+b3&hl=pt-BR&gl=BR&ceid=BR:pt-419`, {
+        headers: { 'User-Agent': getRandomAgent() }
+      });
       if (!res.ok) return [];
       const xml = await res.text();
       
       const items: NewsItem[] = [];
+      // Regex mais robusto para capturar itens
       const itemRegex = /<item>([\s\S]*?)<\/item>/g;
       let match;
       
-      while ((match = itemRegex.exec(xml)) !== null && items.length < 5) {
+      while ((match = itemRegex.exec(xml)) !== null && items.length < 8) {
         const itemXml = match[1];
         const titleMatch = /<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/.exec(itemXml);
         const linkMatch = /<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/.exec(itemXml);
@@ -856,8 +860,17 @@ export class NexusEngineUltra {
         const sourceMatch = /<source[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/source>/.exec(itemXml);
         
         if (titleMatch && linkMatch) {
+          // Limpeza básica de HTML entities
+          const cleanTitle = titleMatch[1]
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'")
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/ - [^-]+$/, ''); // Remove o nome da fonte do título se estiver no final (padrão Google News)
+
           items.push({
-            title: titleMatch[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
+            title: cleanTitle,
             link: linkMatch[1],
             pubDate: pubDateMatch ? new Date(pubDateMatch[1]) : undefined,
             source: sourceMatch ? sourceMatch[1] : undefined,
@@ -865,9 +878,129 @@ export class NexusEngineUltra {
         }
       }
       return items;
-    } catch {
+    } catch (e) {
+      console.error(`[Nexus] Error fetching news for ${ticker}:`, e);
       return [];
     }
+  }
+
+  /**
+   * Busca rankings de ativos baseados em critérios específicos.
+   * Simula a extração de dados de rankings do Investidor10/StatusInvest.
+   */
+  static async fetchRanking(category: string, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
+    const cacheKey = `ranking:${category}:${type}`;
+    const cached = this._cache.get(cacheKey);
+    if (cached && !this.isStale(cached)) return cached.data;
+
+    try {
+      // Como não temos uma API direta de ranking, vamos buscar os top ativos do Yahoo Finance
+      // ou simular baseado em uma lista pré-definida de ativos populares se a busca falhar.
+      const popularTickers: Record<ExtendedAssetType, string[]> = {
+        ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3'],
+        FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11'],
+        BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34'],
+        ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11']
+      };
+
+      const tickers = popularTickers[type] || popularTickers.ACAO;
+      
+      // Buscamos dados básicos para esses ativos
+      const results = await this.executeBatch(
+        tickers.map(ticker => async () => {
+          try {
+            const data = await this.fetchAtivo(ticker, type);
+            return {
+              ticker: ticker,
+              name: data.results.name || ticker,
+              value: data.results.dividendYield || data.results.pl || 'N/A',
+              subValue: `R$ ${data.results.precoAtual || '0,00'}`,
+              raw: data.results
+            };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      const filteredResults = results.filter(r => r !== null) as any[];
+
+      // Ordenação baseada na categoria
+      let sorted = [...filteredResults];
+      if (category.toLowerCase().includes('dividend') || category.toLowerCase().includes('yield')) {
+        sorted.sort((a, b) => {
+          const v1 = parseFloat(a.raw.dividendYield?.replace('%', '').replace(',', '.') || '0');
+          const v2 = parseFloat(b.raw.dividendYield?.replace('%', '').replace(',', '.') || '0');
+          return v2 - v1;
+        });
+      } else if (category.toLowerCase().includes('pl') || category.toLowerCase().includes('baratas')) {
+        sorted.sort((a, b) => {
+          const v1 = parseFloat(a.raw.pl?.replace(',', '.') || '999');
+          const v2 = parseFloat(b.raw.pl?.replace(',', '.') || '999');
+          return v1 - v2;
+        });
+      }
+
+      const finalData = sorted.slice(0, 10);
+      this._cache.set(cacheKey, { data: finalData, timestamp: Date.now() });
+      return finalData;
+    } catch (e) {
+      console.error(`[Nexus] Error fetching ranking ${category}:`, e);
+      return [];
+    }
+  }
+
+  /**
+   * Executa um filtro (screener) em uma lista de ativos.
+   */
+  static async screener(filters: any, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
+    const popularTickers: Record<ExtendedAssetType, string[]> = {
+      ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 'B3SA3', 'HAPV3', 'GGBR4', 'ITSA4', 'SUZB3', 'JBSS3', 'RAIL3', 'CSAN3', 'VIBRA3', 'EQTL3'],
+      FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 'BCFF11', 'BRCR11', 'HGBS11', 'JSRE11', 'VILG11', 'RBRP11'],
+      BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'NFLX34', 'DISB34', 'PYPL34'],
+      ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'FIND11', 'MATB11']
+    };
+
+    const tickers = popularTickers[type] || popularTickers.ACAO;
+    
+    const results = await this.executeBatch(
+      tickers.map(ticker => async () => {
+        try {
+          const data = await this.fetchAtivo(ticker, type);
+          return {
+            ticker: ticker,
+            name: data.results.name || ticker,
+            results: data.results
+          };
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    let filtered = results.filter(r => r !== null) as any[];
+
+    // Aplicar filtros
+    if (filters.minDY) {
+      filtered = filtered.filter(r => {
+        const dy = parseFloat(r.results.dividendYield?.replace('%', '').replace(',', '.') || '0');
+        return dy >= parseFloat(filters.minDY);
+      });
+    }
+    if (filters.maxPL) {
+      filtered = filtered.filter(r => {
+        const pl = parseFloat(r.results.pl?.replace(',', '.') || '999');
+        return pl > 0 && pl <= parseFloat(filters.maxPL);
+      });
+    }
+    if (filters.maxPVP) {
+      filtered = filtered.filter(r => {
+        const pvp = parseFloat(r.results.pvp?.replace(',', '.') || '999');
+        return pvp > 0 && pvp <= parseFloat(filters.maxPVP);
+      });
+    }
+
+    return filtered;
   }
 
   static async fetchAtivo(

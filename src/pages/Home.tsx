@@ -1,4 +1,4 @@
-import { TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, HelpCircle } from 'lucide-react';
+import { TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, HelpCircle, Filter } from 'lucide-react';
 import Dashboard from './Dashboard';
 import { NewsWidget } from '../components/NewsWidget';
 import { motion } from 'motion/react';
@@ -228,6 +228,7 @@ export default function Home() {
           {[
             { icon: Search, label: 'Busca de Ativos', to: '/search', color: 'blue' },
             { icon: GitCompare, label: 'Comparar Ativos', to: '/compare', color: 'cyan' },
+            { icon: Filter, label: 'Busca Avançada', to: '/screener', color: 'blue' },
             { icon: Briefcase, label: 'Minha Carteira', to: '/portfolio', color: 'emerald' },
             { icon: Newspaper, label: 'Últimas Notícias', to: '/news', color: 'purple' },
             { icon: Award, label: 'Rankings', to: '/ranking', color: 'amber' },

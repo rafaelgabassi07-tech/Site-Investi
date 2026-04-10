@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare } from 'lucide-react';
+import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { auth } from '../firebase';
 
@@ -10,6 +10,7 @@ export default function Menu() {
     { icon: Briefcase, label: 'Minha Carteira', to: '/portfolio' },
     { icon: Search, label: 'Buscar Ativos', to: '/search' },
     { icon: GitCompare, label: 'Comparar Ativos', to: '/compare' },
+    { icon: Filter, label: 'Busca Avançada (Screener)', to: '/screener' },
     { icon: Heart, label: 'Favoritos', to: '#' },
     { icon: Newspaper, label: 'Últimas Notícias', to: '/news' },
     { icon: Calendar, label: 'Agenda de Dividendos', to: '/dividends' },
