@@ -1,8 +1,44 @@
-import { signInWithGoogle } from '../firebase';
-import { TrendingUp, ShieldCheck, Globe, Zap } from 'lucide-react';
+import { useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { TrendingUp, ShieldCheck, Globe, Zap, Mail, Lock } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Login() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!isConfigured) {
+      setError('Supabase não configurado! Verifique as variáveis de ambiente.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (error) setError(error.message);
+      else setError('Conta criada com sucesso! Por favor, verifique sua caixa de entrada e clique no link de confirmação enviado para o seu e-mail.');
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) setError(error.message);
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#020617] p-6 relative overflow-hidden">
       {/* Background Effects */}
@@ -32,31 +68,50 @@ export default function Login() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="text-5xl font-black text-white tracking-tighter uppercase mb-4"
+          className="text-5xl font-black text-white tracking-tighter uppercase mb-8"
         >
-          INVEST <span className="text-blue-500">ULTRA</span>
+          {isSignUp ? 'CRIAR CONTA' : 'INVEST <span className="text-blue-500">ULTRA</span>'}
         </motion.h1>
         
-        <motion.p 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="text-slate-400 font-medium mb-12 leading-relaxed text-lg"
-        >
-          Acesse a engine de extração definitiva e gerencie seu patrimônio com <span className="text-white font-bold">precisão milimétrica</span>.
-        </motion.p>
+        <form onSubmit={handleAuth} className="space-y-4 mb-8">
+          <div className="relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="E-mail"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              required
+            />
+          </div>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Senha"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              required
+            />
+          </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
+          </button>
+        </form>
         
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          onClick={() => signInWithGoogle()}
-          className="w-full flex items-center justify-center gap-4 px-8 py-6 bg-white text-black rounded-3xl font-black uppercase tracking-[0.2em] text-xs hover:bg-blue-50 transition-all shadow-2xl active:scale-95 group relative overflow-hidden"
+        <button
+          onClick={() => setIsSignUp(!isSignUp)}
+          className="text-slate-400 text-sm hover:text-white transition-colors"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-          <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          Autenticar com Google
-        </motion.button>
+          {isSignUp ? 'Já tem uma conta? Entre aqui.' : 'Não tem uma conta? Crie uma agora.'}
+        </button>
         
         <motion.div 
           initial={{ opacity: 0 }}

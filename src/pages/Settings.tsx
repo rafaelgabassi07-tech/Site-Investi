@@ -1,9 +1,11 @@
 import { Settings as SettingsIcon, User, Bell, Shield, Wallet, ChevronRight, Lock, EyeOff, Moon } from 'lucide-react';
-import { auth } from '../firebase';
+import { useAuth } from '../hooks/useAuth';
 import { motion } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
 
 export default function Settings() {
+  const { user } = useAuth();
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
   return (
     <div className="space-y-16">
       <PageHeader 
@@ -63,7 +65,7 @@ export default function Settings() {
                 <div className="relative group">
                   <input
                     type="text"
-                    defaultValue={auth.currentUser?.displayName || ''}
+                    defaultValue={displayName}
                     className="w-full px-6 py-5 bg-white/[0.03] border border-white/5 rounded-2xl text-slate-400 font-black uppercase tracking-widest cursor-not-allowed outline-none"
                     disabled
                   />
@@ -77,7 +79,7 @@ export default function Settings() {
                 <div className="relative group">
                   <input
                     type="email"
-                    defaultValue={auth.currentUser?.email || ''}
+                    defaultValue={user?.email || ''}
                     className="w-full px-6 py-5 bg-white/[0.03] border border-white/5 rounded-2xl text-slate-400 font-black uppercase tracking-widest cursor-not-allowed outline-none"
                     disabled
                   />

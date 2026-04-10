@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { supabase } from '../lib/supabase';
 
 export interface Transaction {
   id: string;
@@ -11,6 +10,7 @@ export interface Transaction {
   price: number;
   date: string;
   broker?: string;
+  user_id: string;
 }
 
 export interface PortfolioItem {
@@ -31,17 +31,40 @@ export function usePortfolio() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!isConfigured) {
+      setLoading(false);
+      return;
+    }
 
-    const q = query(collection(db, `users/${auth.currentUser.uid}/transactions`));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+    let mounted = true;
+
+    const fetchTransactions = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        return;
+      }
+
+      if (mounted) {
+        processTransactions(data as Transaction[]);
+      }
+    };
+
+    const processTransactions = (txs: Transaction[]) => {
       setTransactions(txs);
       
-      // Calculate Portfolio
       const portfolioMap = new Map<string, PortfolioItem>();
       
-      txs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).forEach(tx => {
+      txs.forEach(tx => {
         const existing = portfolioMap.get(tx.ticker) || {
           ticker: tx.ticker,
           assetType: tx.assetType,
@@ -58,7 +81,6 @@ export function usePortfolio() {
           existing.totalInvested = newTotalInvested;
         } else {
           existing.totalQuantity -= tx.quantity;
-          // Preço médio não muda na venda, mas o total investido proporcional sim
           existing.totalInvested = existing.totalQuantity * existing.averagePrice;
         }
 
@@ -72,12 +94,27 @@ export function usePortfolio() {
       const portfolioList = Array.from(portfolioMap.values());
       setPortfolio(portfolioList);
       setLoading(false);
-      
-      // Fetch Current Prices
       fetchCurrentPrices(portfolioList);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchTransactions();
+
+    // Real-time subscription
+    const channel = supabase
+      .channel('transactions-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'transactions' 
+      }, () => {
+        fetchTransactions();
+      })
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchCurrentPrices = async (items: PortfolioItem[]) => {

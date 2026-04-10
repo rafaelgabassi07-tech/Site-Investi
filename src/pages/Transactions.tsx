@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { supabase } from '../lib/supabase';
 import { Plus, Loader2, History, ArrowUpRight, ArrowDownRight, Calendar, Tag, DollarSign, Layers, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -20,20 +19,24 @@ export default function Transactions() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
     setLoading(true);
     try {
-      await addDoc(collection(db, `users/${auth.currentUser.uid}/transactions`), {
-        userId: auth.currentUser.uid,
-        ticker: ticker.toUpperCase(),
-        type,
-        assetType,
-        quantity: parseFloat(quantity),
-        price: parseFloat(price),
-        date: new Date(date).toISOString(),
-        createdAt: serverTimestamp()
-      });
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          ticker: ticker.toUpperCase(),
+          type,
+          assetType,
+          quantity: parseFloat(quantity),
+          price: parseFloat(price),
+          date: new Date(date).toISOString(),
+        });
+      
+      if (error) throw error;
       
       setTicker('');
       setQuantity('');

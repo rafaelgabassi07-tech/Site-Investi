@@ -3,14 +3,16 @@ import Dashboard from './Dashboard';
 import { NewsWidget } from '../components/NewsWidget';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { auth } from '../firebase';
+import { useAuth } from '../hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { financeService } from '../services/financeService';
 
 export default function Home() {
-  const user = auth.currentUser;
+  const { user } = useAuth();
   const [marketStats, setMarketStats] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Investidor';
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -66,7 +68,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Boa tarde, <span className="text-blue-500">{user?.displayName?.split(' ')[0] || 'Investidor'}</span>!
+            Boa tarde, <span className="text-blue-500">{displayName.split(' ')[0]}</span>!
           </h1>
           <p className="text-slate-400 mt-2 text-sm md:text-lg max-w-2xl">
             Acompanhe o desempenho da sua carteira e as principais oportunidades do mercado financeiro hoje.
