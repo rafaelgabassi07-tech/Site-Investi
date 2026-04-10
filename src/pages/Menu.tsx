@@ -1,10 +1,37 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter } from 'lucide-react';
+import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { auth } from '../firebase';
+import { useState, useEffect } from 'react';
 
 export default function Menu() {
   const user = auth.currentUser;
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstallable(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   const ferramentas = [
     { icon: Briefcase, label: 'Minha Carteira', to: '/portfolio' },
@@ -67,8 +94,22 @@ export default function Menu() {
       </div>
 
       <div className="px-4 md:px-0">
-        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">Mais Opções</h2>
+        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">App</h2>
         <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
+          {isInstallable && (
+            <button 
+              onClick={handleInstallClick}
+              className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                  <Download size={16} className="text-blue-400" />
+                </div>
+                <span className="text-slate-200 font-medium text-sm">Instalar Aplicativo</span>
+              </div>
+              <ChevronRight size={16} className="text-slate-600" />
+            </button>
+          )}
           {maisOpcoes.map((item, idx) => (
             <Link key={idx} to={item.to} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group">
               <div className="flex items-center gap-4">
