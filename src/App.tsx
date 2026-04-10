@@ -21,6 +21,8 @@ import FixedIncome from './pages/FixedIncome';
 import Compare from './pages/Compare';
 
 export default function App() {
+  return <div className="text-white">TESTE DE RENDERIZAÇÃO</div>;
+  
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
