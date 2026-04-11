@@ -90,9 +90,6 @@ const ETFS_CONHECIDOS = new Set([
   'REIT11','TRET11','WRLD11','XBOV11','PIBB11','SMAC11','MOAT11','PORD11',
 ]);
 
-const DIAS_POR_PERIODO: Readonly<Record<string, number>> = {
-  '1mo': 30, '3mo': 90, '6mo': 180, '1y': 365, '5y': 1825, 'max': 10950,
-};
 
 function safeParse(v: any): number {
   if (typeof v === 'number') return v;

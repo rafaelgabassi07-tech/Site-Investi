@@ -1,4 +1,4 @@
-import { TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, HelpCircle, Filter, Star, TrendingDown, Bitcoin, Building2 } from 'lucide-react';
+import { TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, HelpCircle, Filter, Star, TrendingDown, Bitcoin, Building2, DollarSign, Globe } from 'lucide-react';
 import Dashboard from './Dashboard';
 import { NewsWidget } from '../components/NewsWidget';
 import { MarketMarquee } from '../components/MarketMarquee';
