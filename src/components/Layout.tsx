@@ -10,7 +10,20 @@ import {
   Menu,
   X,
   ChevronRight,
-  Search
+  Search,
+  Award,
+  Calendar,
+  Filter,
+  GitCompare,
+  Shield,
+  Zap,
+  ChevronDown,
+  Lightbulb,
+  Wrench,
+  Star,
+  Building2,
+  Bitcoin,
+  BarChart3
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
@@ -37,10 +50,38 @@ export default function Layout() {
   };
 
   const navItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'portfolio', icon: Briefcase, label: 'Carteira' },
-    { id: 'transactions', icon: History, label: 'Lançamentos' },
-    { id: 'news', icon: Newspaper, label: 'Notícias' },
+    { 
+      label: 'Ideias', 
+      icon: Lightbulb,
+      children: [
+        { label: 'Agenda de Dividendos', to: '/dividends', icon: Calendar },
+        { label: 'Rankings', to: '/ranking', icon: Award },
+        { label: 'Carteiras Recomendadas', to: '/recommended', icon: Star },
+        { label: 'Comparador de Ativos', to: '/compare', icon: GitCompare },
+      ]
+    },
+    { 
+      label: 'Ativos', 
+      icon: TrendingUp,
+      children: [
+        { label: 'Ações', to: '/ranking?type=ACAO', icon: TrendingUp },
+        { label: 'FIIs', to: '/ranking?type=FII', icon: Building2 },
+        { label: 'Stocks', to: '/ranking?type=STOCK', icon: TrendingUp },
+        { label: 'Criptomoedas', to: '/ranking?type=CRYPTO', icon: Bitcoin },
+        { label: 'Renda Fixa', to: '/renda-fixa', icon: Shield },
+      ]
+    },
+    { 
+      label: 'Ferramentas', 
+      icon: Wrench,
+      children: [
+        { label: 'Busca Avançada', to: '/screener', icon: Filter },
+        { label: 'Minha Carteira', to: '/portfolio', icon: Briefcase },
+        { label: 'Calculadoras', to: '/calculators', icon: BarChart3 },
+        { label: 'Imposto de Renda', to: '/taxes', icon: Shield },
+      ]
+    },
+    { label: 'Notícias', to: '/news', icon: Newspaper },
   ];
 
   const scrollToSection = (id: string) => {
@@ -107,16 +148,43 @@ export default function Layout() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-2">
+            <nav className="hidden lg:flex items-center gap-1">
               {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5 relative group"
-                >
-                  {item.label}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-blue-500 rounded-t-full group-hover:w-6 transition-all duration-300 opacity-0 group-hover:opacity-100" />
-                </button>
+                <div key={item.label} className="relative group">
+                  {item.children ? (
+                    <button className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-white hover:bg-white/5 flex items-center gap-1.5">
+                      {item.label}
+                      <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" />
+                    </button>
+                  ) : (
+                    <Link 
+                      to={item.to!} 
+                      className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-white hover:bg-white/5"
+                    >
+                      {item.label}
+                    </Link>
+                  )}
+
+                  {/* Dropdown Menu */}
+                  {item.children && (
+                    <div className="absolute top-full left-0 pt-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-50">
+                      <div className="bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl p-2 min-w-[240px] backdrop-blur-xl">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.label}
+                            to={child.to}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all group/item"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover/item:bg-blue-600/20 group-hover/item:text-blue-400 transition-all">
+                              <child.icon size={16} />
+                            </div>
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </nav>
 
@@ -186,20 +254,39 @@ export default function Layout() {
 
               <nav className="flex-1 overflow-y-auto p-6 space-y-2">
                 {navItems.map((item, idx) => (
-                  <motion.button
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    key={item.id}
-                    onClick={() => scrollToSection(item.id)}
-                    className="flex items-center justify-between px-6 py-5 w-full text-left rounded-2xl font-black uppercase tracking-widest text-xs text-slate-300 hover:bg-white/10 hover:text-white transition-all border border-transparent hover:border-white/10 group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <item.icon size={20} className="text-blue-500" />
-                      {item.label}
-                    </div>
-                    <ChevronRight size={16} className="text-slate-600 group-hover:text-blue-500 transition-all group-hover:translate-x-1" />
-                  </motion.button>
+                  <div key={item.label} className="space-y-1">
+                    {item.children ? (
+                      <>
+                        <div className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{item.label}</div>
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.label}
+                            to={child.to}
+                            onClick={() => setIsMenuOpen(false)}
+                            className="flex items-center justify-between px-6 py-4 w-full text-left rounded-2xl font-bold text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-all border border-transparent"
+                          >
+                            <div className="flex items-center gap-4">
+                              <child.icon size={18} className="text-blue-500" />
+                              {child.label}
+                            </div>
+                            <ChevronRight size={14} className="text-slate-700" />
+                          </Link>
+                        ))}
+                      </>
+                    ) : (
+                      <Link
+                        to={item.to!}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center justify-between px-6 py-4 w-full text-left rounded-2xl font-bold text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-all border border-transparent"
+                      >
+                        <div className="flex items-center gap-4">
+                          <item.icon size={18} className="text-blue-500" />
+                          {item.label}
+                        </div>
+                        <ChevronRight size={14} className="text-slate-700" />
+                      </Link>
+                    )}
+                  </div>
                 ))}
                 <div className="h-px bg-white/10 my-4" />
                 <Link 

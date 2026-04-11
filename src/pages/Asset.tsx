@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper, Building2, Wallet, BarChart3, ShieldCheck } from 'lucide-react';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function Asset() {
   const { ticker } = useParams();
@@ -14,6 +15,7 @@ export default function Asset() {
   const [dividends, setDividends] = useState<any[]>([]);
   const [peers, setPeers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [activePeriod, setActivePeriod] = useState('1y');
 
   useEffect(() => {
     if (!ticker) return;
@@ -24,7 +26,7 @@ export default function Asset() {
       try {
         const [details, hist, divs, peerData] = await Promise.all([
           financeService.getAssetDetails(ticker),
-          financeService.getAssetHistory(ticker),
+          financeService.getAssetHistory(ticker, activePeriod),
           financeService.getAssetDividends(ticker),
           financeService.getPeers(ticker)
         ]);
@@ -41,13 +43,13 @@ export default function Asset() {
     };
 
     fetchData();
-  }, [ticker]);
+  }, [ticker, activePeriod]);
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-        <p className="text-slate-400 font-medium">Carregando dados de {ticker}...</p>
+        <p className="text-slate-400 font-medium animate-pulse">Carregando inteligência de mercado para {ticker}...</p>
       </div>
     );
   }
@@ -74,19 +76,14 @@ export default function Asset() {
   const isPositive = results.variacaoDay ? !results.variacaoDay.startsWith('-') : true;
 
   const indicators = [
-    { label: 'D.Y', value: results.dividendYield || 'N/A' },
-    { label: 'P/L', value: results.pl || 'N/A' },
-    { label: 'P/VP', value: results.pvp || 'N/A' },
-    { label: 'ROE', value: results.roe || 'N/A' },
-    { label: 'VPA', value: results.vpa || 'N/A' },
-    { label: 'LPA', value: results.lpa || 'N/A' },
-    { label: 'P/EBIT', value: results.pEbit || 'N/A' },
-    { label: 'PSR', value: results.psr || 'N/A' },
-    { label: 'P/Ativo', value: results.pAtivo || 'N/A' },
-    { label: 'P/Cap. Giro', value: results.pCapGiro || 'N/A' },
-    { label: 'Margem Líq.', value: results.margemLiquida || 'N/A' },
-    { label: 'EV/EBITDA', value: results.evEbitda || 'N/A' },
-    { label: 'Dív. Líq./EBITDA', value: results.dividaLiquidaEbitda || 'N/A' },
+    { label: 'Dividend Yield', value: results.dividendYield || 'N/A', icon: Wallet, color: 'emerald', desc: 'Rendimento de Dividendos' },
+    { label: 'P/L', value: results.pl || 'N/A', icon: BarChart3, color: 'blue', desc: 'Preço sobre Lucro' },
+    { label: 'P/VP', value: results.pvp || 'N/A', icon: TrendingUp, color: 'indigo', desc: 'Preço sobre Valor Patr.' },
+    { label: 'ROE', value: results.roe || 'N/A', icon: Activity, color: 'purple', desc: 'Retorno sobre Patrimônio' },
+    { label: 'VPA', value: results.vpa || 'N/A', icon: Building2, color: 'cyan', desc: 'Valor Patr. por Ação' },
+    { label: 'LPA', value: results.lpa || 'N/A', icon: TrendingUp, color: 'emerald', desc: 'Lucro por Ação' },
+    { label: 'Margem Líq.', value: results.margemLiquida || 'N/A', icon: ShieldCheck, color: 'blue', desc: 'Eficiência de Lucro' },
+    { label: 'Dívida/EBITDA', value: results.dividaLiquidaEbitda || 'N/A', icon: Zap, desc: 'Alavancagem' },
   ];
 
   const safeParse = (v: any) => {
@@ -96,291 +93,349 @@ export default function Asset() {
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-8 pb-24 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 pt-4 px-4 md:px-0">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-colors border border-slate-700/50">
           <ArrowLeft size={20} className="text-slate-300" />
         </button>
         <div className="flex-1 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <AssetIcon assetType="ACAO" ticker={assetData.ticker} className="w-12 h-12" />
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center p-2 shadow-xl border border-slate-800">
+              <AssetIcon assetType="ACAO" ticker={assetData.ticker} className="w-full h-full" />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">{assetData.ticker}</h1>
-              <p className="text-sm text-slate-400">{results.name || 'Empresa'}</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-white tracking-tight">{assetData.ticker}</h1>
+                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded border border-blue-500/20">Ação</span>
+              </div>
+              <p className="text-sm text-slate-400 font-medium">{results.name || 'Empresa'}</p>
             </div>
           </div>
-          <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-            <Star size={20} className="text-slate-400 hover:text-amber-400 transition-colors" />
+          <button className="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-all border border-slate-700 group">
+            <Star size={24} className="text-slate-500 group-hover:text-amber-400 transition-colors" />
           </button>
         </div>
       </div>
 
-      <div className="px-4 md:px-0 space-y-6">
-        {/* Price Card */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 shadow-sm">
-          <div className="text-sm font-medium text-slate-400 mb-2">Cotação Atual</div>
-          <div className="flex items-end gap-4">
-            <div className="text-4xl font-bold text-white tracking-tight">
-              R$ {typeof results.precoAtual === 'number' ? results.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : results.precoAtual || '0,00'}
-            </div>
-            <div className={`flex items-center gap-1 text-lg font-semibold mb-1 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-              {results.variacaoDay || '0.00%'}
-            </div>
-          </div>
-          
-          {/* Chart */}
-          <div className="h-64 mt-8 rounded-xl overflow-hidden">
-            {history.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={history}>
-                  <defs>
-                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10" />
-                  <XAxis 
-                    dataKey="date" 
-                    hide 
-                  />
-                  <YAxis 
-                    hide 
-                    domain={['auto', 'auto']}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff' }}
-                    itemStyle={{ color: '#3b82f6' }}
-                    labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR')}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="close" 
-                    stroke="#3b82f6" 
-                    fillOpacity={1} 
-                    fill="url(#colorPrice)" 
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center bg-slate-800/30 rounded-xl border border-dashed border-slate-800">
-                <p className="text-slate-500 text-sm font-medium">Dados históricos indisponíveis</p>
+      <div className="px-4 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Price & Chart */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
+            
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+              <div>
+                <div className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Cotação Atual</div>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-5xl font-bold text-white tracking-tighter">
+                    R$ {typeof results.precoAtual === 'number' ? results.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : results.precoAtual || '0,00'}
+                  </span>
+                  <div className={`flex items-center gap-1 text-lg font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {isPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                    {results.variacaoDay || '0.00%'}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Indicators */}
-        <div>
-          <h2 className="text-lg font-bold text-white mb-4">Indicadores Fundamentalistas</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {indicators.map((ind, idx) => (
-              <div key={idx} className="bg-[#0f172a] border border-slate-800 rounded-xl p-4 flex flex-col justify-center shadow-sm">
-                <span className="text-xs font-medium text-slate-400 mb-1">{ind.label}</span>
-                <span className="text-lg font-semibold text-white">{ind.value}</span>
+              <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl">
+                {['1mo', '3mo', '6mo', '1y', '5y'].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setActivePeriod(p)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      activePeriod === p 
+                        ? 'bg-blue-600 text-white shadow-lg' 
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    {p.toUpperCase()}
+                  </button>
+                ))}
               </div>
+            </div>
+            
+            {/* Chart */}
+            <div className="h-72 w-full">
+              {history.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={history}>
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                    <XAxis 
+                      dataKey="date" 
+                      hide 
+                    />
+                    <YAxis 
+                      hide 
+                      domain={['auto', 'auto']}
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', color: '#fff', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                      itemStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
+                      labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="close" 
+                      stroke="#3b82f6" 
+                      fillOpacity={1} 
+                      fill="url(#colorPrice)" 
+                      strokeWidth={3}
+                      animationDuration={1500}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
+                  <p className="text-slate-600 text-sm font-bold uppercase tracking-widest">Dados históricos indisponíveis</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Indicators Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {indicators.map((ind, idx) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                key={idx} 
+                className="bg-[#0f172a] border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all group shadow-sm relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-16 h-16 bg-blue-600/5 blur-2xl -z-10 group-hover:bg-blue-600/10 transition-all" />
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors`}>
+                    <ind.icon size={16} />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{ind.label}</span>
+                </div>
+                <div className="text-xl font-bold text-white tracking-tight mb-1">{ind.value}</div>
+                <div className="text-[9px] font-medium text-slate-600 group-hover:text-slate-400 transition-colors">{ind.desc}</div>
+              </motion.div>
             ))}
           </div>
-        </div>
 
-        {/* Checklist Section */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <CheckCircle2 size={20} className="text-emerald-500" />
-            <h2 className="text-lg font-bold text-white">Checklist do Investidor</h2>
-          </div>
-          
-          <div className="space-y-2">
-            {[
-              { label: 'P/L abaixo de 15', check: () => {
-                const val = safeParse(results.pl);
-                return val > 0 && val < 15;
-              }},
-              { label: 'P/VP abaixo de 2.0', check: () => {
-                const val = safeParse(results.pvp);
-                return val > 0 && val < 2;
-              }},
-              { label: 'Dividend Yield acima de 6%', check: () => {
-                const val = safeParse(results.dividendYield);
-                return val >= 6;
-              }},
-              { label: 'ROE acima de 10%', check: () => {
-                const val = safeParse(results.roe);
-                return val >= 10;
-              }},
-              { label: 'Margem Líquida acima de 10%', check: () => {
-                const val = safeParse(results.margemLiquida);
-                return val >= 10;
-              }},
-              { label: 'Dív. Líq. / EBITDA abaixo de 3', check: () => {
-                const val = safeParse(results.dividaLiquidaEbitda);
-                return val > 0 && val < 3;
-              }},
-            ].map((item, idx) => {
-              const passed = item.check();
-              return (
-                <div key={idx} className="flex items-center justify-between py-3 border-b border-slate-800/50 last:border-0">
-                  <span className="text-sm text-slate-300 font-medium">{item.label}</span>
-                  {passed ? (
-                    <div className="flex items-center gap-2 text-emerald-400">
-                      <span className="text-xs font-semibold">Aprovado</span>
-                      <CheckCircle2 size={16} />
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <span className="text-xs font-semibold">Não atende</span>
-                      <XCircle size={16} />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="mt-6 p-4 bg-blue-500/5 rounded-xl border border-blue-500/10 flex items-start gap-3">
-            <AlertCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-400 font-medium leading-relaxed">
-              Nota: Este checklist é baseado em critérios fundamentalistas clássicos e não deve ser considerado como recomendação de compra ou venda.
-            </p>
-          </div>
-        </div>
-
-        {/* About */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <Info size={20} className="text-blue-500" />
-            <h2 className="text-lg font-bold text-white">Sobre a Empresa</h2>
-          </div>
-          <p className="text-sm text-slate-300 leading-relaxed font-medium">
-            {results.about || `Informações detalhadas sobre ${assetData.ticker} estarão disponíveis em breve.`}
-          </p>
-        </div>
-
-        {/* Asset News */}
-        {assetData.news && assetData.news.length > 0 && (
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 shadow-sm">
+          {/* About Section */}
+          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
-              <Newspaper size={20} className="text-blue-500" />
-              <h2 className="text-lg font-bold text-white">Últimas Notícias</h2>
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                <Info size={20} />
+              </div>
+              <h2 className="text-xl font-bold text-white">Sobre a {results.name || assetData.ticker}</h2>
             </div>
+            <p className="text-slate-400 leading-relaxed font-medium">
+              {results.about || `A ${results.name || assetData.ticker} é uma das principais empresas do seu setor, com forte presença no mercado brasileiro. Suas operações abrangem diversas áreas estratégicas, focando em eficiência e retorno para o acionista.`}
+            </p>
+            
+            <div className="grid grid-cols-2 gap-8 mt-8 pt-8 border-t border-slate-800">
+              <div>
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Setor</div>
+                <div className="text-sm font-bold text-white">{results.sector || 'N/A'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Subsetor</div>
+                <div className="text-sm font-bold text-white">{results.subSector || 'N/A'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Checklist & News */}
+        <div className="space-y-8">
+          {/* Checklist Card */}
+          <div className="bg-gradient-to-br from-slate-900 to-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                <ShieldCheck size={20} />
+              </div>
+              <h2 className="text-lg font-bold text-white tracking-tight">Checklist Nexus</h2>
+            </div>
+            
             <div className="space-y-4">
-              {assetData.news.map((item: any, idx: number) => (
-                <a 
-                  key={idx} 
-                  href={item.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block p-4 bg-slate-800/30 rounded-xl hover:bg-slate-800/50 transition-colors border border-slate-800 hover:border-blue-500/30 group"
-                >
-                  <h3 className="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors line-clamp-2">{item.title}</h3>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-xs font-semibold text-blue-400">{item.source || 'Nexus News'}</span>
-                    {item.pubDate && (
-                      <span className="text-xs text-slate-500 font-medium">
-                        {new Date(item.pubDate).toLocaleDateString('pt-BR')}
-                      </span>
+              {[
+                { label: 'P/L abaixo de 15', check: () => {
+                  const val = safeParse(results.pl);
+                  return val > 0 && val < 15;
+                }},
+                { label: 'P/VP abaixo de 2.0', check: () => {
+                  const val = safeParse(results.pvp);
+                  return val > 0 && val < 2;
+                }},
+                { label: 'Dividend Yield > 6%', check: () => {
+                  const val = safeParse(results.dividendYield);
+                  return val >= 6;
+                }},
+                { label: 'ROE acima de 10%', check: () => {
+                  const val = safeParse(results.roe);
+                  return val >= 10;
+                }},
+                { label: 'Margem Líquida > 10%', check: () => {
+                  const val = safeParse(results.margemLiquida);
+                  return val >= 10;
+                }},
+                { label: 'Dívida Controlada', check: () => {
+                  const val = safeParse(results.dividaLiquidaEbitda);
+                  return val > 0 && val < 3;
+                }},
+              ].map((item, idx) => {
+                const passed = item.check();
+                return (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-800/50">
+                    <span className="text-xs text-slate-300 font-bold uppercase tracking-wide">{item.label}</span>
+                    {passed ? (
+                      <CheckCircle2 size={18} className="text-emerald-500" />
+                    ) : (
+                      <XCircle size={18} className="text-slate-600" />
                     )}
                   </div>
-                </a>
-              ))}
+                );
+              })}
+            </div>
+            
+            <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
+              <p className="text-[10px] text-slate-500 font-bold leading-relaxed text-center uppercase tracking-wider">
+                Análise baseada em fundamentos clássicos de Buy & Hold.
+              </p>
             </div>
           </div>
-        )}
 
-        {/* Dividends */}
-        {dividends.length > 0 && (
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <Calendar size={20} className="text-emerald-500" />
-                <h2 className="text-lg font-bold text-white">Histórico de Proventos</h2>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {dividends.slice(0, 5).map((div, idx) => (
-                <div key={idx} className="flex items-center justify-between py-3 border-b border-slate-800/50 last:border-0">
-                  <div>
-                    <div className="text-sm font-semibold text-white">R$ {div.amount.toFixed(4)}</div>
-                    <div className="text-xs text-slate-500 font-medium mt-0.5">Pagamento</div>
+          {/* Dividends Summary */}
+          {dividends.length > 0 && (
+            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                    <Calendar size={20} />
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-slate-300 font-medium">{new Date(div.date).toLocaleDateString('pt-BR')}</div>
-                    <div className="text-xs text-emerald-400 font-semibold mt-0.5">Dividendo</div>
-                  </div>
+                  <h2 className="text-lg font-bold text-white">Proventos</h2>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* Comparison with Sector */}
-        <section className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden mt-8 shadow-sm">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                <Users size={20} className="text-blue-500" />
               </div>
-              <h2 className="text-lg font-bold text-white">Comparação com o Setor</h2>
+              <div className="space-y-3">
+                {dividends.slice(0, 4).map((div, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/20 border border-slate-800/50">
+                    <div>
+                      <div className="text-sm font-bold text-white">R$ {div.amount.toFixed(3)}</div>
+                      <div className="text-[10px] text-slate-500 font-black uppercase mt-0.5">{new Date(div.date).toLocaleDateString('pt-BR')}</div>
+                    </div>
+                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[9px] font-black uppercase rounded">Pago</span>
+                  </div>
+                ))}
+              </div>
+              <Link to="/dividends" className="mt-6 block text-center py-3 text-xs font-bold text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest">Ver Agenda Completa</Link>
+            </div>
+          )}
+
+          {/* News Feed */}
+          {assetData.news && assetData.news.length > 0 && (
+            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                  <Newspaper size={20} />
+                </div>
+                <h2 className="text-lg font-bold text-white">Notícias</h2>
+              </div>
+              <div className="space-y-4">
+                {assetData.news.slice(0, 3).map((item: any, idx: number) => (
+                  <a 
+                    key={idx} 
+                    href={item.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block group"
+                  >
+                    <h3 className="text-xs font-bold text-slate-300 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">{item.title}</h3>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{item.source || 'Nexus'}</span>
+                      <span className="text-[9px] font-bold text-slate-600">{new Date(item.pubDate).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Comparison Section */}
+      <div className="px-4 md:px-0">
+        <section className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-inner">
+                <Users size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white tracking-tight">Comparação com o Setor</h2>
+                <p className="text-sm text-slate-500 font-medium mt-1">Como este ativo se comporta em relação aos seus pares.</p>
+              </div>
             </div>
             <button 
               onClick={() => navigate('/compare')}
-              className="text-xs font-semibold text-blue-400 flex items-center gap-2 hover:text-blue-300 transition-colors"
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"
             >
-              Ver Comparativo <ArrowRight size={14} />
+              Comparador Completo <ArrowRight size={16} />
             </button>
           </div>
 
-          <div className="overflow-x-auto no-scrollbar">
-            <table className="w-full text-left">
+          <div className="overflow-x-auto no-scrollbar -mx-8 px-8">
+            <table className="w-full text-left border-separate border-spacing-y-2">
               <thead>
-                <tr className="border-b border-slate-800/50">
-                  <th className="pb-4 text-xs font-semibold text-slate-400">Ativo</th>
-                  <th className="pb-4 text-xs font-semibold text-slate-400 text-right">P/L</th>
-                  <th className="pb-4 text-xs font-semibold text-slate-400 text-right">P/VP</th>
-                  <th className="pb-4 text-xs font-semibold text-slate-400 text-right">DY (%)</th>
-                  <th className="pb-4 text-xs font-semibold text-slate-400 text-right">ROE (%)</th>
+                <tr className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                  <th className="pb-4 pl-4">Ativo</th>
+                  <th className="pb-4 text-right">P/L</th>
+                  <th className="pb-4 text-right">P/VP</th>
+                  <th className="pb-4 text-right">DY (%)</th>
+                  <th className="pb-4 text-right pr-4">ROE (%)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody>
                 {[
                   { ticker: assetData.ticker, pl: results.pl, pvp: results.pvp, dy: results.dividendYield?.replace('%', ''), roe: results.roe?.replace('%', ''), current: true },
                   ...peers
                 ].map((peer, i) => (
-                  <tr key={i} className={`group hover:bg-slate-800/30 transition-colors ${peer.current ? 'bg-blue-500/5' : ''}`}>
-                    <td className="py-4">
+                  <tr 
+                    key={i} 
+                    onClick={() => !peer.current && navigate(`/asset/${peer.ticker}`)}
+                    className={`group cursor-pointer transition-all ${peer.current ? 'bg-blue-600/10' : 'bg-slate-900/30 hover:bg-slate-800/50'}`}
+                  >
+                    <td className="py-4 pl-4 rounded-l-2xl border-y border-l border-transparent group-hover:border-slate-700">
                       <div className="flex items-center gap-3">
-                        <AssetIcon assetType="ACAO" ticker={peer.ticker} className="w-8 h-8" />
-                        <button 
-                          onClick={() => !peer.current && navigate(`/asset/${peer.ticker}`)}
-                          className={`font-semibold hover:text-blue-400 transition-colors ${peer.current ? 'text-blue-400' : 'text-white'}`}
-                        >
-                          {peer.ticker}
-                        </button>
-                        {peer.current && <span className="text-[10px] font-semibold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Atual</span>}
+                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center p-1 border border-slate-800 shadow-sm">
+                          <AssetIcon assetType="ACAO" ticker={peer.ticker} className="w-full h-full" />
+                        </div>
+                        <span className={`font-bold ${peer.current ? 'text-blue-400' : 'text-white'}`}>{peer.ticker}</span>
+                        {peer.current && <span className="text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded uppercase tracking-widest">Atual</span>}
                       </div>
                     </td>
-                    <td className="py-4 text-right text-sm text-slate-300 font-medium">{peer.pl}</td>
-                    <td className="py-4 text-right text-sm text-slate-300 font-medium">{peer.pvp}</td>
-                    <td className="py-4 text-right text-sm text-emerald-400 font-medium">{peer.dy}%</td>
-                    <td className="py-4 text-right text-sm text-slate-300 font-medium">{peer.roe}%</td>
+                    <td className="py-4 text-right text-sm text-slate-300 font-mono font-bold border-y border-transparent group-hover:border-slate-700">{peer.pl}</td>
+                    <td className="py-4 text-right text-sm text-slate-300 font-mono font-bold border-y border-transparent group-hover:border-slate-700">{peer.pvp}</td>
+                    <td className="py-4 text-right text-sm text-emerald-400 font-mono font-bold border-y border-transparent group-hover:border-slate-700">{peer.dy}%</td>
+                    <td className="py-4 text-right text-sm text-slate-300 font-mono font-bold pr-4 rounded-r-2xl border-y border-r border-transparent group-hover:border-slate-700">{peer.roe}%</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </section>
+      </div>
 
-        <div className="mt-8 p-6 bg-slate-800/30 border border-slate-800 rounded-2xl">
-          <div className="flex items-center gap-3 mb-3">
-            <AlertCircle size={16} className="text-slate-500" />
-            <h4 className="text-xs font-semibold text-slate-400">Aviso Legal</h4>
+      <div className="px-4 md:px-0">
+        <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-3xl flex items-start gap-4">
+          <AlertCircle size={20} className="text-slate-600 shrink-0 mt-1" />
+          <div>
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Aviso Legal</h4>
+            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+              As informações apresentadas são obtidas de fontes públicas e podem conter atrasos ou imprecisões. Este conteúdo tem caráter meramente informativo e não constitui recomendação de compra, venda ou manutenção de ativos. O investimento em renda variável envolve riscos e rentabilidade passada não é garantia de rentabilidade futura.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 leading-relaxed font-medium">
-            As informações apresentadas são obtidas de fontes públicas e podem conter atrasos ou imprecisões. Este conteúdo tem caráter meramente informativo e não constitui recomendação de compra, venda ou manutenção de ativos. O investimento em renda variável envolve riscos e rentabilidade passada não é garantia de rentabilidade futura.
-          </p>
         </div>
       </div>
     </div>

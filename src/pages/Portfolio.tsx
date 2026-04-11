@@ -50,9 +50,9 @@ export default function Portfolio() {
       acc.push({ name: item.assetType, value: item.currentValue || item.totalInvested });
     }
     return acc;
-  }, []);
+  }, []).sort((a, b) => b.value - a.value);
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
   const menuItems = [
     { icon: PieIcon, label: 'Resumo', to: '/portfolio' },
@@ -147,27 +147,32 @@ export default function Portfolio() {
                   data={allocationData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
-                  outerRadius={60}
+                  innerRadius={50}
+                  outerRadius={70}
                   paddingAngle={5}
                   dataKey="value"
+                  stroke="none"
                 >
                   {allocationData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
+                <RechartsTooltip 
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <p className="text-sm font-medium text-slate-400 mb-4">Alocação de Ativos</p>
-          <div className="space-y-3 relative z-10">
-            {allocationData.slice(0, 3).map((item: any, idx: number) => (
+          <div className="space-y-3 relative z-10 max-h-[120px] overflow-y-auto no-scrollbar">
+            {allocationData.map((item: any, idx: number) => (
               <div key={idx} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                  <span className="text-sm font-medium text-slate-300">{item.name}</span>
+                  <span className="text-xs font-medium text-slate-300">{item.name}</span>
                 </div>
-                <span className="text-sm font-semibold text-white">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
+                <span className="text-xs font-semibold text-white">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
               </div>
             ))}
           </div>
