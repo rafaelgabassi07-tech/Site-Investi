@@ -4,7 +4,6 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import yahooFinance from "yahoo-finance2";
 import { NexusEngine } from "./src/lib/nexus/engine.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -106,7 +105,7 @@ export async function createServer() {
       }
     });
 
-    app.get("/api/market-stats", async (req, res) => {
+    app.get("/api/market-stats", async (_req, res) => {
       const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD"];
       try {
         const results = await Promise.all(tickers.map(t => NexusEngine.fetchAtivo(t, 'ACAO')));
@@ -123,7 +122,7 @@ export async function createServer() {
     });
 
     // Mock CRON Worker for Corporate Events
-    app.post("/api/cron/sync-events", (req, res) => {
+    app.post("/api/cron/sync-events", (_req, res) => {
       console.log('[WORKER] Syncing corporate events from B3...');
       
       // In a real app, this would:
@@ -166,7 +165,7 @@ export async function createServer() {
     } else {
       const distPath = path.join(process.cwd(), 'dist');
       app.use(express.static(distPath));
-      app.get('*', (req, res) => {
+      app.get('*', (_req, res) => {
         res.sendFile(path.join(distPath, 'index.html'));
       });
     }

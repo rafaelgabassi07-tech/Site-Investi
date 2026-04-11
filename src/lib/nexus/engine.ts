@@ -58,7 +58,6 @@ const RE_DECIMAL = /,/;
 const RE_SA      = /\.SA$/i;
 const RE_BDR     = /3[2-5]$/;
 const RE_TICKER  = /^[A-Z]{4}\d{1,2}$/;
-const RE_ESPACO  = /\s+/;
 
 export const VALORES_INVALIDOS = new Set([
   '-', '—', '–', 'N/A', 'n/a', 'nd', '', 'null', 'undefined',
@@ -159,10 +158,6 @@ function validarTicker(clean: string): string | null {
 
 function getRandomAgent(): string {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-}
-
-function periodoParaData(periodo: string): Date {
-  return new Date(Date.now() - (DIAS_POR_PERIODO[periodo] ?? 365) * 86_400_000);
 }
 
 function backoffMs(attempt: number, base = 500, cap = 16_000): number {
