@@ -19,10 +19,13 @@ import RecommendedPortfolios from './pages/RecommendedPortfolios';
 import Asset from './pages/Asset';
 import FixedIncome from './pages/FixedIncome';
 import Compare from './pages/Compare';
+import Rebalance from './pages/Rebalance';
+import Taxes from './pages/Taxes';
+
+import { PortfolioProvider } from './contexts/PortfolioContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
-  return <div className="text-white">TESTE DE RENDERIZAÇÃO</div>;
-  
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
@@ -74,7 +77,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-        <Route path="/" element={user ? <Layout /> : <Navigate to="/login" />}>
+        <Route path="/" element={user ? <PortfolioProvider><Layout /></PortfolioProvider> : <Navigate to="/login" />}>
           <Route index element={<Home />} />
           <Route path="portfolio" element={<Portfolio />} />
           <Route path="search" element={<Search />} />
@@ -89,6 +92,8 @@ export default function App() {
           <Route path="asset/:ticker" element={<Asset />} />
           <Route path="renda-fixa" element={<FixedIncome />} />
           <Route path="compare" element={<Compare />} />
+          <Route path="rebalance" element={<Rebalance />} />
+          <Route path="taxes" element={<Taxes />} />
         </Route>
       </Routes>
     </Router>

@@ -16,6 +16,8 @@ import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { ErrorBoundary } from './ErrorBoundary';
+
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,69 +89,60 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex flex-col selection:bg-blue-500/30">
-      {/* Header Estilo Nexus Ultra */}
+      {/* Header Estilo Nexus */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
         scrolled ? 'bg-[#020617]/80 backdrop-blur-2xl border-b border-white/10 py-3 shadow-2xl' : 'bg-transparent py-6'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            {/* Logo Nexus Style */}
+            {/* Logo Professional Style */}
             <Link to="/" className="flex items-center gap-3 group">
-              <motion.div 
-                whileHover={{ scale: 1.1, rotate: 0 }}
-                initial={{ rotate: 3 }}
-                className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-500/40 transition-all duration-500"
-              >
-                <TrendingUp size={28} />
-              </motion.div>
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 transition-all duration-300 group-hover:scale-105">
+                <TrendingUp size={24} strokeWidth={2.5} />
+              </div>
               <div className="flex flex-col">
-                <span className="text-2xl font-black tracking-tighter text-white leading-none">INVEST</span>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-blue-400 uppercase">Ultra V2.5</span>
+                <span className="text-xl font-bold tracking-tight text-white leading-none">Nexus</span>
+                <span className="text-[11px] font-medium text-blue-400 mt-0.5">Invest</span>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
+            <nav className="hidden lg:flex items-center gap-2">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white hover:bg-white/10 relative group"
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5 relative group"
                 >
                   {item.label}
-                  <motion.div 
-                    className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-blue-500 rounded-full group-hover:w-4 transition-all"
-                  />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-blue-500 rounded-t-full group-hover:w-6 transition-all duration-300 opacity-0 group-hover:opacity-100" />
                 </button>
               ))}
             </nav>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {/* Search Bar */}
-              <form onSubmit={handleSearch} className="hidden lg:flex items-center gap-3 px-6 py-2.5 bg-white/5 border border-white/10 rounded-2xl group focus-within:border-blue-500/50 transition-all duration-500">
-                <Search size={14} className="text-slate-500 group-focus-within:text-blue-500" />
+              <form onSubmit={handleSearch} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-[#0f172a] border border-slate-800 rounded-xl focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all duration-300">
+                <Search size={16} className="text-slate-500" />
                 <input 
                   type="text" 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="BUSCAR ATIVO..." 
-                  className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-white placeholder:text-slate-700 w-32 xl:w-48"
+                  placeholder="Buscar ativo..." 
+                  className="bg-transparent border-none outline-none text-sm font-medium text-white placeholder:text-slate-500 w-40 xl:w-56"
                 />
-                <div className="px-1.5 py-0.5 bg-white/5 rounded-md text-[8px] font-black text-slate-600 border border-white/10">
-                  ENTER
-                </div>
               </form>
 
               <Link 
                 to="/settings" 
-                className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all hidden sm:flex border border-transparent hover:border-white/10"
+                className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all hidden sm:flex"
               >
                 <SettingsIcon size={20} />
               </Link>
               <button
                 onClick={handleLogout}
-                className="hidden sm:flex items-center gap-2 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
               >
                 <LogOut size={18} />
                 Sair
@@ -181,7 +174,7 @@ export default function Layout() {
                   <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
                     <TrendingUp size={24} />
                   </div>
-                  <span className="text-xl font-black tracking-tighter text-white">INVEST</span>
+                  <span className="text-xl font-black tracking-tighter text-white">NEXUS</span>
                 </div>
                 <button 
                   className="p-2.5 text-slate-200 hover:bg-white/10 rounded-xl border border-white/10"
@@ -228,7 +221,7 @@ export default function Layout() {
               </nav>
 
               <div className="p-8 border-t border-white/5 text-center">
-                <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.3em]">Invest Ultra Engine v2.5</p>
+                <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.3em]">Nexus Invest Engine v2.5</p>
               </div>
             </motion.div>
           )}
@@ -238,7 +231,9 @@ export default function Layout() {
       {/* Main Content */}
       <main className="flex-1 pt-24 md:pt-32 pb-32 md:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
 
@@ -279,8 +274,8 @@ export default function Layout() {
                   <TrendingUp size={24} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-black tracking-tighter text-white leading-none">INVEST</span>
-                  <span className="text-[8px] font-bold tracking-[0.2em] text-blue-400 uppercase">Ultra Engine</span>
+                  <span className="text-xl font-black tracking-tighter text-white leading-none">NEXUS</span>
+                  <span className="text-[8px] font-bold tracking-[0.2em] text-blue-400 uppercase">Invest Engine</span>
                 </div>
               </Link>
               <p className="text-slate-500 text-xs font-medium max-w-xs text-center md:text-left">
@@ -307,7 +302,7 @@ export default function Layout() {
           <div className="h-px bg-white/5 my-12" />
           
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">© 2026 Invest Ultra. Todos os direitos reservados.</p>
+            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">© 2026 Nexus Invest. Todos os direitos reservados.</p>
             <div className="flex items-center gap-6">
               <a href="#" className="text-slate-600 hover:text-white transition-colors"><X size={16} /></a>
               <a href="#" className="text-slate-600 hover:text-white transition-colors"><SettingsIcon size={16} /></a>

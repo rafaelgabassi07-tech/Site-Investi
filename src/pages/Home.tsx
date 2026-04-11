@@ -10,7 +10,9 @@ import { financeService } from '../services/financeService';
 export default function Home() {
   const { user } = useAuth();
   const [marketStats, setMarketStats] = useState<any[]>([]);
+  const [topGainers, setTopGainers] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingGainers, setLoadingGainers] = useState(true);
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Investidor';
 
@@ -25,7 +27,20 @@ export default function Home() {
         setLoadingStats(false);
       }
     };
+
+    const fetchGainers = async () => {
+      try {
+        const gainers = await financeService.getRanking('Maiores Altas');
+        setTopGainers(gainers.slice(0, 3));
+      } catch (err) {
+        console.error('Failed to fetch top gainers', err);
+      } finally {
+        setLoadingGainers(false);
+      }
+    };
+
     fetchStats();
+    fetchGainers();
   }, []);
 
   const defaultStats = [
@@ -67,10 +82,10 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
             Boa tarde, <span className="text-blue-500">{displayName.split(' ')[0]}</span>!
           </h1>
-          <p className="text-slate-400 mt-2 text-sm md:text-lg max-w-2xl">
+          <p className="text-slate-400 mt-2 text-sm md:text-base max-w-2xl">
             Acompanhe o desempenho da sua carteira e as principais oportunidades do mercado financeiro hoje.
           </p>
         </motion.div>
@@ -78,34 +93,34 @@ export default function Home() {
 
       {/* Market Sentiment & Quick Stats */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0">
-        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
+        <div className="lg:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden group shadow-lg">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
           
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                 <Gauge size={20} className="text-blue-500" />
               </div>
-              <h2 className="text-xl font-bold text-white">Sentimento do Mercado</h2>
+              <h2 className="text-lg font-bold text-white">Sentimento do Mercado</h2>
             </div>
             <button className="text-slate-500 hover:text-white transition-colors">
               <HelpCircle size={18} />
             </button>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            <div className="relative w-48 h-24 overflow-hidden">
-              <div className="absolute inset-0 border-[12px] border-slate-800 rounded-t-full" />
-              <div className="absolute inset-0 border-[12px] border-t-emerald-500 border-r-emerald-500/50 border-l-red-500/50 rounded-t-full rotate-[45deg]" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-20 bg-white origin-bottom rotate-[30deg] transition-transform duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-slate-900" />
+          <div className="flex flex-col md:flex-row items-center gap-10">
+            <div className="relative w-40 h-20 overflow-hidden">
+              <div className="absolute inset-0 border-[10px] border-slate-800 rounded-t-full" />
+              <div className="absolute inset-0 border-[10px] border-t-emerald-500 border-r-emerald-500/50 border-l-red-500/50 rounded-t-full rotate-[45deg]" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-16 bg-white origin-bottom rotate-[30deg] transition-transform duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full border-2 border-slate-900" />
             </div>
             
-            <div className="flex-1 space-y-4 text-center md:text-left">
-              <div className="inline-block px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest">
+            <div className="flex-1 space-y-3 text-center md:text-left">
+              <div className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-semibold">
                 Otimismo Moderado
               </div>
-              <h3 className="text-3xl font-black text-white tracking-tighter">Greed: 68/100</h3>
+              <h3 className="text-2xl font-bold text-white tracking-tight">Greed: 68/100</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
                 O mercado demonstra apetite por risco. Investidores estão otimistas com os últimos dados de inflação e resultados corporativos.
               </p>
@@ -113,18 +128,14 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-2xl shadow-blue-500/20">
+        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 md:p-8 text-white relative overflow-hidden group shadow-lg shadow-blue-500/10">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 group-hover:bg-white/20 transition-all" />
           <Zap size={48} className="text-white/20 absolute -bottom-4 -right-4 rotate-12 group-hover:scale-110 transition-transform" />
           
-          <h3 className="text-xl font-black mb-4 uppercase tracking-tight">Invest Ultra PRO</h3>
-          <p className="text-blue-100 text-sm leading-relaxed mb-8 font-medium">
-            Desbloqueie análises de IA, checklists exclusivos e monitoramento de carteira em tempo real.
+          <h3 className="text-lg font-bold mb-3 tracking-tight">100% Gratuito</h3>
+          <p className="text-blue-100 text-sm leading-relaxed mb-6 font-medium">
+            Aproveite análises avançadas, checklists exclusivos e monitoramento de carteira em tempo real sem pagar nada.
           </p>
-          
-          <button className="w-full py-4 bg-white text-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all shadow-xl">
-            Assinar Agora
-          </button>
         </div>
       </section>
 
@@ -138,47 +149,53 @@ export default function Home() {
       <section className="space-y-6 px-4 md:px-0">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
               <TrendingUp size={20} className="text-emerald-500" />
             </div>
-            <h2 className="text-2xl font-semibold text-white tracking-tight">Maiores Altas Hoje</h2>
+            <h2 className="text-xl font-bold text-white tracking-tight">Maiores Altas Hoje</h2>
           </div>
-          <Link to="/ranking" className="text-blue-500 text-sm font-bold flex items-center gap-1 hover:underline">
+          <Link to="/ranking" className="text-blue-500 text-sm font-medium flex items-center gap-1 hover:underline">
             Ver ranking completo <ArrowRight size={16} />
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { ticker: 'PETR4', name: 'Petrobras', price: '38,45', change: '+2.34%' },
-            { ticker: 'VALE3', name: 'Vale', price: '62,10', change: '+1.85%' },
-            { ticker: 'ITUB4', name: 'Itaú Unibanco', price: '34,20', change: '+1.12%' },
-          ].map((asset, idx) => (
-            <Link key={idx} to={`/asset/${asset.ticker}`} className="bg-white/5 border border-white/10 rounded-3xl p-6 flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.02] group">
-              <div>
-                <div className="font-bold text-white text-xl group-hover:text-blue-400 transition-colors">{asset.ticker}</div>
-                <div className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">{asset.name}</div>
-              </div>
-              <div className="text-right">
-                <div className="font-mono font-bold text-white text-lg">R$ {asset.price}</div>
-                <div className="text-sm font-bold text-emerald-500 flex items-center justify-end gap-1">
-                  <TrendingUp size={14} />
-                  {asset.change}
+          {loadingGainers ? (
+            Array(3).fill(0).map((_, idx) => (
+              <div key={idx} className="bg-[#0f172a] border border-slate-800 rounded-2xl p-5 h-24 animate-pulse" />
+            ))
+          ) : topGainers.length > 0 ? (
+            topGainers.map((asset, idx) => (
+              <Link key={idx} to={`/asset/${asset.ticker}`} className="bg-[#0f172a] border border-slate-800 rounded-2xl p-5 flex items-center justify-between hover:bg-slate-800/50 transition-all hover:-translate-y-1 group shadow-sm">
+                <div>
+                  <div className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">{asset.ticker}</div>
+                  <div className="text-xs text-slate-400 font-medium mt-0.5">{asset.name}</div>
                 </div>
-              </div>
-            </Link>
-          ))}
+                <div className="text-right">
+                  <div className="font-semibold text-white text-base">{asset.subValue}</div>
+                  <div className="text-sm font-medium text-emerald-400 flex items-center justify-end gap-1 mt-0.5">
+                    <TrendingUp size={14} />
+                    {asset.raw.variacaoDay}
+                  </div>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="col-span-full py-10 text-center text-slate-500 font-medium">
+              Dados indisponíveis no momento.
+            </div>
+          )}
         </div>
       </section>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
       
       {/* Rankings Section */}
       <section className="space-y-6 px-4 md:px-0">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
             <Award size={20} className="text-blue-500" />
           </div>
-          <h2 className="text-2xl font-semibold text-white tracking-tight">Rankings</h2>
+          <h2 className="text-xl font-bold text-white tracking-tight">Rankings</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -187,45 +204,27 @@ export default function Home() {
             { label: 'Stocks', icon: 'S', to: '/ranking' },
             { label: 'BDRs', icon: 'B', to: '/ranking' },
           ].map((rank, idx) => (
-            <Link key={idx} to={rank.to} className="flex flex-col items-center justify-center p-8 rounded-3xl bg-white/5 hover:bg-white/10 transition-all border border-white/10 group gap-4 hover:border-blue-500/30">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-all">
-                <span className="text-xl font-black">{rank.icon}</span>
+            <Link key={idx} to={rank.to} className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#0f172a] hover:bg-slate-800/50 transition-all border border-slate-800 group gap-3 hover:border-blue-500/30 shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-all">
+                <span className="text-lg font-bold">{rank.icon}</span>
               </div>
-              <span className="text-slate-200 font-bold text-sm uppercase tracking-widest">{rank.label}</span>
+              <span className="text-slate-300 font-medium text-sm">{rank.label}</span>
             </Link>
           ))}
         </div>
       </section>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
       
       <section id="news" className="scroll-mt-32">
         <NewsWidget />
       </section>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-
-      <section className="px-4 md:px-0">
-        <button className="w-full flex items-center justify-between p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-600/5 to-transparent border border-amber-500/20 hover:border-amber-500/40 transition-all group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl -mr-16 -mt-16" />
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-              <Zap size={24} className="text-amber-500 fill-amber-500" />
-            </div>
-            <div className="text-left">
-              <span className="text-amber-500 font-black text-lg block">Liberar acesso PRO</span>
-              <span className="text-amber-500/60 text-xs font-bold uppercase tracking-widest">Tenha acesso a indicadores exclusivos</span>
-            </div>
-          </div>
-          <ChevronRight size={24} className="text-amber-500/50 group-hover:text-amber-500 group-hover:translate-x-1 transition-all relative z-10" />
-        </button>
-      </section>
-
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
 
       {/* Meus Recursos Section */}
       <section className="space-y-6 px-4 md:px-0">
-        <h2 className="text-2xl font-semibold text-white tracking-tight mb-8">Meus recursos</h2>
+        <h2 className="text-xl font-bold text-white tracking-tight mb-6">Meus recursos</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: Search, label: 'Busca de Ativos', to: '/search', color: 'blue' },
@@ -239,12 +238,12 @@ export default function Home() {
             { icon: BarChart3, label: 'Calculadoras', to: '/calculators', color: 'cyan' },
             { icon: Shield, label: 'Renda Fixa', to: '/renda-fixa', color: 'orange' },
           ].map((item, idx) => (
-            <Link key={idx} to={item.to} className="flex flex-col p-6 rounded-3xl bg-white/5 hover:bg-white/10 transition-all group border border-white/5 hover:border-white/10 gap-4">
-              <div className={`w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                <item.icon size={24} className="text-slate-400 group-hover:text-white transition-colors" />
+            <Link key={idx} to={item.to} className="flex flex-col p-5 rounded-2xl bg-[#0f172a] hover:bg-slate-800/50 transition-all group border border-slate-800 hover:border-slate-700 gap-3 shadow-sm">
+              <div className={`w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                <item.icon size={20} className="text-slate-400 group-hover:text-white transition-colors" />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-200 font-bold text-sm">{item.label}</span>
+                <span className="text-slate-300 font-medium text-sm">{item.label}</span>
                 <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
               </div>
             </Link>

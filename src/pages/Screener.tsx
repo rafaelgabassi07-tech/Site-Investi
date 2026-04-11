@@ -12,10 +12,14 @@ export default function Screener() {
     minDY: '',
     maxPL: '',
     maxPVP: '',
+    minROE: '',
+    minMargemLiquida: '',
+    minVPA: '',
   });
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'dy', direction: 'desc' });
 
   const handleSearch = async () => {
     setLoading(true);
@@ -31,6 +35,36 @@ export default function Screener() {
     }
   };
 
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedResults = [...results].sort((a, b) => {
+    const parse = (v: any) => {
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') return parseFloat(v.replace('%', '').replace(',', '.')) || 0;
+      return 0;
+    };
+
+    let aVal, bVal;
+    switch (sortConfig.key) {
+      case 'ticker': aVal = a.ticker; bVal = b.ticker; break;
+      case 'price': aVal = parse(a.results.precoAtual); bVal = parse(b.results.precoAtual); break;
+      case 'dy': aVal = parse(a.results.dividendYield); bVal = parse(b.results.dividendYield); break;
+      case 'pl': aVal = parse(a.results.pl); bVal = parse(b.results.pl); break;
+      case 'pvp': aVal = parse(a.results.pvp); bVal = parse(b.results.pvp); break;
+      default: return 0;
+    }
+
+    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="space-y-8 pb-24">
       <PageHeader 
@@ -42,19 +76,19 @@ export default function Screener() {
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Filters Sidebar */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-6">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 space-y-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
               <SlidersHorizontal size={18} className="text-blue-500" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-widest">Filtros</h3>
+              <h3 className="text-sm font-semibold text-white">Filtros</h3>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Tipo de Ativo</label>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block">Tipo de Ativo</label>
                 <select 
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 >
                   <option value="ACAO">Ações</option>
                   <option value="FII">FIIs</option>
@@ -64,35 +98,68 @@ export default function Screener() {
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Dividend Yield Mín. (%)</label>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block">Dividend Yield Mín. (%)</label>
                 <input 
                   type="number"
                   placeholder="Ex: 6"
                   value={filters.minDY}
                   onChange={(e) => setFilters({...filters, minDY: e.target.value})}
-                  className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">P/L Máximo</label>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block">P/L Máximo</label>
                 <input 
                   type="number"
                   placeholder="Ex: 15"
                   value={filters.maxPL}
                   onChange={(e) => setFilters({...filters, maxPL: e.target.value})}
-                  className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">P/VP Máximo</label>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block">P/VP Máximo</label>
                 <input 
                   type="number"
                   placeholder="Ex: 1.5"
                   value={filters.maxPVP}
                   onChange={(e) => setFilters({...filters, maxPVP: e.target.value})}
-                  className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block">ROE Mínimo (%)</label>
+                <input 
+                  type="number"
+                  placeholder="Ex: 10"
+                  value={filters.minROE}
+                  onChange={(e) => setFilters({...filters, minROE: e.target.value})}
+                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block">Margem Líq. Mín. (%)</label>
+                <input 
+                  type="number"
+                  placeholder="Ex: 10"
+                  value={filters.minMargemLiquida}
+                  onChange={(e) => setFilters({...filters, minMargemLiquida: e.target.value})}
+                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-2 block">VPA Mínimo</label>
+                <input 
+                  type="number"
+                  placeholder="Ex: 5"
+                  value={filters.minVPA}
+                  onChange={(e) => setFilters({...filters, minVPA: e.target.value})}
+                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
               </div>
             </div>
@@ -100,7 +167,7 @@ export default function Screener() {
             <button 
               onClick={handleSearch}
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20 uppercase tracking-widest text-xs"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm text-sm"
             >
               {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
               {loading ? 'Filtrando...' : 'Aplicar Filtros'}
@@ -115,27 +182,27 @@ export default function Screener() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="h-full flex flex-col items-center justify-center py-20 text-center bg-white/5 border border-white/10 border-dashed rounded-[2.5rem]"
+                className="h-full flex flex-col items-center justify-center py-20 text-center bg-slate-800/10 border border-slate-800 border-dashed rounded-2xl"
               >
-                <div className="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center mb-6">
-                  <Filter size={32} className="text-slate-600" />
+                <div className="w-16 h-16 rounded-full bg-slate-800/30 flex items-center justify-center mb-6 border border-slate-800">
+                  <Filter size={24} className="text-slate-500" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Pronto para filtrar?</h3>
-                <p className="text-slate-500 max-w-xs text-sm">Ajuste os filtros ao lado para encontrar as melhores oportunidades do mercado.</p>
+                <h3 className="text-lg font-bold text-white mb-2">Pronto para filtrar?</h3>
+                <p className="text-slate-400 max-w-xs text-sm font-medium">Ajuste os filtros ao lado para encontrar as melhores oportunidades do mercado.</p>
               </motion.div>
             ) : loading ? (
               <div className="h-full flex flex-col items-center justify-center py-20 gap-4">
-                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Analisando Mercado...</p>
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                <p className="text-slate-500 font-medium text-sm">Analisando Mercado...</p>
               </div>
             ) : results.length === 0 ? (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="h-full flex flex-col items-center justify-center py-20 text-center bg-white/5 border border-white/10 rounded-[2.5rem]"
+                className="h-full flex flex-col items-center justify-center py-20 text-center bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm"
               >
-                <h3 className="text-xl font-bold text-white mb-2">Nenhum ativo encontrado</h3>
-                <p className="text-slate-500 max-w-xs text-sm">Tente ajustar seus filtros para obter mais resultados.</p>
+                <h3 className="text-lg font-bold text-white mb-2">Nenhum ativo encontrado</h3>
+                <p className="text-slate-400 max-w-xs text-sm font-medium">Tente ajustar seus filtros para obter mais resultados.</p>
               </motion.div>
             ) : (
               <motion.div 
@@ -143,44 +210,54 @@ export default function Screener() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between px-4">
-                  <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{results.length} Ativos Encontrados</span>
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                    <ArrowUpDown size={14} /> Ordenado por DY
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-sm font-semibold text-slate-400">{results.length} Ativos Encontrados</span>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400">
+                    <ArrowUpDown size={14} /> Ordenado por {sortConfig.key.toUpperCase()} ({sortConfig.direction === 'asc' ? 'Cresc.' : 'Decresc.'})
                   </div>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden">
+                <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
-                        <tr className="border-b border-white/5">
-                          <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Ativo</th>
-                          <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Preço</th>
-                          <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">DY (%)</th>
-                          <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">P/L</th>
-                          <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">P/VP</th>
-                          <th className="p-6"></th>
+                        <tr className="border-b border-slate-800/50 bg-slate-800/30">
+                          <th className="p-5 text-xs font-semibold text-slate-400 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('ticker')}>
+                            <div className="flex items-center gap-2">Ativo {sortConfig.key === 'ticker' && <ArrowUpDown size={12} />}</div>
+                          </th>
+                          <th className="p-5 text-xs font-semibold text-slate-400 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('price')}>
+                            <div className="flex items-center justify-end gap-2">Preço {sortConfig.key === 'price' && <ArrowUpDown size={12} />}</div>
+                          </th>
+                          <th className="p-5 text-xs font-semibold text-slate-400 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('dy')}>
+                            <div className="flex items-center justify-end gap-2">DY (%) {sortConfig.key === 'dy' && <ArrowUpDown size={12} />}</div>
+                          </th>
+                          <th className="p-5 text-xs font-semibold text-slate-400 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('pl')}>
+                            <div className="flex items-center justify-end gap-2">P/L {sortConfig.key === 'pl' && <ArrowUpDown size={12} />}</div>
+                          </th>
+                          <th className="p-5 text-xs font-semibold text-slate-400 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('pvp')}>
+                            <div className="flex items-center justify-end gap-2">P/VP {sortConfig.key === 'pvp' && <ArrowUpDown size={12} />}</div>
+                          </th>
+                          <th className="p-5"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/5">
-                        {results.map((item, idx) => (
-                          <tr key={idx} className="group hover:bg-white/5 transition-colors">
-                            <td className="p-6">
+                      <tbody className="divide-y divide-slate-800/50">
+                        {sortedResults.map((item, idx) => (
+                          <tr key={idx} className="group hover:bg-slate-800/30 transition-colors">
+                            <td className="p-5">
                               <div className="flex items-center gap-4">
                                 <AssetIcon assetType={type as any} ticker={item.ticker} className="w-10 h-10" />
                                 <div>
-                                  <div className="font-black text-white group-hover:text-blue-400 transition-colors">{item.ticker}</div>
-                                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate max-w-[120px]">{item.name}</div>
+                                  <div className="font-bold text-white group-hover:text-blue-400 transition-colors">{item.ticker}</div>
+                                  <div className="text-xs font-medium text-slate-500 mt-0.5 truncate max-w-[120px]">{item.name}</div>
                                 </div>
                               </div>
                             </td>
-                            <td className="p-6 text-right font-mono text-sm text-white">R$ {item.results.precoAtual || '0,00'}</td>
-                            <td className="p-6 text-right font-mono text-sm text-emerald-400">{item.results.dividendYield || '0,00%'}</td>
-                            <td className="p-6 text-right font-mono text-sm text-slate-300">{item.results.pl || 'N/A'}</td>
-                            <td className="p-6 text-right font-mono text-sm text-slate-300">{item.results.pvp || 'N/A'}</td>
-                            <td className="p-6 text-right">
-                              <Link to={`/asset/${item.ticker}`} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-blue-500/20 hover:text-blue-500 transition-all">
+                            <td className="p-5 text-right text-sm text-white font-medium">R$ {item.results.precoAtual || '0,00'}</td>
+                            <td className="p-5 text-right text-sm text-emerald-400 font-medium">{item.results.dividendYield || '0,00%'}</td>
+                            <td className="p-5 text-right text-sm text-slate-300 font-medium">{item.results.pl || 'N/A'}</td>
+                            <td className="p-5 text-right text-sm text-slate-300 font-medium">{item.results.pvp || 'N/A'}</td>
+                            <td className="p-5 text-right">
+                              <Link to={`/asset/${item.ticker}`} className="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center hover:bg-blue-500/20 hover:text-blue-400 transition-all text-slate-400 ml-auto">
                                 <ChevronRight size={18} />
                               </Link>
                             </td>

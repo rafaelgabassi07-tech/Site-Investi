@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter, Download } from 'lucide-react';
+import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter, Download, Scale, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -40,6 +40,8 @@ export default function Menu() {
     { icon: Search, label: 'Buscar Ativos', to: '/search' },
     { icon: GitCompare, label: 'Comparar Ativos', to: '/compare' },
     { icon: Filter, label: 'Busca Avançada (Screener)', to: '/screener' },
+    { icon: Scale, label: 'Rebalanceamento', to: '/rebalance' },
+    { icon: FileText, label: 'Motor Fiscal & DARF', to: '/taxes' },
     { icon: Heart, label: 'Favoritos', to: '#' },
     { icon: Newspaper, label: 'Últimas Notícias', to: '/news' },
     { icon: Calendar, label: 'Agenda de Dividendos', to: '/dividends' },
@@ -54,7 +56,7 @@ export default function Menu() {
     { icon: Bell, label: 'Notificações', to: '#', badge: '20' },
     { icon: Bell, label: 'Notificações via push', to: '#' },
     { icon: HeadphonesIcon, label: 'Suporte', to: '#' },
-    { icon: Info, label: 'Sobre o Invest Ultra', to: '#' },
+    { icon: Info, label: 'Sobre o Nexus Invest', to: '#' },
   ];
 
   return (
@@ -69,10 +71,6 @@ export default function Menu() {
           <div className="flex-1">
             <h3 className="text-xl font-bold text-white">{displayName}</h3>
             <p className="text-sm text-slate-400">{user?.email}</p>
-            <button className="mt-3 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-colors">
-              <Crown size={14} />
-              Quero ser investidor PRO
-            </button>
           </div>
           <ChevronRight className="text-slate-600" />
         </div>

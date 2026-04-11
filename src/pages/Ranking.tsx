@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { Link } from 'react-router-dom';
+import { financeService } from '../services/financeService';
 
 export default function Ranking() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -70,12 +71,12 @@ export default function Ranking() {
                 { label: 'BDRs', value: 'BDR' }
               ].map((type) => (
                 <button 
-                  key={type.value} 
+                  key={type.label} 
                   onClick={() => setSelectedType(type.value)}
-                  className={`px-6 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors ${
+                  className={`px-5 py-2 rounded-xl border text-sm font-semibold transition-colors whitespace-nowrap ${
                     selectedType === type.value 
-                      ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' 
-                      : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-md' 
+                      : 'bg-slate-800/30 border-slate-800 text-slate-300 hover:bg-slate-800/50'
                   }`}
                 >
                   {type.label}
@@ -91,13 +92,13 @@ export default function Ranking() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.02 }}
                   onClick={() => handleCategoryClick(cat.title)}
-                  className="p-6 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center text-center gap-4 hover:bg-white/10 transition-colors cursor-pointer group"
+                  className="p-5 bg-[#0f172a] border border-slate-800 rounded-2xl flex flex-col items-center justify-center text-center gap-4 hover:bg-slate-800/50 transition-colors cursor-pointer group shadow-sm"
                 >
-                  <div className="w-14 h-14 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:bg-slate-800 transition-colors">
-                    <cat.icon size={24} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
+                  <div className="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center group-hover:bg-slate-800 transition-colors border border-slate-800/50">
+                    <cat.icon size={20} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-200 leading-snug">{cat.title}</h3>
+                    <h3 className="text-sm font-semibold text-slate-300 leading-snug">{cat.title}</h3>
                   </div>
                 </motion.div>
               ))}
@@ -109,47 +110,47 @@ export default function Ranking() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-8"
+            className="space-y-6"
           >
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setSelectedCategory(null)}
-                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+                className="w-10 h-10 rounded-xl bg-slate-800/30 flex items-center justify-center hover:bg-slate-800/50 transition-colors border border-slate-800"
               >
                 <ChevronLeft size={20} className="text-slate-400" />
               </button>
               <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">{selectedCategory}</h2>
-                <p className="text-sm text-slate-400 uppercase tracking-widest font-bold">Top 10 {selectedType}</p>
+                <h2 className="text-xl font-bold text-white tracking-tight">{selectedCategory}</h2>
+                <p className="text-sm text-slate-400 font-medium">Top 10 {selectedType}</p>
               </div>
             </div>
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-32 gap-4">
-                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Processando Ranking...</p>
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                <p className="text-slate-500 font-medium text-sm">Processando Ranking...</p>
               </div>
             ) : (
-              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
+              <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/50 shadow-lg">
                 {rankingData.map((item, idx) => (
                   <Link 
                     to={`/asset/${item.ticker}`}
                     key={idx}
-                    className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors group"
+                    className="p-5 flex items-center justify-between hover:bg-slate-800/30 transition-colors group"
                   >
-                    <div className="flex items-center gap-6">
-                      <span className="text-2xl font-black text-slate-700 group-hover:text-blue-500/50 transition-colors w-8">#{idx + 1}</span>
+                    <div className="flex items-center gap-5">
+                      <span className="text-xl font-bold text-slate-600 group-hover:text-blue-500/50 transition-colors w-8">#{idx + 1}</span>
                       <div className="flex items-center gap-4">
-                        <AssetIcon assetType={selectedType as any} ticker={item.ticker} className="w-12 h-12" />
+                        <AssetIcon assetType={selectedType as any} ticker={item.ticker} className="w-10 h-10" />
                         <div>
-                          <div className="font-black text-white text-lg tracking-tighter group-hover:text-blue-400 transition-colors">{item.ticker}</div>
-                          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.name}</div>
+                          <div className="font-bold text-white text-base group-hover:text-blue-400 transition-colors">{item.ticker}</div>
+                          <div className="text-xs font-medium text-slate-500 mt-0.5">{item.name}</div>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xl font-black text-white tracking-tighter">{item.value}</div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.subValue}</div>
+                      <div className="text-lg font-semibold text-white">{item.value}</div>
+                      <div className="text-xs font-medium text-slate-500 mt-0.5">{item.subValue}</div>
                     </div>
                   </Link>
                 ))}

@@ -1,4 +1,4 @@
-import { Settings as SettingsIcon, User, Bell, Shield, Wallet, ChevronRight, Lock, EyeOff, Moon } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, ChevronRight, Lock, EyeOff, Moon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { motion } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -10,7 +10,7 @@ export default function Settings() {
     <div className="space-y-16">
       <PageHeader 
         title="Configurações"
-        description={<>Gerencie sua conta e preferências do <span className="text-blue-500 font-bold">Invest Ultra</span>.</>}
+        description={<>Gerencie sua conta e preferências do <span className="text-blue-500 font-bold">Nexus Invest</span>.</>}
         icon={SettingsIcon}
       />
 
@@ -25,7 +25,6 @@ export default function Settings() {
             { label: "Perfil", icon: User, active: true },
             { label: "Notificações", icon: Bell, active: false },
             { label: "Segurança", icon: Shield, active: false },
-            { label: "Assinatura", icon: Wallet, active: false },
           ].map((item, idx) => (
             <button 
               key={idx}

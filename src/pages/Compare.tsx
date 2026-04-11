@@ -82,11 +82,11 @@ export default function Compare() {
             value={ticker1}
             onChange={(e) => setTicker1(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && fetchAsset(ticker1, setAsset1, setLoading1)}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-blue-500 transition-all uppercase font-bold tracking-widest"
+            className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all uppercase font-semibold shadow-sm"
           />
           <button 
             onClick={() => fetchAsset(ticker1, setAsset1, setLoading1)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             {loading1 ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
           </button>
@@ -100,11 +100,11 @@ export default function Compare() {
             value={ticker2}
             onChange={(e) => setTicker2(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && fetchAsset(ticker2, setAsset2, setLoading2)}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-blue-500 transition-all uppercase font-bold tracking-widest"
+            className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all uppercase font-semibold shadow-sm"
           />
           <button 
             onClick={() => fetchAsset(ticker2, setAsset2, setLoading2)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             {loading2 ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
           </button>
@@ -112,52 +112,52 @@ export default function Compare() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm font-medium text-center">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium text-center">
           {error}
         </div>
       )}
 
-      <div className="bg-white/5 border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl">
-        <div className="grid grid-cols-3 border-b border-white/10 bg-white/[0.02]">
-          <div className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center">Indicador</div>
-          <div className="p-6 text-center">
+      <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+        <div className="grid grid-cols-3 border-b border-slate-800/50 bg-slate-800/30">
+          <div className="p-5 text-sm font-semibold text-slate-400 flex items-center">Indicador</div>
+          <div className="p-5 text-center">
             {asset1 ? (
               <div className="flex flex-col items-center gap-2">
                 <AssetIcon assetType="ACAO" ticker={asset1.ticker} className="w-10 h-10" />
-                <span className="text-lg font-black text-white tracking-tighter">{asset1.ticker}</span>
+                <span className="text-lg font-bold text-white">{asset1.ticker}</span>
               </div>
             ) : (
-              <span className="text-slate-600 font-bold uppercase tracking-widest text-[10px]">Ativo 1</span>
+              <span className="text-slate-500 font-semibold text-sm">Ativo 1</span>
             )}
           </div>
-          <div className="p-6 text-center">
+          <div className="p-5 text-center">
             {asset2 ? (
               <div className="flex flex-col items-center gap-2">
                 <AssetIcon assetType="ACAO" ticker={asset2.ticker} className="w-10 h-10" />
-                <span className="text-lg font-black text-white tracking-tighter">{asset2.ticker}</span>
+                <span className="text-lg font-bold text-white">{asset2.ticker}</span>
               </div>
             ) : (
-              <span className="text-slate-600 font-bold uppercase tracking-widest text-[10px]">Ativo 2</span>
+              <span className="text-slate-500 font-semibold text-sm">Ativo 2</span>
             )}
           </div>
         </div>
 
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-slate-800/50">
           {indicators.map((ind, idx) => {
             const val1 = asset1?.results?.[ind.key];
             const val2 = asset2?.results?.[ind.key];
             const winner = compareValues(val1, val2, ind.key);
 
             return (
-              <div key={idx} className="grid grid-cols-3 hover:bg-white/[0.02] transition-colors">
-                <div className="p-6 text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center">{ind.label}</div>
-                <div className={`p-6 text-center font-mono text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset1' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
+              <div key={idx} className="grid grid-cols-3 hover:bg-slate-800/30 transition-colors">
+                <div className="p-5 text-sm font-medium text-slate-400 flex items-center">{ind.label}</div>
+                <div className={`p-5 text-center font-medium text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset1' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
                   {val1 || '-'}
-                  {winner === 'asset1' && <TrendingUp size={12} className="text-emerald-500" />}
+                  {winner === 'asset1' && <TrendingUp size={14} className="text-emerald-500" />}
                 </div>
-                <div className={`p-6 text-center font-mono text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset2' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
+                <div className={`p-5 text-center font-medium text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset2' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
                   {val2 || '-'}
-                  {winner === 'asset2' && <TrendingUp size={12} className="text-emerald-500" />}
+                  {winner === 'asset2' && <TrendingUp size={14} className="text-emerald-500" />}
                 </div>
               </div>
             );
@@ -167,11 +167,11 @@ export default function Compare() {
 
       {!asset1 && !asset2 && (
         <div className="py-20 text-center space-y-4">
-          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto border border-white/10">
-            <GitCompare size={32} className="text-slate-600" />
+          <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto border border-slate-800">
+            <GitCompare size={24} className="text-slate-500" />
           </div>
-          <h3 className="text-xl font-bold text-white">Pronto para comparar?</h3>
-          <p className="text-slate-500 text-sm max-w-xs mx-auto">Insira dois tickers acima para ver uma comparação detalhada de seus indicadores.</p>
+          <h3 className="text-lg font-bold text-white">Pronto para comparar?</h3>
+          <p className="text-slate-400 text-sm max-w-xs mx-auto font-medium">Insira dois tickers acima para ver uma comparação detalhada de seus indicadores.</p>
         </div>
       )}
     </div>

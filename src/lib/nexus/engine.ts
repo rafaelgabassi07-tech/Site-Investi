@@ -95,6 +95,14 @@ const DIAS_POR_PERIODO: Readonly<Record<string, number>> = {
   '1mo': 30, '3mo': 90, '6mo': 180, '1y': 365, '5y': 1825, 'max': 10950,
 };
 
+function safeParse(v: any): number {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') {
+    return parseFloat(v.replace('%', '').replace(',', '.')) || 0;
+  }
+  return 0;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // 3. GUARD: process.cpuUsage (Node-specific)
 // ════════════════════════════════════════════════════════════════════════════
@@ -140,7 +148,7 @@ export function canonicalizeTicker(raw: string): string {
 }
 
 export async function fetchNews(ticker: string): Promise<NewsItem[]> {
-  return NexusEngineUltra.fetchNews(ticker);
+  return NexusEngine.fetchNews(ticker);
 }
 
 function validarTicker(clean: string): string | null {
@@ -411,6 +419,11 @@ export const B3Schema = z.object({
   margemLiquida: z.string().optional(),
   margemBruta:   z.string().optional(),
   evEbitda:      z.union([z.number(), z.string()]).optional(),
+  pEbit:         z.union([z.number(), z.string()]).optional(),
+  psr:           z.union([z.number(), z.string()]).optional(),
+  pAtivo:        z.union([z.number(), z.string()]).optional(),
+  pCapGiro:      z.union([z.number(), z.string()]).optional(),
+  dividaLiquidaEbitda: z.union([z.number(), z.string()]).optional(),
   variacaoDay:   z.string().optional(),
 });
 
@@ -463,6 +476,11 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
     { name: 'margemLiquida', anchors: ['Margem Líquida', 'Margem Liquida'],             extractRegex: />\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
     { name: 'margemBruta',   anchors: ['Margem Bruta'],                                 extractRegex: />\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
     { name: 'evEbitda',      anchors: ['EV/EBITDA'],                                    extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pEbit',         anchors: ['P/EBIT'],                                       extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'psr',           anchors: ['PSR'],                                          extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pAtivo',        anchors: ['P/Ativo'],                                      extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pCapGiro',      anchors: ['P/Cap. Giro', 'P/Capital de Giro'],             extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'dividaLiquidaEbitda', anchors: ['Dív. Líq. / EBITDA', 'Divida Liquida / EBITDA'], extractRegex: />\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
     { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day'], extractRegex: />\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
   ],
 };
@@ -612,7 +630,7 @@ async function yahooFundamentals(ticker: string, timeoutMs: number): Promise<Yah
 // 12. MOTOR PRINCIPAL
 // ════════════════════════════════════════════════════════════════════════════
 
-export class NexusEngineUltra {
+export class NexusEngine {
   private static _urlInFlight     = new Map<string, Promise<any>>();
   private static _tickerInFlight  = new Map<string, Promise<any>>();
   private static _cache           = new LRUCache<any>(300);
@@ -929,25 +947,119 @@ export class NexusEngineUltra {
       let sorted = [...filteredResults];
       if (category.toLowerCase().includes('dividend') || category.toLowerCase().includes('yield')) {
         sorted.sort((a, b) => {
-          const v1 = parseFloat(a.raw.dividendYield?.replace('%', '').replace(',', '.') || '0');
-          const v2 = parseFloat(b.raw.dividendYield?.replace('%', '').replace(',', '.') || '0');
+          const v1 = safeParse(a.raw.dividendYield);
+          const v2 = safeParse(b.raw.dividendYield);
           return v2 - v1;
         });
       } else if (category.toLowerCase().includes('pl') || category.toLowerCase().includes('baratas')) {
         sorted.sort((a, b) => {
-          const v1 = parseFloat(a.raw.pl?.replace(',', '.') || '999');
-          const v2 = parseFloat(b.raw.pl?.replace(',', '.') || '999');
+          const v1 = safeParse(a.raw.pl) || 999;
+          const v2 = safeParse(b.raw.pl) || 999;
+          return v1 - v2;
+        });
+      } else if (category.toLowerCase().includes('altas') || category.toLowerCase().includes('gainers')) {
+        sorted.sort((a, b) => {
+          const v1 = safeParse(a.raw.variacaoDay);
+          const v2 = safeParse(b.raw.variacaoDay);
+          return v2 - v1;
+        });
+      } else if (category.toLowerCase().includes('roe')) {
+        sorted.sort((a, b) => {
+          const v1 = safeParse(a.raw.roe);
+          const v2 = safeParse(b.raw.roe);
+          return v2 - v1;
+        });
+      } else if (category.toLowerCase().includes('margem')) {
+        sorted.sort((a, b) => {
+          const v1 = safeParse(a.raw.margemLiquida);
+          const v2 = safeParse(b.raw.margemLiquida);
+          return v2 - v1;
+        });
+      } else if (category.toLowerCase().includes('pvp')) {
+        sorted.sort((a, b) => {
+          const v1 = safeParse(a.raw.pvp) || 999;
+          const v2 = safeParse(b.raw.pvp) || 999;
           return v1 - v2;
         });
       }
 
       const finalData = sorted.slice(0, 10);
-      this._cache.set(cacheKey, { data: finalData, timestamp: Date.now() });
+      this._cache.set(cacheKey, { data: finalData, timestamp: Date.now() }, this._options.cacheStaleMs, this._options.cacheTtlMs);
       return finalData;
     } catch (e) {
       console.error(`[Nexus] Error fetching ranking ${category}:`, e);
       return [];
     }
+  }
+
+  /**
+   * Busca ativos similares (peers) para comparação.
+   */
+  static async fetchPeers(ticker: string, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
+    const clean = canonicalizeTicker(ticker);
+    const cacheKey = `peers:${clean}:${type}`;
+    const cached = this._cache.get(cacheKey);
+    if (cached && !this.isStale(cached)) return cached.data;
+
+    try {
+      const sectorPeers: Record<string, string[]> = {
+        'PETR4': ['PETR3', 'PRIO3', 'RECV3', 'RRRP3', 'UGPA3'],
+        'VALE3': ['CSNA3', 'GGBR4', 'GOAU4', 'USIM5'],
+        'ITUB4': ['BBDC4', 'BBAS3', 'SANB11', 'BPAC11'],
+        'BBDC4': ['ITUB4', 'BBAS3', 'SANB11', 'BPAC11'],
+        'BBAS3': ['ITUB4', 'BBDC4', 'SANB11', 'BPAC11'],
+        'ABEV3': ['MDIA3', 'SMTO3', 'BEEF3', 'MRFG3'],
+        'WEGE3': ['TUPY3', 'ROMI3', 'KEPL3'],
+        'MGLU3': ['VIIA3', 'AMER3', 'LREN3', 'CEAB3'],
+        'HGLG11': ['XPLG11', 'BTLG11', 'VILG11', 'KNRI11'],
+        'MXRF11': ['CPTS11', 'IRDM11', 'KNIP11', 'DEVA11'],
+      };
+
+      let peers = sectorPeers[clean] || [];
+      
+      if (peers.length === 0) {
+        const popular: Record<ExtendedAssetType, string[]> = {
+          ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4'],
+          FII: ['HGLG11', 'MXRF11', 'KNRI11', 'XPLG11', 'VISC11'],
+          BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34'],
+          ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11']
+        };
+        peers = popular[type] || popular.ACAO;
+      }
+
+      peers = peers.filter(p => p !== clean).slice(0, 5);
+
+      const results = await this.executeBatch(
+        peers.map(p => async () => {
+          try {
+            const data = await this.fetchAtivo(p, type);
+            return {
+              ticker: p,
+              name: data.results.name || p,
+              pl: data.results.pl || 'N/A',
+              pvp: data.results.pvp || 'N/A',
+              dy: data.results.dividendYield?.replace('%', '') || '0',
+              roe: data.results.roe?.replace('%', '') || '0',
+              precoAtual: data.results.precoAtual || 0
+            };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      const finalData = results.filter(r => r !== null) as any[];
+      this._cache.set(cacheKey, { data: finalData, timestamp: Date.now() }, this._options.cacheStaleMs, this._options.cacheTtlMs);
+      return finalData;
+    } catch (e) {
+      console.error(`[Nexus] Error fetching peers for ${ticker}:`, e);
+      return [];
+    }
+  }
+
+  private static isStale(cached: any): boolean {
+    if (!cached || !cached.timestamp) return true;
+    return Date.now() - cached.timestamp > this._options.cacheStaleMs;
   }
 
   /**
@@ -997,6 +1109,24 @@ export class NexusEngineUltra {
       filtered = filtered.filter(r => {
         const pvp = parseFloat(r.results.pvp?.replace(',', '.') || '999');
         return pvp > 0 && pvp <= parseFloat(filters.maxPVP);
+      });
+    }
+    if (filters.minROE) {
+      filtered = filtered.filter(r => {
+        const roe = parseFloat(r.results.roe?.replace('%', '').replace(',', '.') || '0');
+        return roe >= parseFloat(filters.minROE);
+      });
+    }
+    if (filters.minMargemLiquida) {
+      filtered = filtered.filter(r => {
+        const margem = parseFloat(r.results.margemLiquida?.replace('%', '').replace(',', '.') || '0');
+        return margem >= parseFloat(filters.minMargemLiquida);
+      });
+    }
+    if (filters.minVPA) {
+      filtered = filtered.filter(r => {
+        const vpa = parseFloat(r.results.vpa?.replace(',', '.') || '0');
+        return vpa >= parseFloat(filters.minVPA);
       });
     }
 
@@ -1243,11 +1373,11 @@ export async function runNexusBatch(
   _opts?:      any,
   includeNews? : boolean,
 ): Promise<any[]> {
-  return NexusEngineUltra.executeBatch(
+  return NexusEngine.executeBatch(
     tickers.map(ticker => async () => {
       const t0 = performance.now();
       try {
-        const result = await NexusEngineUltra.fetchAtivo(ticker, type, includeNews);
+        const result = await NexusEngine.fetchAtivo(ticker, type, includeNews);
         return {
           ...result,
           metrics: {
@@ -1267,7 +1397,7 @@ export async function runNexusBatch(
             foundKeys:         [],
             successRate:       0,
             earlyAbort:        false,
-            source:            'Nexus Engine Ultra (Failed)',
+            source:            'Nexus Engine (Failed)',
             estimatedMemoryMb: 0,
             cpuUsageMs:        0,
           },
@@ -1282,12 +1412,12 @@ export async function runNexusBatchAuto(
   _opts?:      any,
   includeNews?: boolean,
 ): Promise<any[]> {
-  return NexusEngineUltra.executeBatch(
+  return NexusEngine.executeBatch(
     tickers.map(ticker => async () => {
       const type = inferAssetType(ticker);
       const t0   = performance.now();
       try {
-        const result = await NexusEngineUltra.fetchAtivo(ticker, type, includeNews);
+        const result = await NexusEngine.fetchAtivo(ticker, type, includeNews);
         return { ...result, metrics: { ...result.metrics, totalTimeMs: performance.now() - t0 } };
       } catch (e: any) {
         return {

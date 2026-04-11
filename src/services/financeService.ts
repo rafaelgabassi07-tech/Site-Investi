@@ -57,6 +57,12 @@ export const financeService = {
     return res.json();
   },
 
+  async getPeers(ticker: string, type: string = 'ACAO'): Promise<any[]> {
+    const res = await fetch(`/api/peers/${ticker}?type=${type}`);
+    if (!res.ok) throw new Error('Failed to fetch peers');
+    return res.json();
+  },
+
   async getScreener(filters: any, type: string = 'ACAO'): Promise<any[]> {
     const params = new URLSearchParams({ type, ...filters });
     const res = await fetch(`/api/screener?${params.toString()}`);

@@ -5,7 +5,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import yahooFinance from "yahoo-finance2";
-import { NexusEngineUltra } from "./src/lib/nexus/engine.ts";
+import { NexusEngine } from "./src/lib/nexus/engine.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +27,7 @@ export async function createServer() {
       const { ticker } = req.params;
       const { type } = req.query;
       try {
-        const data = await NexusEngineUltra.fetchAtivo(ticker, (type as any) || 'ACAO');
+        const data = await NexusEngine.fetchAtivo(ticker, (type as any) || 'ACAO');
         res.json(data);
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -38,7 +38,7 @@ export async function createServer() {
       const { ticker } = req.params;
       const { period } = req.query;
       try {
-        const data = await NexusEngineUltra.fetchHistoricoGrafico(ticker, (period as any) || '1y');
+        const data = await NexusEngine.fetchHistoricoGrafico(ticker, (period as any) || '1y');
         res.json(data);
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -48,7 +48,7 @@ export async function createServer() {
     app.get("/api/dividends/:ticker", async (req, res) => {
       const { ticker } = req.params;
       try {
-        const data = await NexusEngineUltra.fetchDividends(ticker);
+        const data = await NexusEngine.fetchDividends(ticker);
         res.json(data);
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -58,7 +58,7 @@ export async function createServer() {
     app.get("/api/search", async (req, res) => {
       const { q } = req.query;
       try {
-        const result = await NexusEngineUltra.searchTicker(q as string);
+        const result = await NexusEngine.searchTicker(q as string);
         res.json(result);
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -68,7 +68,7 @@ export async function createServer() {
     app.get("/api/news", async (req, res) => {
       const { ticker } = req.query;
       try {
-        const result = await NexusEngineUltra.fetchNews((ticker as string) || "IBOVESPA");
+        const result = await NexusEngine.fetchNews((ticker as string) || "IBOVESPA");
         res.json(result);
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -78,7 +78,18 @@ export async function createServer() {
     app.get("/api/ranking", async (req, res) => {
       const { category, type } = req.query;
       try {
-        const result = await NexusEngineUltra.fetchRanking((category as string) || "Dividend Yield", (type as any) || "ACAO");
+        const result = await NexusEngine.fetchRanking((category as string) || "Dividend Yield", (type as any) || "ACAO");
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+    
+    app.get("/api/peers/:ticker", async (req, res) => {
+      const { ticker } = req.params;
+      const { type } = req.query;
+      try {
+        const result = await NexusEngine.fetchPeers(ticker, (type as any) || "ACAO");
         res.json(result);
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -88,7 +99,7 @@ export async function createServer() {
     app.get("/api/screener", async (req, res) => {
       const { type, ...filters } = req.query;
       try {
-        const result = await NexusEngineUltra.screener(filters, (type as any) || "ACAO");
+        const result = await NexusEngine.screener(filters, (type as any) || "ACAO");
         res.json(result);
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -98,7 +109,7 @@ export async function createServer() {
     app.get("/api/market-stats", async (req, res) => {
       const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD"];
       try {
-        const results = await Promise.all(tickers.map(t => NexusEngineUltra.fetchAtivo(t, 'ACAO')));
+        const results = await Promise.all(tickers.map(t => NexusEngine.fetchAtivo(t, 'ACAO')));
         const stats = results.map((r, idx) => ({
           label: idx === 0 ? 'IBOVESPA' : idx === 1 ? 'S&P 500' : idx === 2 ? 'DÓLAR' : 'BITCOIN',
           value: typeof r.results.precoAtual === 'number' ? r.results.precoAtual.toLocaleString('pt-BR') : r.results.precoAtual,
@@ -109,6 +120,28 @@ export async function createServer() {
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
       }
+    });
+
+    // Mock CRON Worker for Corporate Events
+    app.post("/api/cron/sync-events", (req, res) => {
+      console.log('[WORKER] Syncing corporate events from B3...');
+      
+      // In a real app, this would:
+      // 1. Fetch splits/dividends from an external API (e.g., B3, Yahoo Finance)
+      // 2. Insert them into the `corporate_events` table in Supabase
+      // 3. Trigger a recalculation of `user_positions` for affected users
+      
+      const mockEvents = [
+        { ticker: 'PETR4', type: 'DIVIDEND', value: 1.04, date: new Date().toISOString() },
+        { ticker: 'MGLU3', type: 'SPLIT', factor: 4, date: new Date().toISOString() }
+      ];
+
+      res.json({ 
+        status: 'success', 
+        message: 'Corporate events synced successfully',
+        events_processed: mockEvents.length,
+        data: mockEvents
+      });
     });
 
     // Vite middleware for development

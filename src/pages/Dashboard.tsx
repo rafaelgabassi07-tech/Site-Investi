@@ -9,7 +9,9 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Cell
+  Cell,
+  PieChart,
+  Pie
 } from 'recharts';
 import { TrendingUp, Info, Wallet, PieChart as PieChartIcon, ArrowUpRight, LayoutDashboard } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -17,7 +19,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
 
 export default function Dashboard() {
-  const { portfolio, loading } = usePortfolio();
+  const { portfolio, quotaHistory, loading } = usePortfolio();
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32 gap-4">
@@ -31,33 +33,47 @@ export default function Dashboard() {
   const totalProfit = totalCurrentValue - totalInvested;
   const profitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
-  // Mocking historical data for now, but using real current value as the last point
-  const chartData = [
-    { name: 'JAN', value: totalInvested * 0.8 },
-    { name: 'FEV', value: totalInvested * 0.85 },
-    { name: 'MAR', value: totalInvested * 0.9 },
-    { name: 'ABR', value: totalInvested * 0.95 },
-    { name: 'MAI', value: totalInvested },
-    { name: 'JUN', value: totalCurrentValue },
+  // Format quota history for chart
+  const chartData = quotaHistory.length > 0 ? quotaHistory.map(q => {
+    const d = new Date(q.date);
+    return {
+      name: `${d.getDate()}/${d.getMonth()+1}`,
+      cota: q.quotaValue,
+      patrimonio: q.totalPatrimony
+    };
+  }) : [
+    { name: 'Início', cota: 1.0, patrimonio: 0 }
   ];
 
-  const COLORS = ['#2563eb', '#06b6d4', '#10b981', '#8b5cf6', '#f59e0b'];
+  // Calculate allocation by asset type
+  const allocationMap = portfolio.reduce((acc, item) => {
+    const type = item.assetType || 'OUTROS';
+    acc[type] = (acc[type] || 0) + (item.currentValue || item.totalInvested);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const allocationData = Object.entries(allocationMap).map(([name, value]) => ({
+    name,
+    value
+  })).sort((a, b) => b.value - a.value);
+
+  const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-10">
       <PageHeader 
         title="Visão Geral"
-        description={<>Performance consolidada da sua carteira <span className="text-blue-500 font-bold">Invest Ultra</span>.</>}
+        description={<>Performance consolidada da sua carteira <span className="text-blue-500 font-semibold">Nexus Invest</span>.</>}
         icon={LayoutDashboard}
         actions={
-          <div className="px-6 py-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+          <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-2">
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             Mercado Aberto
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard 
           label="Total Investido"
           value={`R$ ${totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
@@ -87,62 +103,69 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="card p-6 md:p-10"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 shadow-lg lg:col-span-2"
         >
-          <div className="flex items-center justify-between mb-12">
-            <h3 className="text-xl font-black text-white uppercase tracking-tight">Evolução Patrimonial</h3>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-tight">Rentabilidade (Cota)</h3>
+              <p className="text-xs text-slate-400 mt-1">Método Time-Weighted Return (TWR)</p>
+            </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-600 rounded-full" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Patrimônio</span>
+              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+              <span className="text-xs font-medium text-slate-400">Valor da Cota</span>
             </div>
           </div>
-          <div className="h-[300px] md:h-[400px] w-full">
+          <div className="h-[300px] md:h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                  <linearGradient id="colorCota" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  dy={20}
+                  dy={10}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  dx={-20}
-                  tickFormatter={(val) => `R$ ${val/1000}k`}
+                  dx={-10}
+                  domain={['auto', 'auto']}
+                  tickFormatter={(val) => val.toFixed(2)}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
                 />
                 <Tooltip 
-                  cursor={{ stroke: '#2563eb', strokeWidth: 2, strokeDasharray: '5 5' }}
+                  cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4' }}
                   contentStyle={{ 
                     backgroundColor: '#0f172a', 
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '16px',
-                    padding: '16px',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                    border: '1px solid #1e293b',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
                   }}
-                  itemStyle={{ color: '#fff', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}
-                  labelStyle={{ color: '#64748b', marginBottom: '8px', fontWeight: '900', fontSize: '10px' }}
+                  itemStyle={{ color: '#fff', fontWeight: '600', fontSize: '13px' }}
+                  labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontWeight: '500', fontSize: '12px' }}
+                  formatter={(value: number) => [value.toFixed(4), 'Valor da Cota']}
                 />
                 <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#2563eb" 
-                  strokeWidth={4} 
+                  type="stepAfter" 
+                  dataKey="cota" 
+                  stroke="#3b82f6" 
+                  strokeWidth={3} 
                   fillOpacity={1} 
-                  fill="url(#colorValue)" 
-                  animationDuration={2000}
+                  fill="url(#colorCota)" 
+                  animationDuration={1500}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -153,54 +176,66 @@ export default function Dashboard() {
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="card p-6 md:p-10"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col"
         >
-          <div className="flex items-center justify-between mb-12">
-            <h3 className="text-xl font-black text-white uppercase tracking-tight">Alocação por Ativo</h3>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-600 rounded-full" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Investido</span>
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-white tracking-tight">Alocação por Classe</h3>
+            <p className="text-xs text-slate-400 mt-1">Distribuição do patrimônio</p>
+          </div>
+          
+          {allocationData.length > 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={allocationData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {allocationData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 'Valor']}
+                      contentStyle={{ 
+                        backgroundColor: '#0f172a', 
+                        border: '1px solid #1e293b',
+                        borderRadius: '12px'
+                      }}
+                      itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="w-full mt-6 space-y-3">
+                {allocationData.map((item, idx) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                      <span className="text-sm text-slate-300 font-medium">{item.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-bold text-white block">
+                        {((item.value / totalCurrentValue) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="h-[300px] md:h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={portfolio}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis 
-                  dataKey="ticker" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  dy={20}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  dx={-20}
-                  tickFormatter={(val) => `R$ ${val/1000}k`}
-                />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                  contentStyle={{ 
-                    backgroundColor: '#0f172a', 
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '16px',
-                    padding: '16px'
-                  }}
-                  itemStyle={{ color: '#fff', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}
-                  labelStyle={{ color: '#64748b', marginBottom: '8px', fontWeight: '900', fontSize: '10px' }}
-                />
-                <Bar 
-                  dataKey="totalInvested" 
-                  radius={[8, 8, 0, 0]} 
-                  animationDuration={2000}
-                >
-                  {portfolio.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-slate-500 text-sm">Nenhum ativo na carteira</p>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

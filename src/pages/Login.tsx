@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { TrendingUp, ShieldCheck, Globe, Zap, Mail, Lock } from 'lucide-react';
-import { motion } from 'motion/react';
+import { TrendingUp, Mail, Lock, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -9,26 +9,32 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
     if (!isConfigured) {
-      setError('Supabase não configurado! Verifique as variáveis de ambiente.');
+      setError('Supabase não configurado! Verifique as variáveis de ambiente no painel.');
       return;
     }
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({
         email,
         password,
       });
-      if (error) setError(error.message);
-      else setError('Conta criada com sucesso! Por favor, verifique sua caixa de entrada e clique no link de confirmação enviado para o seu e-mail.');
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccess('Conta criada com sucesso! Verifique sua caixa de entrada para confirmar o e-mail.');
+        setIsSignUp(false);
+      }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -40,109 +46,176 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#020617] p-6 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-96 bg-blue-600/10 blur-[150px] -z-10 rounded-full" />
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: 'linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px)',
-        backgroundSize: '60px 60px'
-      }} />
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#020617] relative overflow-hidden">
+      {/* Left Side - Branding (Hidden on Mobile) */}
+      <div className="hidden md:flex md:w-1/2 lg:w-3/5 relative flex-col justify-between p-12 border-r border-white/5">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-[#020617] to-[#020617] -z-10" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] -z-10" />
+        
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+            <TrendingUp size={28} strokeWidth={2.5} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-2xl font-bold tracking-tight text-white leading-none">Nexus</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-blue-400 uppercase mt-1">Invest</span>
+          </div>
+        </div>
 
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="max-w-md w-full card p-8 md:p-12 text-center relative border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)]"
-      >
-        <motion.div 
-          initial={{ rotate: -10, scale: 0.8 }}
-          animate={{ rotate: 3, scale: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-          className="w-24 h-24 bg-blue-600 rounded-[2.5rem] flex items-center justify-center text-white mx-auto mb-10 shadow-[0_20px_50px_rgba(37,99,235,0.4)] relative group"
-        >
-          <div className="absolute inset-0 bg-blue-400 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
-          <TrendingUp size={48} className="relative z-10" />
-        </motion.div>
-        
-        <motion.h1 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="text-5xl font-black text-white tracking-tighter uppercase mb-8"
-        >
-          {isSignUp ? 'CRIAR CONTA' : 'INVEST <span className="text-blue-500">ULTRA</span>'}
-        </motion.h1>
-        
-        <form onSubmit={handleAuth} className="space-y-4 mb-8">
-          <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="E-mail"
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-              required
-            />
+        <div className="max-w-lg">
+          <h2 className="text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight mb-6">
+            A plataforma definitiva para gestão de patrimônio.
+          </h2>
+          <p className="text-slate-400 text-lg leading-relaxed">
+            Acompanhe seus investimentos, analise ativos com inteligência artificial e tome decisões baseadas em dados reais do mercado.
+          </p>
+          
+          <div className="mt-12 flex items-center gap-6">
+            <div className="flex -space-x-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={`w-12 h-12 rounded-full border-2 border-[#020617] bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 z-[${10-i}]`}>
+                  {i === 4 ? '+2k' : `U${i}`}
+                </div>
+              ))}
+            </div>
+            <div className="text-sm text-slate-400 font-medium">
+              Junte-se a milhares de investidores inteligentes.
+            </div>
           </div>
-          <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Senha"
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-              required
-            />
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
-          >
-            {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
-          </button>
-        </form>
-        
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="text-slate-400 text-sm hover:text-white transition-colors"
-        >
-          {isSignUp ? 'Já tem uma conta? Entre aqui.' : 'Não tem uma conta? Crie uma agora.'}
-        </button>
-        
+        </div>
+
+        <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
+          <ShieldCheck size={18} className="text-emerald-500" />
+          Dados criptografados e seguros
+        </div>
+      </div>
+
+      {/* Right Side - Auth Form */}
+      <div className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center p-6 sm:p-12 relative">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] -z-10 rounded-full pointer-events-none" />
+
         <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-16 flex flex-col items-center gap-6"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full max-w-[400px]"
         >
-          <div className="flex items-center justify-center gap-4 w-full">
-            <div className="h-px flex-1 bg-white/5" />
-            <p className="text-[9px] text-slate-600 uppercase tracking-[0.4em] font-black whitespace-nowrap">
-              Invest Security Protocol
+          {/* Mobile Logo */}
+          <div className="flex md:hidden items-center gap-3 mb-12 justify-center">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+              <TrendingUp size={24} strokeWidth={2.5} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xl font-bold tracking-tight text-white leading-none">Nexus</span>
+              <span className="text-[10px] font-bold tracking-[0.2em] text-blue-400 uppercase mt-0.5">Invest</span>
+            </div>
+          </div>
+
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
+              {isSignUp ? 'Criar conta' : 'Bem-vindo de volta'}
+            </h1>
+            <p className="text-slate-400 text-sm font-medium">
+              {isSignUp ? 'Preencha os dados abaixo para começar.' : 'Insira suas credenciais para acessar sua carteira.'}
             </p>
-            <div className="h-px flex-1 bg-white/5" />
           </div>
+          
+          <form onSubmit={handleAuth} className="space-y-5">
+            <div className="space-y-2 group">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider group-focus-within:text-blue-400 transition-colors">E-mail</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={18} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full bg-slate-800/30 border border-slate-800 rounded-xl py-3.5 pl-11 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2 group">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider group-focus-within:text-blue-400 transition-colors">Senha</label>
+                {!isSignUp && (
+                  <a href="#" className="text-xs font-semibold text-blue-500 hover:text-blue-400 transition-colors">Esqueceu a senha?</a>
+                )}
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={18} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-800/30 border border-slate-800 rounded-xl py-3.5 pl-11 pr-4 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium"
+                  required
+                />
+              </div>
+            </div>
 
-          <div className="flex items-center gap-6 text-slate-600">
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={14} />
-              <span className="text-[8px] font-black uppercase tracking-widest">AES-256</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Globe size={14} />
-              <span className="text-[8px] font-black uppercase tracking-widest">Global Node</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap size={14} />
-              <span className="text-[8px] font-black uppercase tracking-widest">Ultra Fast</span>
-            </div>
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                    {error}
+                  </div>
+                </motion.div>
+              )}
+              {success && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    {success}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-4 shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 group"
+            >
+              {loading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  {isSignUp ? 'Criar Conta' : 'Entrar na Plataforma'}
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+          
+          <div className="mt-8 text-center">
+            <p className="text-slate-500 text-sm font-medium">
+              {isSignUp ? 'Já tem uma conta?' : 'Ainda não tem conta?'}
+              <button
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError(null);
+                  setSuccess(null);
+                }}
+                className="ml-2 text-blue-500 hover:text-blue-400 font-bold transition-colors"
+              >
+                {isSignUp ? 'Faça login' : 'Cadastre-se grátis'}
+              </button>
+            </p>
           </div>
         </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
 }
