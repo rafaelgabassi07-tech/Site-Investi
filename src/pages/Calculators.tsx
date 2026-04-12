@@ -69,7 +69,7 @@ export default function Calculators() {
   const fireResults = calculateFIRE();
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-3 pb-12">
       <PageHeader 
         title="Calculadoras"
         description="Simule seus investimentos e planeje seu futuro."
@@ -98,8 +98,8 @@ export default function Calculators() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6 bg-white/5 border border-white/10 p-8 rounded-3xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="lg:col-span-1 space-y-3 bg-white/5 border border-white/10 p-6 rounded-3xl">
           <AnimatePresence mode="wait">
             {activeCalc === 'COMPOUND' && (
               <motion.div 
@@ -107,10 +107,10 @@ export default function Calculators() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
+                className="space-y-4"
               >
                 <h3 className="text-lg font-bold text-white mb-4">Parâmetros</h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Valor Inicial (R$)</label>
                     <input type="number" value={initialAmount} onChange={(e) => setInitialAmount(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -137,10 +137,10 @@ export default function Calculators() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
+                className="space-y-4"
               >
                 <h3 className="text-lg font-bold text-white mb-4">Método de Bazin</h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Dividendo Médio (5 anos)</label>
                     <input type="number" value={avgDividend} onChange={(e) => setAvgDividend(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -159,10 +159,10 @@ export default function Calculators() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
+                className="space-y-4"
               >
                 <h3 className="text-lg font-bold text-white mb-4">Fórmula de Graham</h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">VPA (Valor Patrimonial por Ação)</label>
                     <input type="number" value={vpa} onChange={(e) => setVpa(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -181,10 +181,10 @@ export default function Calculators() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
+                className="space-y-4"
               >
                 <h3 className="text-lg font-bold text-white mb-4">FIRE (Independência)</h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Gasto Mensal Desejado (R$)</label>
                     <input type="number" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -199,14 +199,14 @@ export default function Calculators() {
           </AnimatePresence>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-3">
           <AnimatePresence mode="wait">
             {activeCalc === 'COMPOUND' && (
               <motion.div 
                 key="res-compound"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/30 p-8 rounded-3xl relative overflow-hidden"
+                className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] -z-10" />
                 <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-2">Valor Total Final</h3>
@@ -214,7 +214,7 @@ export default function Calculators() {
                   R$ {compoundResults.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                   <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign size={16} className="text-slate-400" />
@@ -242,7 +242,7 @@ export default function Calculators() {
                 key="res-bazin"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border border-emerald-500/30 p-8 rounded-3xl relative overflow-hidden"
+                className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border border-emerald-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] -z-10" />
                 <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-widest mb-2">Preço Teto Estimado</h3>
@@ -260,7 +260,7 @@ export default function Calculators() {
                 key="res-graham"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-br from-amber-600/20 to-amber-900/20 border border-amber-500/30 p-8 rounded-3xl relative overflow-hidden"
+                className="bg-gradient-to-br from-amber-600/20 to-amber-900/20 border border-amber-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] -z-10" />
                 <h3 className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-2">Preço Justo (Graham)</h3>
@@ -278,7 +278,7 @@ export default function Calculators() {
                 key="res-fire"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 border border-purple-500/30 p-8 rounded-3xl relative overflow-hidden"
+                className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 border border-purple-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[80px] -z-10" />
                 <h3 className="text-sm font-bold text-purple-400 uppercase tracking-widest mb-2">Patrimônio Necessário</h3>

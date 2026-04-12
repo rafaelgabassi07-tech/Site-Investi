@@ -30,14 +30,14 @@ export function NewsWidget() {
 
   return (
     <div className="card p-6 md:p-8 bg-white/5 rounded-3xl border border-white/10">
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
           <Newspaper size={20} className="text-amber-500" />
         </div>
         <h2 className="text-2xl font-medium text-white">Notícias de hoje</h2>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {news.map((item, index) => {
           const displayTitle = item.title;
           const displayLink = item.link;
@@ -79,7 +79,7 @@ export function NewsWidget() {
         })}
       </div>
 
-      <div className="mt-8 pt-6 flex justify-center">
+      <div className="mt-6 pt-4 flex justify-center">
         <Link 
           to="/news"
           className="px-8 py-3 rounded-2xl border border-white/10 text-white font-medium hover:bg-white/5 transition-colors"

@@ -56,7 +56,7 @@ export default function Search() {
   ];
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-4 pb-24">
       <PageHeader 
         title="Busca"
         description="Encontre ativos, empresas e criptomoedas."
@@ -100,8 +100,8 @@ export default function Search() {
         ))}
       </div>
 
-      <div className="space-y-4 pt-4">
-        <h3 className="text-lg font-bold text-white tracking-tight mb-4">
+      <div className="space-y-3 pt-4">
+        <h3 className="text-lg font-bold text-white tracking-tight mb-3">
           {results.length > 0 ? `Resultados para "${debouncedQuery}"` : 'Os mais buscados'}
         </h3>
         

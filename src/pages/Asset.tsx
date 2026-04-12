@@ -93,7 +93,7 @@ export default function Asset() {
   };
 
   return (
-    <div className="space-y-8 pb-24 max-w-5xl mx-auto">
+    <div className="space-y-3 pb-12 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 pt-4 px-4 md:px-0">
         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-colors border border-slate-700/50">
@@ -118,13 +118,13 @@ export default function Asset() {
         </div>
       </div>
 
-      <div className="px-4 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="px-4 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Left Column: Price & Chart */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        <div className="lg:col-span-2 space-y-3">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
               <div>
                 <div className="text-xxs font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Cotação Atual</div>
                 <div className="flex items-baseline gap-3">
@@ -200,7 +200,7 @@ export default function Asset() {
           </div>
 
           {/* Indicators Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {indicators.map((ind, idx) => (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
@@ -223,7 +223,7 @@ export default function Asset() {
           </div>
 
           {/* About Section */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 shadow-sm">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                 <Info size={20} />
@@ -248,7 +248,7 @@ export default function Asset() {
         </div>
 
         {/* Right Column: Checklist & News */}
-        <div className="space-y-8">
+        <div className="space-y-3">
           {/* Checklist Card */}
           <div className="bg-gradient-to-br from-slate-900 to-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-8">
@@ -365,7 +365,7 @@ export default function Asset() {
 
       {/* Comparison Section */}
       <div className="px-4 md:px-0">
-        <section className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+        <section className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
             <div className="flex items-center gap-4">

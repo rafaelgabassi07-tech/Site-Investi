@@ -14,12 +14,12 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10"
+      className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6"
     >
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-4">
         {Icon && (
-          <div className="w-14 h-14 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-sm">
-            <Icon size={28} strokeWidth={2} />
+          <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-sm">
+            <Icon size={24} strokeWidth={2} />
           </div>
         )}
         <div>

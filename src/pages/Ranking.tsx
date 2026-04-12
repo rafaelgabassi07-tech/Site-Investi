@@ -42,7 +42,7 @@ export default function Ranking() {
   };
 
   return (
-    <div className="space-y-8 pb-24 max-w-6xl mx-auto px-4 md:px-0">
+    <div className="space-y-3 pb-12 max-w-6xl mx-auto px-4 md:px-0">
       <AnimatePresence mode="wait">
         {!selectedCategory ? (
           <motion.div
@@ -50,7 +50,7 @@ export default function Ranking() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="space-y-10"
+            className="space-y-4"
           >
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <PageHeader 
@@ -81,7 +81,7 @@ export default function Ranking() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {categories.map((cat, idx) => (
                 <motion.div
                   key={idx}
@@ -89,7 +89,7 @@ export default function Ranking() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.05 }}
                   onClick={() => handleCategoryClick(cat.title)}
-                  className="group relative p-6 bg-[#0f172a] border border-slate-800 rounded-3xl flex flex-col gap-6 hover:border-slate-700 transition-all cursor-pointer shadow-sm hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden"
+                  className="group relative p-4 bg-[#0f172a] border border-slate-800 rounded-3xl flex flex-col gap-4 hover:border-slate-700 transition-all cursor-pointer shadow-sm hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden"
                 >
                   <div className={`absolute top-0 right-0 w-32 h-32 bg-${cat.color}-500/5 blur-[40px] -z-10 group-hover:bg-${cat.color}-500/10 transition-all`} />
                   
@@ -116,7 +116,7 @@ export default function Ranking() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-8"
+            className="space-y-3"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-6">
@@ -206,7 +206,7 @@ export default function Ranking() {
               </div>
             )}
             
-            <div className="p-8 bg-slate-900/50 border border-slate-800 rounded-[2rem] flex items-start gap-4">
+            <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] flex items-start gap-4">
               <Info size={20} className="text-slate-600 shrink-0 mt-1" />
               <div>
                 <h4 className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Metodologia Nexus</h4>

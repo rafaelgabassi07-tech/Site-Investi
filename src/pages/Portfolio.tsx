@@ -65,7 +65,7 @@ export default function Portfolio() {
   ];
 
   return (
-    <div className="section-spacing space-y-8">
+    <div className="section-spacing space-y-4">
       <PageHeader 
         title="Minha Carteira"
         description={<>Gestão estratégica de ativos e alocação via <span className="text-blue-500 font-bold">Invest Engine</span>.</>}
@@ -100,12 +100,12 @@ export default function Portfolio() {
 
       <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent element-spacing" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 element-spacing">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 element-spacing">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-lg"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-lg"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[60px] -z-10" />
           <p className="text-sm font-medium text-slate-400 mb-2">Patrimônio Atual</p>
@@ -123,7 +123,7 @@ export default function Portfolio() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-lg"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-lg"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/5 blur-[60px] -z-10" />
           <p className="text-sm font-medium text-slate-400 mb-2">Total Investido</p>
@@ -138,7 +138,7 @@ export default function Portfolio() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden hidden lg:block shadow-lg"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden hidden lg:block shadow-lg"
         >
           <div className="absolute inset-0 flex items-center justify-center opacity-20">
             <ResponsiveContainer width="100%" height="100%">
@@ -179,12 +179,12 @@ export default function Portfolio() {
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="lg:col-span-2 space-y-8"
+          className="lg:col-span-2 space-y-4"
         >
           <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
             {/* Desktop Table */}
@@ -298,9 +298,9 @@ export default function Portfolio() {
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="space-y-8"
+          className="space-y-4"
         >
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 min-h-[500px] md:min-h-[600px] relative overflow-hidden flex flex-col shadow-lg">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 min-h-[500px] md:min-h-[600px] relative overflow-hidden flex flex-col shadow-lg">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
             <div className="flex items-center justify-between mb-8">

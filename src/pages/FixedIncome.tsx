@@ -30,15 +30,15 @@ export default function FixedIncome() {
   };
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-3 pb-12">
       <PageHeader 
         title="Renda Fixa"
         description="Encontre as melhores taxas para investir com segurança e previsibilidade."
         icon={ShieldCheck}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="lg:col-span-2 space-y-3">
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
             {['Todos', 'CDBs', 'LCI/LCA', 'Tesouro Direto', 'Debêntures'].map((type, i) => (
               <button 
@@ -54,7 +54,7 @@ export default function FixedIncome() {
             ))}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {products.map((product, idx) => (
               <motion.div 
                 key={idx}
@@ -98,8 +98,8 @@ export default function FixedIncome() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-8 relative overflow-hidden shadow-lg">
+        <div className="space-y-3">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-6 relative overflow-hidden shadow-lg">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[60px] -z-10" />
             <h3 className="text-lg font-bold text-white mb-8 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
@@ -122,7 +122,7 @@ export default function FixedIncome() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/20 rounded-[2rem] p-8 shadow-lg">
+          <div className="bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/20 rounded-[2rem] p-6 shadow-lg">
             <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-3">
               <Calculator size={18} className="text-blue-400" />
               Simulador Rápido

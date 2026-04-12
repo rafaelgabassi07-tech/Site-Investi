@@ -60,11 +60,11 @@ export default function Menu() {
   ];
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-6 pb-24">
       <div className="pt-6 px-4 md:px-0">
         <h2 className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">Minha Conta</h2>
         
-        <div className="flex items-center gap-4 mb-8 bg-white/5 p-4 rounded-3xl border border-white/10">
+        <div className="flex items-center gap-4 mb-6 bg-white/5 p-4 rounded-3xl border border-white/10">
           <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-blue-500/20">
             {displayName[0].toUpperCase()}
           </div>

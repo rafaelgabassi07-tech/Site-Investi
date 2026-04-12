@@ -66,14 +66,14 @@ export default function Compare() {
   };
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-4 pb-24">
       <PageHeader 
         title="Comparar Ativos"
         description="Compare indicadores fundamentalistas entre dois ativos lado a lado."
         icon={GitCompare}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Input 1 */}
         <div className="relative">
           <input
@@ -119,8 +119,8 @@ export default function Compare() {
 
       <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
         <div className="grid grid-cols-3 border-b border-slate-800/50 bg-slate-800/30">
-          <div className="p-5 text-sm font-semibold text-slate-400 flex items-center">Indicador</div>
-          <div className="p-5 text-center">
+          <div className="p-4 text-sm font-semibold text-slate-400 flex items-center">Indicador</div>
+          <div className="p-4 text-center">
             {asset1 ? (
               <div className="flex flex-col items-center gap-2">
                 <AssetIcon assetType="ACAO" ticker={asset1.ticker} className="w-10 h-10" />
@@ -130,7 +130,7 @@ export default function Compare() {
               <span className="text-slate-500 font-semibold text-sm">Ativo 1</span>
             )}
           </div>
-          <div className="p-5 text-center">
+          <div className="p-4 text-center">
             {asset2 ? (
               <div className="flex flex-col items-center gap-2">
                 <AssetIcon assetType="ACAO" ticker={asset2.ticker} className="w-10 h-10" />
@@ -150,12 +150,12 @@ export default function Compare() {
 
             return (
               <div key={idx} className="grid grid-cols-3 hover:bg-slate-800/30 transition-colors">
-                <div className="p-5 text-sm font-medium text-slate-400 flex items-center">{ind.label}</div>
-                <div className={`p-5 text-center font-medium text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset1' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
+                <div className="p-4 text-sm font-medium text-slate-400 flex items-center">{ind.label}</div>
+                <div className={`p-4 text-center font-medium text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset1' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
                   {val1 || '-'}
                   {winner === 'asset1' && <TrendingUp size={14} className="text-emerald-500" />}
                 </div>
-                <div className={`p-5 text-center font-medium text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset2' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
+                <div className={`p-4 text-center font-medium text-sm flex flex-col items-center justify-center gap-1 ${winner === 'asset2' ? 'text-emerald-400 bg-emerald-500/5' : 'text-white'}`}>
                   {val2 || '-'}
                   {winner === 'asset2' && <TrendingUp size={14} className="text-emerald-500" />}
                 </div>

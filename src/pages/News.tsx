@@ -47,7 +47,7 @@ export default function News() {
   );
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-4">
       <PageHeader 
         title="Market Intelligence"
         description={<>Insights e notícias em tempo real via <span className="text-blue-500 font-bold">Invest News Engine</span>.</>}
@@ -81,7 +81,7 @@ export default function News() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.isArray(filteredNews) && filteredNews.length > 0 ? filteredNews.map((item, index) => {
           const displayTitle = item.title;
           const displayLink = item.link;
@@ -103,7 +103,7 @@ export default function News() {
               <div className="absolute top-0 right-0 w-40 h-40 bg-blue-600/5 blur-[80px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
               
               {item.thumbnail ? (
-                <div className="h-64 overflow-hidden relative">
+                <div className="h-48 overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent z-10 opacity-80" />
                   <img
                     src={item.thumbnail.resolutions[0]?.url}
@@ -118,7 +118,7 @@ export default function News() {
                   </div>
                 </div>
               ) : (
-                <div className="h-64 bg-slate-900 flex items-center justify-center relative overflow-hidden">
+                <div className="h-48 bg-slate-900 flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
                   <Newspaper size={64} className="text-slate-800" />
                   <div className="absolute top-6 left-6 z-20">
@@ -129,17 +129,17 @@ export default function News() {
                 </div>
               )}
               
-              <div className="p-6 md:p-10 flex-1 flex flex-col">
-                <div className="flex items-center gap-3 text-slate-500 text-xxs font-black uppercase tracking-[0.2em] mb-4 md:mb-6">
+              <div className="p-4 flex-1 flex flex-col">
+                <div className="flex items-center gap-3 text-slate-500 text-xxs font-black uppercase tracking-[0.2em] mb-3 md:mb-4">
                   <Clock size={14} className="text-blue-500" />
                   {formatDistanceToNow(displayDate, { addSuffix: true, locale: ptBR })}
                 </div>
                 
-                <h3 className="text-xl md:text-2xl font-black text-white mb-6 md:mb-8 line-clamp-3 leading-[1.1] tracking-tighter group-hover:text-blue-400 transition-colors duration-500">
+                <h3 className="text-lg md:text-xl font-black text-white mb-4 md:mb-6 line-clamp-3 leading-[1.1] tracking-tighter group-hover:text-blue-400 transition-colors duration-500">
                   {displayTitle}
                 </h3>
                 
-                <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Zap size={14} className="text-blue-500" />
                     <span className="text-xxs font-black text-slate-500 uppercase tracking-[0.2em] group-hover:text-white transition-colors duration-500">Ler Reportagem</span>

@@ -7,14 +7,14 @@ export default function Settings() {
   const { user } = useAuth();
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
   return (
-    <div className="space-y-16">
+    <div className="space-y-8">
       <PageHeader 
         title="Configurações"
         description={<>Gerencie sua conta e preferências do <span className="text-blue-500 font-bold">Nexus Invest</span>.</>}
         icon={SettingsIcon}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <motion.aside 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -43,22 +43,22 @@ export default function Settings() {
           ))}
         </motion.aside>
 
-        <div className="lg:col-span-3 space-y-10">
+        <div className="lg:col-span-3 space-y-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="card p-6 md:p-12 relative overflow-hidden"
+            className="card p-6 md:p-8 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10" />
-            <div className="flex items-center gap-4 mb-10">
+            <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 border border-blue-500/20">
                 <User size={24} />
               </div>
               <h3 className="text-2xl font-black text-white uppercase tracking-tight">Informações Pessoais</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <label className="block text-xxs font-black text-slate-500 uppercase tracking-[0.2em]">Nome de Exibição</label>
                 <div className="relative group">
@@ -95,10 +95,10 @@ export default function Settings() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="card p-6 md:p-12 relative overflow-hidden"
+            className="card p-6 md:p-8 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10" />
-            <div className="flex items-center gap-4 mb-10">
+            <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 border border-blue-500/20">
                 <SettingsIcon size={24} />
               </div>

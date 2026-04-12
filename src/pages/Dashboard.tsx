@@ -60,7 +60,7 @@ export default function Dashboard() {
   const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
 
   return (
-    <div className="section-spacing space-y-8">
+    <div className="space-y-4">
       <PageHeader 
         title="Visão Geral"
         description={<>Performance consolidada da sua carteira <span className="text-blue-500 font-semibold">Nexus Invest</span>.</>}
@@ -73,7 +73,7 @@ export default function Dashboard() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 element-spacing">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <StatCard 
           label="Total Investido"
           value={`R$ ${totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
@@ -103,14 +103,14 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 element-spacing">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 shadow-lg lg:col-span-2"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 md:p-6 shadow-lg lg:col-span-2"
         >
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">Rentabilidade (Cota)</h3>
               <p className="text-xs text-slate-400 mt-1">Método Time-Weighted Return (TWR)</p>
@@ -176,9 +176,9 @@ export default function Dashboard() {
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 md:p-6 shadow-lg flex flex-col"
         >
-          <div className="mb-6">
+          <div className="mb-4">
             <h3 className="text-lg font-bold text-white tracking-tight">Alocação por Classe</h3>
             <p className="text-xs text-slate-400 mt-1">Distribuição do patrimônio</p>
           </div>

@@ -317,7 +317,7 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 pt-24 md:pt-32 pb-32 md:pb-20">
+      <main className="flex-1 pt-20 md:pt-24 pb-24 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ErrorBoundary>
             <Outlet />
@@ -352,7 +352,7 @@ export default function Layout() {
       </div>
 
       {/* Footer Tecnológico */}
-      <footer className="bg-[#020617] border-t border-white/5 py-16 relative overflow-hidden">
+      <footer className="bg-[#020617] border-t border-white/5 py-12 relative overflow-hidden">
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-blue-600/5 blur-[100px] -z-10 rounded-full" />
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
@@ -387,7 +387,7 @@ export default function Layout() {
             </div>
           </div>
           
-          <div className="h-px bg-white/5 my-12" />
+          <div className="h-px bg-white/5 my-8" />
           
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">© 2026 Nexus Invest. Todos os direitos reservados.</p>

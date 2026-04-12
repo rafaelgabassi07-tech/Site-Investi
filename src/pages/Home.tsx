@@ -82,15 +82,15 @@ export default function Home() {
   ];
 
   return (
-    <div className="space-y-24 pb-32 overflow-hidden">
+    <div className="space-y-6 pb-12 overflow-hidden">
       {/* Market Marquee */}
       <div className="fixed top-20 left-0 right-0 z-40">
         <MarketMarquee />
       </div>
 
       {/* Hero Section */}
-      <section className="pt-32 md:pt-40 px-4 md:px-0">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
+      <section className="pt-20 md:pt-24 px-4 md:px-0">
+        <div className="max-w-4xl mx-auto text-center space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -148,7 +148,7 @@ export default function Home() {
           </motion.div>
 
           {/* Quick Stats Bar */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
             {stats.map((stat, idx) => {
               const data = marketStats.find(s => s.ticker === stat.ticker);
               return (
@@ -188,7 +188,7 @@ export default function Home() {
       </section>
 
       {/* Market Sentiment & Quick Stats */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3 px-4 md:px-0">
         <div className="lg:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden group shadow-lg">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
           
@@ -243,7 +243,7 @@ export default function Home() {
       </section>
       
       {/* Rankings Section - Enhanced with Tabs and Real Data */}
-      <section className="space-y-8 px-4 md:px-0">
+      <section className="space-y-4 px-4 md:px-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
@@ -274,7 +274,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Main Ranking Card */}
           <div className="md:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
@@ -324,7 +324,7 @@ export default function Home() {
           </div>
 
           {/* Side Ranking / Info */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="bg-gradient-to-br from-slate-900 to-[#0f172a] border border-slate-800 rounded-2xl p-6 shadow-lg">
               <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                 <TrendingUp size={18} className="text-emerald-500" />
@@ -369,9 +369,9 @@ export default function Home() {
       <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
 
       {/* Meus Recursos Section */}
-      <section className="space-y-6 px-4 md:px-0">
+      <section className="space-y-4 px-4 md:px-0">
         <h2 className="text-xl font-bold text-white tracking-tight mb-6">Ferramentas e Recursos</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { icon: Search, label: 'Busca de Ativos', to: '/search', color: 'blue' },
             { icon: GitCompare, label: 'Comparar Ativos', to: '/compare', color: 'cyan' },

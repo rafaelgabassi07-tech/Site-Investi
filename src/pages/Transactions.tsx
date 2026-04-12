@@ -69,23 +69,23 @@ export default function Transactions() {
   };
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-8">
       <PageHeader 
         title="Lançamentos"
         description={<>Registre suas operações e mantenha seu histórico atualizado no <span className="text-blue-500 font-bold">Invest Engine</span>.</>}
         icon={History}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-10 relative overflow-hidden shadow-lg"
+          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-lg"
         >
           <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/5 blur-[100px] -z-10" />
           
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
               <Plus size={24} />
             </div>
@@ -243,10 +243,10 @@ export default function Transactions() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-10 relative overflow-hidden flex flex-col min-h-[600px] shadow-lg">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col min-h-[600px] shadow-lg">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
                   <History size={20} />

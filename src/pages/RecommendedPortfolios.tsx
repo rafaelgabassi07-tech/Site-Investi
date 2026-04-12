@@ -43,25 +43,25 @@ export default function RecommendedPortfolios() {
   ];
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-3 pb-12">
       <PageHeader 
         title="Carteiras Recomendadas"
         description="Estratégias prontas montadas por nossos especialistas para diferentes perfis."
         icon={Award}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {portfolios.map((portfolio, idx) => (
           <motion.div 
             key={idx}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="bg-[#0f172a] border border-slate-800 rounded-3xl p-8 hover:border-slate-700 transition-all group cursor-pointer relative overflow-hidden shadow-lg"
+            className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 hover:border-slate-700 transition-all group cursor-pointer relative overflow-hidden shadow-lg"
           >
             <div className={`absolute top-0 right-0 w-48 h-48 bg-${portfolio.color}-500/5 blur-[80px] -z-10`} />
             
-            <div className="flex items-start justify-between mb-8">
+            <div className="flex items-start justify-between mb-6">
               <div className={`w-14 h-14 rounded-2xl bg-${portfolio.color}-500/10 flex items-center justify-center border border-${portfolio.color}-500/20`}>
                 <portfolio.icon size={28} className={`text-${portfolio.color}-500`} />
               </div>
@@ -73,9 +73,9 @@ export default function RecommendedPortfolios() {
             </div>
 
             <h3 className="text-2xl font-bold text-white mb-3 tracking-tight group-hover:text-blue-400 transition-colors">{portfolio.title}</h3>
-            <p className="text-sm text-slate-400 mb-8 leading-relaxed font-medium">{portfolio.description}</p>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed font-medium">{portfolio.description}</p>
 
-            <div className="space-y-4 mb-8">
+            <div className="space-y-3 mb-6">
               <p className="text-xxs font-bold text-slate-500 uppercase tracking-[0.2em]">Principais Ativos</p>
               <div className="flex flex-wrap gap-2">
                 {portfolio.assets.map(asset => (
@@ -86,7 +86,7 @@ export default function RecommendedPortfolios() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-8 border-t border-slate-800/50">
+            <div className="flex items-center justify-between pt-6 border-t border-slate-800/50">
               <div>
                 <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1">Dividend Yield Esperado</div>
                 <div className={`text-2xl font-black text-${portfolio.color}-400`}>{portfolio.yield}</div>
