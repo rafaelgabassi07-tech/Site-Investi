@@ -56,7 +56,7 @@ export default function Menu() {
     { icon: Bell, label: 'Notificações', to: '#', badge: '20' },
     { icon: Bell, label: 'Notificações via push', to: '#' },
     { icon: HeadphonesIcon, label: 'Suporte', to: '#' },
-    { icon: Info, label: 'Sobre o Nexus Invest', to: '#' },
+    { icon: Info, label: 'Sobre o Nexus Invest', to: '/about' },
   ];
 
   return (

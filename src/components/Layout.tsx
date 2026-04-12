@@ -23,13 +23,16 @@ import {
   Star,
   Building2,
   Bitcoin,
-  BarChart3
+  BarChart3,
+  Info
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { ErrorBoundary } from './ErrorBoundary';
+
+import { Logo } from './ui/Logo';
 
 export default function Layout() {
   const location = useLocation();
@@ -82,6 +85,7 @@ export default function Layout() {
       ]
     },
     { label: 'Notícias', to: '/news', icon: Newspaper },
+    { label: 'Sobre', to: '/about', icon: Info },
   ];
 
   const scrollToSection = (id: string) => {
@@ -138,13 +142,7 @@ export default function Layout() {
           <div className="flex items-center justify-between">
             {/* Logo Professional Style */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 transition-all duration-300 group-hover:scale-105">
-                <TrendingUp size={24} strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight text-white leading-none">Nexus</span>
-                <span className="text-[11px] font-medium text-blue-400 mt-0.5">Invest</span>
-              </div>
+              <Logo size={40} showText />
             </Link>
 
             {/* Desktop Navigation */}
@@ -240,12 +238,7 @@ export default function Layout() {
             className="md:hidden fixed inset-0 z-[200] bg-[#020617] flex flex-col"
           >
             <div className="p-6 flex items-center justify-between border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                  <TrendingUp size={24} />
-                </div>
-                <span className="text-xl font-black tracking-tighter text-white">NEXUS</span>
-              </div>
+              <Logo size={40} showText />
               <button 
                 className="p-2.5 text-slate-200 hover:bg-white/10 rounded-xl border border-white/10"
                 onClick={() => setIsMenuOpen(false)}
@@ -358,13 +351,7 @@ export default function Layout() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex flex-col items-center md:items-start gap-4">
               <Link to="/" className="flex items-center gap-3 group">
-                <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
-                  <TrendingUp size={24} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-black tracking-tighter text-white leading-none">NEXUS</span>
-                  <span className="text-[8px] font-bold tracking-[0.2em] text-blue-400 uppercase">Invest Engine</span>
-                </div>
+                <Logo size={40} showText />
               </Link>
               <p className="text-slate-500 text-xs font-medium max-w-xs text-center md:text-left">
                 A plataforma definitiva para acompanhamento de dados financeiros e gestão de patrimônio de alta performance.

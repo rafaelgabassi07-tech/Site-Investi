@@ -8,6 +8,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { financeService } from '../services/financeService';
 
+import { Logo } from '../components/ui/Logo';
+
 export default function Home() {
   const { user } = useAuth();
   const [topGainers, setTopGainers] = useState<any[]>([]);
@@ -90,11 +92,20 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="pt-20 md:pt-24">
-        <div className="max-w-4xl mx-auto text-center space-y-4">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="flex justify-center"
+          >
+            <Logo size={80} showText className="flex-col gap-4" />
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-4"
           >
             <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">

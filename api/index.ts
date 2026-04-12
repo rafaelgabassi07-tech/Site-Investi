@@ -1,4 +1,4 @@
-import { createServer } from './app';
+import { createServer } from './app.js';
 
 export default async (req: any, res: any) => {
   const { app } = await createServer();

@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { TrendingUp, Mail, Lock, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { Logo } from '../components/ui/Logo';
+
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -52,15 +54,7 @@ export default function Login() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-[#020617] to-[#020617] -z-10" />
         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] -z-10" />
         
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-            <TrendingUp size={28} strokeWidth={2.5} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-bold tracking-tight text-white leading-none">Nexus</span>
-            <span className="text-xs font-bold tracking-[0.2em] text-blue-400 uppercase mt-1">Invest</span>
-          </div>
-        </div>
+        <Logo size={48} showText />
 
         <div className="max-w-lg">
           <h2 className="text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight mb-6">
@@ -102,13 +96,7 @@ export default function Login() {
         >
           {/* Mobile Logo */}
           <div className="flex md:hidden items-center gap-3 mb-12 justify-center">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <TrendingUp size={24} strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-white leading-none">Nexus</span>
-              <span className="text-[10px] font-bold tracking-[0.2em] text-blue-400 uppercase mt-0.5">Invest</span>
-            </div>
+            <Logo size={40} showText />
           </div>
 
           <div className="mb-10">

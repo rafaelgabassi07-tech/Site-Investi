@@ -21,6 +21,7 @@ import FixedIncome from './pages/FixedIncome';
 import Compare from './pages/Compare';
 import Rebalance from './pages/Rebalance';
 import Taxes from './pages/Taxes';
+import About from './pages/About';
 
 import { PortfolioProvider } from './contexts/PortfolioContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="compare" element={<Compare />} />
             <Route path="rebalance" element={<Rebalance />} />
             <Route path="taxes" element={<Taxes />} />
+            <Route path="about" element={<About />} />
           </Route>
         </Routes>
       </Router>
