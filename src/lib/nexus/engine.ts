@@ -28,7 +28,7 @@ export interface ScrapeSource<T = any> {
   requireStealth?: boolean;
 }
 
-export type ExtendedAssetType = 'ACAO' | 'FII' | 'BDR' | 'ETF';
+export type ExtendedAssetType = 'ACAO' | 'FII' | 'BDR' | 'ETF' | 'STOCK' | 'CRYPTO';
 
 export interface NewsItem {
   title: string;
@@ -57,7 +57,7 @@ const RE_MILHAR  = /\./g;
 const RE_DECIMAL = /,/;
 const RE_SA      = /\.SA$/i;
 const RE_BDR     = /3[2-5]$/;
-const RE_TICKER  = /^[A-Z]{4}\d{1,2}$/;
+const RE_TICKER  = /^[A-Z0-9\.\-=^]{2,20}$/;
 
 export const VALORES_INVALIDOS = new Set([
   '-', '—', '–', 'N/A', 'n/a', 'nd', '', 'null', 'undefined',
@@ -509,7 +509,7 @@ export const etfTemplate: ExtractorTemplate<ETFData> = {
   ],
 };
 
-const ASSET_PRESETS: Record<ExtendedAssetType, {
+const ASSET_PRESETS: Record<string, {
   i10Base: string;
   siBase:  string;
   template: ExtractorTemplate<any>;
@@ -518,6 +518,8 @@ const ASSET_PRESETS: Record<ExtendedAssetType, {
   FII:  { i10Base: 'https://investidor10.com.br/fiis',   siBase: 'https://statusinvest.com.br/fundos-imobiliarios', template: fiiTemplate  },
   BDR:  { i10Base: 'https://investidor10.com.br/bdrs',   siBase: 'https://statusinvest.com.br/bdrs',               template: bdrTemplate  },
   ETF:  { i10Base: 'https://investidor10.com.br/etfs',   siBase: 'https://statusinvest.com.br/etfs',               template: etfTemplate  },
+  STOCK: { i10Base: 'https://investidor10.com.br/stocks', siBase: 'https://statusinvest.com.br/stocks',            template: acaoTemplate },
+  CRYPTO: { i10Base: 'https://investidor10.com.br/cripto', siBase: 'https://statusinvest.com.br/cripto',           template: acaoTemplate },
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -913,11 +915,13 @@ export class NexusEngine {
     try {
       // Como não temos uma API direta de ranking, vamos buscar os top ativos do Yahoo Finance
       // ou simular baseado em uma lista pré-definida de ativos populares se a busca falhar.
-      const popularTickers: Record<ExtendedAssetType, string[]> = {
+      const popularTickers: Record<string, string[]> = {
         ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3'],
         FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11'],
         BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34'],
-        ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11']
+        ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'],
+        STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'BRK-B'],
+        CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD']
       };
 
       const tickers = popularTickers[type] || popularTickers.ACAO;
@@ -1148,12 +1152,12 @@ export class NexusEngine {
     if (erroVal) {
       return { ticker: cleanTicker, results: {}, cacheStatus: 'ERROR', metrics: { error: erroVal } };
     }
-    const preset  = ASSET_PRESETS[type];
+    const preset  = ASSET_PRESETS[type] || ASSET_PRESETS.ACAO;
     const t       = cleanTicker.toLowerCase();
-    const sources: ScrapeSource<any>[] = [
+    const sources: ScrapeSource<any>[] = preset ? [
       { url: `${preset.i10Base}/${t}/`, template: preset.template, requireStealth: true },
       { url: `${preset.siBase}/${t}/`,  template: preset.template, requireStealth: true },
-    ];
+    ] : [];
 
     const startTime = performance.now();
     const startCpu  = safeCpuStart();
@@ -1296,9 +1300,13 @@ export class NexusEngine {
     for (const url of endpoints) {
       try {
         const json = await fetchJson(url, this._options.fetchTimeoutMs);
-        return (json?.quotes ?? []).filter(
-          (q: any) => q.exchange === 'SAO' || q.exchange === 'BVMF' || q.symbol?.endsWith('.SA')
-        );
+        return (json?.quotes ?? []).map((q: any) => ({
+          ...q,
+          ticker: q.symbol,
+          name: q.shortname || q.longname || q.symbol,
+          exchange: q.exchange,
+          type: q.quoteType
+        }));
       } catch { continue; }
     }
     return [];

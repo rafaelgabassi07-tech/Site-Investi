@@ -42,7 +42,7 @@ export default function Ranking() {
   };
 
   return (
-    <div className="space-y-3 pb-12 max-w-6xl mx-auto px-1 md:px-0">
+    <div className="space-y-3 pb-12 max-w-7xl mx-auto">
       <AnimatePresence mode="wait">
         {!selectedCategory ? (
           <motion.div

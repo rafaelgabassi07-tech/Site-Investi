@@ -12,7 +12,8 @@ export const ASSET_TYPES = [
   { id: 'FII', label: 'FII', icon: Building2, color: 'emerald' },
   { id: 'ETF', label: 'ETF', icon: Layers, color: 'indigo' },
   { id: 'BDR', label: 'BDR', icon: Globe, color: 'purple' },
-  { id: 'CRIPT', label: 'Cripto', icon: Bitcoin, color: 'orange' },
+  { id: 'STOCK', label: 'Stock', icon: TrendingUp, color: 'cyan' },
+  { id: 'CRYPTO', label: 'Cripto', icon: Bitcoin, color: 'orange' },
   { id: 'RF', label: 'Renda Fixa', icon: Landmark, color: 'slate' },
 ] as const;
 
