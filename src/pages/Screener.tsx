@@ -104,7 +104,7 @@ export default function Screener() {
                   placeholder="Ex: 6"
                   value={filters.minDY}
                   onChange={(e) => setFilters({...filters, minDY: e.target.value})}
-                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 />
               </div>
 
@@ -115,7 +115,7 @@ export default function Screener() {
                   placeholder="Ex: 15"
                   value={filters.maxPL}
                   onChange={(e) => setFilters({...filters, maxPL: e.target.value})}
-                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 />
               </div>
 
@@ -126,7 +126,7 @@ export default function Screener() {
                   placeholder="Ex: 1.5"
                   value={filters.maxPVP}
                   onChange={(e) => setFilters({...filters, maxPVP: e.target.value})}
-                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 />
               </div>
 
@@ -137,7 +137,7 @@ export default function Screener() {
                   placeholder="Ex: 10"
                   value={filters.minROE}
                   onChange={(e) => setFilters({...filters, minROE: e.target.value})}
-                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 />
               </div>
 
@@ -148,7 +148,7 @@ export default function Screener() {
                   placeholder="Ex: 10"
                   value={filters.minMargemLiquida}
                   onChange={(e) => setFilters({...filters, minMargemLiquida: e.target.value})}
-                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 />
               </div>
 
@@ -159,7 +159,7 @@ export default function Screener() {
                   placeholder="Ex: 5"
                   value={filters.minVPA}
                   onChange={(e) => setFilters({...filters, minVPA: e.target.value})}
-                  className="w-full bg-slate-800/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 />
               </div>
             </div>

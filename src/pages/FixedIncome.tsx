@@ -137,7 +137,7 @@ export default function FixedIncome() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="1.000,00" 
-                    className="w-full bg-slate-900/50 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                    className="w-full bg-[#0f172a] border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" 
                   />
                 </div>
               </div>

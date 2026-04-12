@@ -113,19 +113,19 @@ export default function Calculators() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Valor Inicial (R$)</label>
-                    <input type="number" value={initialAmount} onChange={(e) => setInitialAmount(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={initialAmount} onChange={(e) => setInitialAmount(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Aporte Mensal (R$)</label>
-                    <input type="number" value={monthlyContribution} onChange={(e) => setMonthlyContribution(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={monthlyContribution} onChange={(e) => setMonthlyContribution(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Taxa Anual (%)</label>
-                    <input type="number" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Período (Anos)</label>
-                    <input type="number" value={years} onChange={(e) => setYears(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={years} onChange={(e) => setYears(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                 </div>
               </motion.div>
@@ -147,7 +147,7 @@ export default function Calculators() {
                   </div>
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Yield Desejado (%)</label>
-                    <input type="number" value={desiredYield} onChange={(e) => setDesiredYield(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={desiredYield} onChange={(e) => setDesiredYield(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                 </div>
               </motion.div>
@@ -165,11 +165,11 @@ export default function Calculators() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">VPA (Valor Patrimonial por Ação)</label>
-                    <input type="number" value={vpa} onChange={(e) => setVpa(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={vpa} onChange={(e) => setVpa(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">LPA (Lucro por Ação)</label>
-                    <input type="number" value={lpa} onChange={(e) => setLpa(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={lpa} onChange={(e) => setLpa(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                 </div>
               </motion.div>
@@ -187,11 +187,11 @@ export default function Calculators() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Gasto Mensal Desejado (R$)</label>
-                    <input type="number" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                   <div>
                     <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Taxa de Retirada Anual (%)</label>
-                    <input type="number" value={withdrawalRate} onChange={(e) => setWithdrawalRate(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input type="number" value={withdrawalRate} onChange={(e) => setWithdrawalRate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
                   </div>
                 </div>
               </motion.div>

@@ -77,27 +77,27 @@ export default function Search() {
         icon={SearchIcon}
       />
 
-      <div className="relative group">
-        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+      <div className="relative flex items-center w-full bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl focus-within:border-blue-500/50 transition-all p-1 overflow-hidden">
+        <div className="pl-3 text-slate-500">
           {loading ? (
             <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
           ) : (
-            <SearchIcon className="h-5 w-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+            <SearchIcon className="h-5 w-5 text-slate-500" />
           )}
         </div>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="block w-full pl-12 pr-12 py-5 bg-[#0f172a] border border-slate-800 rounded-[2rem] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all shadow-2xl"
+          className="flex-1 min-w-0 bg-transparent border-none outline-none py-3 px-3 text-sm md:text-lg text-white placeholder:text-slate-600"
           placeholder="Buscar ativos (ex: PETR4, AAPL, BTC-USD)"
         />
         {query && (
           <button 
             onClick={() => setQuery('')}
-            className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-500 hover:text-white transition-colors"
+            className="p-2 text-slate-500 hover:text-white transition-colors"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         )}
       </div>

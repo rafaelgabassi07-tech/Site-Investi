@@ -22,12 +22,30 @@ export default function Home() {
 
   const [marketStats, setMarketStats] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [sentiment, setSentiment] = useState({ score: 50, label: 'Neutro', color: 'slate', desc: 'O mercado aguarda novas direções.' });
 
   useEffect(() => {
     financeService.getMarketStats()
       .then(data => {
         setMarketStats(data);
         setLoadingStats(false);
+        
+        // Calculate sentiment based on market stats
+        const upCount = data.filter((s: any) => !s.change.startsWith('-')).length;
+        const total = data.length;
+        const ratio = upCount / total;
+        
+        if (ratio >= 0.75) {
+          setSentiment({ score: 82, label: 'Ganância Extrema', color: 'emerald', desc: 'Forte apetite por risco. Investidores estão muito otimistas.' });
+        } else if (ratio >= 0.6) {
+          setSentiment({ score: 68, label: 'Ganância', color: 'emerald', desc: 'O mercado demonstra otimismo moderado e apetite por risco.' });
+        } else if (ratio >= 0.4) {
+          setSentiment({ score: 50, label: 'Neutro', color: 'slate', desc: 'O mercado está equilibrado, aguardando novos gatilhos econômicos.' });
+        } else if (ratio >= 0.25) {
+          setSentiment({ score: 35, label: 'Medo', color: 'red', desc: 'Investidores estão cautelosos. Há uma tendência de aversão ao risco.' });
+        } else {
+          setSentiment({ score: 15, label: 'Medo Extremo', color: 'red', desc: 'Pânico ou forte pessimismo. O mercado está em modo de proteção.' });
+        }
       })
       .catch(() => setLoadingStats(false));
   }, []);
@@ -121,24 +139,30 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="relative max-w-2xl mx-auto"
+            className="relative max-w-2xl mx-auto px-4 md:px-0"
           >
             <div className="absolute inset-0 bg-blue-500/20 blur-[100px] -z-10" />
-            <div className="flex items-center gap-3 p-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl focus-within:border-blue-500/50 transition-all w-full">
-              <div className="pl-4 text-slate-500">
-                <Search size={24} />
+            <div className="relative flex items-center w-full bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl focus-within:border-blue-500/50 transition-all p-1 overflow-hidden">
+              <div className="pl-3 text-slate-500">
+                <Search size={18} />
               </div>
               <input 
                 type="text" 
-                placeholder="Busque ativos, empresas, índices..." 
-                className="flex-1 bg-transparent border-none outline-none py-3 text-lg text-white placeholder:text-slate-600"
+                placeholder="Busque ativos..." 
+                className="flex-1 min-w-0 bg-transparent border-none outline-none py-3 px-3 text-sm md:text-lg text-white placeholder:text-slate-600"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     window.location.href = `/search?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`;
                   }
                 }}
               />
-              <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 shrink-0">
+              <button 
+                onClick={() => {
+                  const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                  if (input.value) window.location.href = `/search?q=${encodeURIComponent(input.value)}`;
+                }}
+                className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 text-xs md:text-sm"
+              >
                 Pesquisar
               </button>
             </div>
@@ -218,18 +242,24 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center gap-10">
             <div className="relative w-40 h-20 overflow-hidden">
               <div className="absolute inset-0 border-[10px] border-slate-800 rounded-t-full" />
-              <div className="absolute inset-0 border-[10px] border-t-emerald-500 border-r-emerald-500/50 border-l-red-500/50 rounded-t-full rotate-[45deg]" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-16 bg-white origin-bottom rotate-[30deg] transition-transform duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+              <div 
+                className={`absolute inset-0 border-[10px] border-t-${sentiment.color}-500 border-r-${sentiment.color}-500/50 border-l-red-500/50 rounded-t-full transition-all duration-1000`} 
+                style={{ transform: `rotate(${(sentiment.score / 100) * 180 - 90}deg)` }}
+              />
+              <div 
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-16 bg-white origin-bottom transition-transform duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+                style={{ transform: `translateX(-50%) rotate(${(sentiment.score / 100) * 180 - 90}deg)` }}
+              />
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full border-2 border-slate-900" />
             </div>
             
             <div className="flex-1 space-y-3 text-center md:text-left">
-              <div className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-semibold">
-                Otimismo Moderado
+              <div className={`inline-block px-3 py-1 bg-${sentiment.color}-500/10 border border-${sentiment.color}-500/20 text-${sentiment.color}-400 rounded-lg text-xs font-semibold`}>
+                {sentiment.label}
               </div>
-              <h3 className="text-2xl font-bold text-white tracking-tight">Greed: 68/100</h3>
+              <h3 className="text-2xl font-bold text-white tracking-tight">Score: {sentiment.score}/100</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                O mercado demonstra apetite por risco. Investidores estão otimistas com os últimos dados de inflação e resultados corporativos.
+                {sentiment.desc}
               </p>
             </div>
           </div>

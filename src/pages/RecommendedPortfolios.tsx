@@ -91,9 +91,15 @@ export default function RecommendedPortfolios() {
                 <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1">Dividend Yield Esperado</div>
                 <div className={`text-2xl font-black text-${portfolio.color}-400`}>{portfolio.yield}</div>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center group-hover:bg-blue-600 transition-all border border-slate-800 group-hover:border-blue-500">
-                <ChevronRight size={24} className="text-slate-500 group-hover:text-white transition-colors" />
-              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.location.href = `/search?q=${portfolio.assets.join(',')}`;
+                }}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-blue-600/20"
+              >
+                Ver Ativos
+              </button>
             </div>
           </motion.div>
         ))}

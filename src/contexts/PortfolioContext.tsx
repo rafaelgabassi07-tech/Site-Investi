@@ -37,6 +37,14 @@ interface PortfolioContextType {
 
 export const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
+export function usePortfolio() {
+  const context = useContext(PortfolioContext);
+  if (context === undefined) {
+    throw new Error('usePortfolio must be used within a PortfolioProvider');
+  }
+  return context;
+}
+
 export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);

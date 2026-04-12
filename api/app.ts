@@ -75,10 +75,12 @@ export async function createServer() {
 
     app.get("/api/ranking", async (req, res) => {
       const { category, type } = req.query;
+      console.log(`[API] Fetching ranking: category=${category}, type=${type}`);
       try {
         const result = await NexusEngine.fetchRanking((category as string) || "Dividend Yield", (type as any) || "ACAO");
         res.json(result);
       } catch (error) {
+        console.error(`[API] Error fetching ranking:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });

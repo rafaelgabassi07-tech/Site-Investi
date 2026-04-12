@@ -61,8 +61,8 @@ export default function Transactions() {
       setMessage('Lançamento realizado com sucesso!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      console.error(error);
-      setMessage('Erro ao realizar lançamento.');
+      console.error('Erro detalhado ao salvar transação:', error);
+      setMessage(`Erro ao realizar lançamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }

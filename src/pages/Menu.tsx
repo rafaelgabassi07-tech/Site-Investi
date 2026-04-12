@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter, Download, Scale, FileText } from 'lucide-react';
+import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter, Download, Scale, FileText, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -37,19 +37,20 @@ export default function Menu() {
 
   const ferramentas = [
     { icon: Briefcase, label: 'Minha Carteira', to: '/portfolio' },
+    { icon: TrendingUp, label: 'Rentabilidade', to: '/profitability' },
     { icon: Search, label: 'Buscar Ativos', to: '/search' },
     { icon: GitCompare, label: 'Comparar Ativos', to: '/compare' },
     { icon: Filter, label: 'Busca Avançada (Screener)', to: '/screener' },
     { icon: Scale, label: 'Rebalanceamento', to: '/rebalance' },
     { icon: FileText, label: 'Motor Fiscal & DARF', to: '/taxes' },
-    { icon: Heart, label: 'Favoritos', to: '#' },
+    { icon: Heart, label: 'Favoritos', to: '/favorites' },
     { icon: Newspaper, label: 'Últimas Notícias', to: '/news' },
     { icon: Calendar, label: 'Agenda de Dividendos', to: '/dividends' },
     { icon: Award, label: 'Carteiras Recomendadas', to: '/recommended' },
     { icon: Calculator, label: 'Calculadoras', to: '/calculators' },
     { icon: ShieldCheck, label: 'Renda Fixa', to: '/renda-fixa' },
     { icon: Award, label: 'Rankings', to: '/ranking' },
-    { icon: HelpCircle, label: 'Guia do Iniciante', to: '#' },
+    { icon: HelpCircle, label: 'Guia do Iniciante', to: '/guide' },
   ];
 
   const maisOpcoes = [

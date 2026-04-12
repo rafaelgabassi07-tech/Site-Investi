@@ -77,8 +77,6 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
 ];
 
-const YAHOO_HOSTS = ['query1', 'query2'] as const;
-
 /**
  * FIX #2 — ETFs B3 conhecidos.
  */
@@ -420,6 +418,9 @@ export const B3Schema = z.object({
   pCapGiro:      z.union([z.number(), z.string()]).optional(),
   dividaLiquidaEbitda: z.union([z.number(), z.string()]).optional(),
   variacaoDay:   z.string().optional(),
+  about:         z.string().optional(),
+  sector:        z.string().optional(),
+  subSector:     z.string().optional(),
 });
 
 export const FIISchema = z.object({
@@ -432,6 +433,9 @@ export const FIISchema = z.object({
   vacanciaFisica:    z.string().optional(),
   patrimonioLiquido: z.union([z.number(), z.string()]).optional(),
   variacaoDay:       z.string().optional(),
+  about:             z.string().optional(),
+  sector:            z.string().optional(),
+  subSector:         z.string().optional(),
 });
 
 export const ETFSchema = z.object({
@@ -441,6 +445,9 @@ export const ETFSchema = z.object({
   patrimonioLiquido: z.union([z.number(), z.string()]).optional(),
   taxaAdmin:         z.string().optional(),
   variacaoDay:       z.string().optional(),
+  about:             z.string().optional(),
+  sector:            z.string().optional(),
+  subSector:         z.string().optional(),
 });
 
 export type B3Data  = z.infer<typeof B3Schema>;
@@ -460,23 +467,26 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
   name: 'B3_ACAO',
   schema: B3Schema,
   rules: [
-    { name: 'precoAtual',    anchors: ['Preço Atual', 'Cotação', 'cotacao'],            extractRegex: />\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield', anchors: ['Dividend Yield', 'DY', 'Yield'],               extractRegex: />\s*([\d,.]+\s*%?)\s*</,      formatter: COMMON_FORMATTERS.pct },
-    { name: 'pl',            anchors: ['P/L', 'P/Lucro', 'Preço/Lucro'],               extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pvp',           anchors: ['P/VP', 'P/Valor Patrimonial'],                  extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'vpa',           anchors: ['VPA', 'Valor Patrimonial por Ação'],            extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'lpa',           anchors: ['LPA', 'Lucro por Ação'],                        extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'roe',           anchors: ['ROE', 'Retorno sobre Patrimônio'],              extractRegex: />\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'roic',          anchors: ['ROIC'],                                          extractRegex: />\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'margemLiquida', anchors: ['Margem Líquida', 'Margem Liquida'],             extractRegex: />\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'margemBruta',   anchors: ['Margem Bruta'],                                 extractRegex: />\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'evEbitda',      anchors: ['EV/EBITDA'],                                    extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pEbit',         anchors: ['P/EBIT'],                                       extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'psr',           anchors: ['PSR'],                                          extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pAtivo',        anchors: ['P/Ativo'],                                      extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pCapGiro',      anchors: ['P/Cap. Giro', 'P/Capital de Giro'],             extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'dividaLiquidaEbitda', anchors: ['Dív. Líq. / EBITDA', 'Divida Liquida / EBITDA'], extractRegex: />\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day'], extractRegex: />\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'precoAtual',    anchors: ['Preço Atual', 'Cotação', 'cotacao'],            extractRegex: /_card-body[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
+    { name: 'dividendYield', anchors: ['Dividend Yield', 'DY', 'Yield'],               extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</,      formatter: COMMON_FORMATTERS.pct },
+    { name: 'pl',            anchors: ['P/L', 'P/Lucro', 'Preço/Lucro'],               extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pvp',           anchors: ['P/VP', 'P/Valor Patrimonial'],                  extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'vpa',           anchors: ['VPA', 'Valor Patrimonial por Ação'],            extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'lpa',           anchors: ['LPA', 'Lucro por Ação'],                        extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'roe',           anchors: ['ROE', 'Retorno sobre Patrimônio'],              extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'roic',          anchors: ['ROIC'],                                          extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'margemLiquida', anchors: ['Margem Líquida', 'Margem Liquida'],             extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'margemBruta',   anchors: ['Margem Bruta'],                                 extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'evEbitda',      anchors: ['EV/EBITDA'],                                    extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pEbit',         anchors: ['P/EBIT'],                                       extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'psr',           anchors: ['PSR'],                                          extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pAtivo',        anchors: ['P/Ativo'],                                      extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pCapGiro',      anchors: ['P/Cap. Giro', 'P/Capital de Giro'],             extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'dividaLiquidaEbitda', anchors: ['Dív. Líq. / EBITDA', 'Divida Liquida / EBITDA'], extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
+    { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day'], extractRegex: /_card-body[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'sector',        anchors: ['Setor'],                                        extractRegex: /_card-body[\s\S]*?>\s*([\w\s&]+)\s*</ },
+    { name: 'subSector',     anchors: ['Subsetor'],                                     extractRegex: /_card-body[\s\S]*?>\s*([\w\s&]+)\s*</ },
+    { name: 'about',         anchors: ['Sobre a Empresa', 'Descrição'],                 extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
 
@@ -484,15 +494,17 @@ export const fiiTemplate: ExtractorTemplate<FIIData> = {
   name: 'B3_FII',
   schema: FIISchema,
   rules: [
-    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: />\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: />\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: />\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'valorPatrimonial',  anchors: ['Valor Patrimonial', 'VP/Cota'],         extractRegex: />\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: />\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'ultimoRendimento',  anchors: ['Último Rendimento', 'Rendimento'],      extractRegex: />\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'vacanciaFisica',    anchors: ['Vacância Física', 'Vacância'],          extractRegex: />\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: />\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: />\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'valorPatrimonial',  anchors: ['Valor Patrimonial', 'VP/Cota'],         extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
+    { name: 'ultimoRendimento',  anchors: ['Último Rendimento', 'Rendimento'],      extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'vacanciaFisica',    anchors: ['Vacância Física', 'Vacância'],          extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
+    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: /_card-body[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'sector',            anchors: ['Segmento'],                             extractRegex: /_card-body[\s\S]*?>\s*([\w\s&]+)\s*</ },
+    { name: 'about',             anchors: ['Sobre o Fundo', 'Descrição'],           extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
 
@@ -501,12 +513,13 @@ export const etfTemplate: ExtractorTemplate<ETFData> = {
   name: 'B3_ETF',
   schema: ETFSchema,
   rules: [
-    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: />\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: />\s*([\d,.]+\s*%?)\s*</,      formatter: COMMON_FORMATTERS.pct },
-    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: />\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: />\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa Admin'],  extractRegex: />\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: />\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
+    { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa Admin'],  extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: /_card-body[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'about',             anchors: ['Sobre o ETF', 'Descrição'],             extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
 
@@ -536,6 +549,8 @@ interface YahooQuoteData {
   epsTrailingTwelveMonths?: number;
   trailingAnnualDividendYield?: number;
   marketCap?: number;
+  longName?: string;
+  shortName?: string;
 }
 
 interface YahooFundamentalsData {
@@ -554,21 +569,6 @@ interface YahooFundamentalsData {
   pegRatio?: number;
 }
 
-async function fetchJson(url: string, timeoutMs: number): Promise<any> {
-  const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal:  ctrl.signal,
-      headers: { 'Accept': 'application/json', 'User-Agent': getRandomAgent() },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
   for (const symbol of symbols) {
@@ -585,6 +585,8 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
         epsTrailingTwelveMonths:     quote.epsTrailingTwelveMonths,
         trailingAnnualDividendYield: quote.trailingAnnualDividendYield,
         marketCap:                   quote.marketCap,
+        longName:                    quote.longName,
+        shortName:                   quote.shortName,
       };
     } catch (e) { 
       console.warn(`[YAHOO] Erro ao buscar quote para ${symbol}:`, (e as Error).message);
@@ -598,7 +600,7 @@ async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<Ya
   const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
   for (const symbol of symbols) {
     try {
-      const result = await yahooFinance.quoteSummary(symbol, {
+      const result = await (yahooFinance as any).quoteSummary(symbol, {
         modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
       });
       
@@ -925,7 +927,7 @@ export class NexusEngine {
     try {
       // Como não temos uma API direta de ranking, vamos buscar os top ativos do Yahoo Finance
       // ou simular baseado em uma lista pré-definida de ativos populares se a busca falhar.
-      const popularTickers: Record<string, string[]> = {
+      const popularTickers: any = {
         ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3'],
         FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11'],
         BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34'],
@@ -960,38 +962,38 @@ export class NexusEngine {
       let sorted = [...filteredResults];
       if (category.toLowerCase().includes('dividend') || category.toLowerCase().includes('yield')) {
         sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw.dividendYield);
-          const v2 = safeParse(b.raw.dividendYield);
+          const v1 = safeParse(a.raw?.dividendYield);
+          const v2 = safeParse(b.raw?.dividendYield);
           return v2 - v1;
         });
       } else if (category.toLowerCase().includes('pl') || category.toLowerCase().includes('baratas')) {
         sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw.pl) || 999;
-          const v2 = safeParse(b.raw.pl) || 999;
+          const v1 = safeParse(a.raw?.pl) || 999;
+          const v2 = safeParse(b.raw?.pl) || 999;
           return v1 - v2;
         });
       } else if (category.toLowerCase().includes('altas') || category.toLowerCase().includes('gainers')) {
         sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw.variacaoDay);
-          const v2 = safeParse(b.raw.variacaoDay);
+          const v1 = safeParse(a.raw?.variacaoDay);
+          const v2 = safeParse(b.raw?.variacaoDay);
           return v2 - v1;
         });
       } else if (category.toLowerCase().includes('roe')) {
         sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw.roe);
-          const v2 = safeParse(b.raw.roe);
+          const v1 = safeParse(a.raw?.roe);
+          const v2 = safeParse(b.raw?.roe);
           return v2 - v1;
         });
       } else if (category.toLowerCase().includes('margem')) {
         sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw.margemLiquida);
-          const v2 = safeParse(b.raw.margemLiquida);
+          const v1 = safeParse(a.raw?.margemLiquida);
+          const v2 = safeParse(b.raw?.margemLiquida);
           return v2 - v1;
         });
       } else if (category.toLowerCase().includes('pvp')) {
         sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw.pvp) || 999;
-          const v2 = safeParse(b.raw.pvp) || 999;
+          const v1 = safeParse(a.raw?.pvp) || 999;
+          const v2 = safeParse(b.raw?.pvp) || 999;
           return v1 - v2;
         });
       }
@@ -1031,11 +1033,13 @@ export class NexusEngine {
       let peers = sectorPeers[clean] || [];
       
       if (peers.length === 0) {
-        const popular: Record<ExtendedAssetType, string[]> = {
+        const popular: any = {
           ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4'],
           FII: ['HGLG11', 'MXRF11', 'KNRI11', 'XPLG11', 'VISC11'],
           BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34'],
-          ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11']
+          ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'],
+          STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA'],
+          CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD']
         };
         peers = popular[type] || popular.ACAO;
       }
@@ -1079,11 +1083,13 @@ export class NexusEngine {
    * Executa um filtro (screener) em uma lista de ativos.
    */
   static async screener(filters: any, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
-    const popularTickers: Record<ExtendedAssetType, string[]> = {
-      ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 'B3SA3', 'HAPV3', 'GGBR4', 'ITSA4', 'SUZB3', 'JBSS3', 'RAIL3', 'CSAN3', 'VIBRA3', 'EQTL3'],
-      FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 'BCFF11', 'BRCR11', 'HGBS11', 'JSRE11', 'VILG11', 'RBRP11'],
-      BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'NFLX34', 'DISB34', 'PYPL34'],
-      ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'FIND11', 'MATB11']
+    const popularTickers: any = {
+      ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 'B3SA3', 'HAPV3', 'GGBR4', 'ITSA4', 'SUZB3', 'JBSS3', 'RAIL3', 'CSAN3', 'VIBRA3', 'EQTL3', 'LREN3', 'PRIO3', 'GOAU4', 'CPLE6', 'CMIG4', 'SANB11', 'BPAC11', 'KLBN11', 'TAEE11', 'TRPL4'],
+      FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 'BCFF11', 'BRCR11', 'HGBS11', 'JSRE11', 'VILG11', 'RBRP11', 'KNIP11', 'KNCR11', 'HGRU11', 'PVBI11', 'LVBI11'],
+      BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'NFLX34', 'DISB34', 'PYPL34', 'BABA34', 'NIKE34', 'JNJB34', 'PGCO34', 'VIVT34'],
+      ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'FIND11', 'MATB11', 'GOVE11', 'XFIX11', 'GOLD11', 'SPXI11'],
+      STOCK: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'BRK-B', 'V', 'JNJ', 'WMT', 'PG', 'MA', 'HD', 'DIS'],
+      CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'AVAX-USD', 'DOT-USD', 'DOGE-USD', 'LINK-USD']
     };
 
     const tickers = popularTickers[type] || popularTickers.ACAO;
@@ -1192,17 +1198,18 @@ export class NexusEngine {
     };
 
     if (quote) {
-      fill('precoAtual',    quote.regularMarketPrice);
-      fill('variacaoDay',   quote.regularMarketChangePercent != null
-        ? quote.regularMarketChangePercent.toFixed(2) + '%' : undefined);
-      fill('pl',            quote.trailingPE);
-      fill('pvp',           quote.priceToBook);
-      fill('vpa',           quote.bookValue);
-      fill('lpa',           quote.epsTrailingTwelveMonths);
-      fill('dividendYield', quote.trailingAnnualDividendYield != null
-        ? (quote.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
-      fill('marketCap',     quote.marketCap);
-      fill('name',          quote.longName || quote.shortName);
+      const q = quote as any;
+      fill('precoAtual',    q.regularMarketPrice);
+      fill('variacaoDay',   q.regularMarketChangePercent != null
+        ? q.regularMarketChangePercent.toFixed(2) + '%' : undefined);
+      fill('pl',            q.trailingPE);
+      fill('pvp',           q.priceToBook);
+      fill('vpa',           q.bookValue);
+      fill('lpa',           q.epsTrailingTwelveMonths);
+      fill('dividendYield', q.trailingAnnualDividendYield != null
+        ? (q.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
+      fill('marketCap',     q.marketCap);
+      fill('name',          q.longName || q.shortName);
     }
     if (fund) {
       fill('margemLiquida',  fund.profitMargins    != null ? (fund.profitMargins    * 100).toFixed(2) + '%' : undefined);
@@ -1253,7 +1260,7 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        const result = await yahooFinance.chart(symbol, {
+        const result = await (yahooFinance as any).chart(symbol, {
           period1: range, // yahoo-finance2 handles '1y', '1mo', etc.
           interval: interval as any,
         });
@@ -1282,7 +1289,7 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        const result = await yahooFinance.chart(symbol, {
+        const result = await (yahooFinance as any).chart(symbol, {
           period1: '5y',
           interval: '1mo',
           events: 'div',
@@ -1305,7 +1312,7 @@ export class NexusEngine {
 
   static async searchTicker(query: string): Promise<any[]> {
     try {
-      const result = await yahooFinance.search(query, {
+      const result = await (yahooFinance as any).search(query, {
         quotesCount: 10,
         newsCount: 0
       });

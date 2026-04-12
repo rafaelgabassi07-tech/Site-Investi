@@ -47,9 +47,24 @@ export default function Asset() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-        <p className="text-slate-400 font-medium animate-pulse">Carregando inteligência de mercado para {ticker}...</p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 max-w-5xl mx-auto">
+        <div className="relative">
+          <div className="w-24 h-24 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Zap className="w-8 h-8 text-blue-500 animate-pulse" />
+          </div>
+        </div>
+        <div className="text-center space-y-3">
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter animate-pulse">Analisando {ticker}</h2>
+          <p className="text-slate-400 font-medium max-w-xs mx-auto">Estamos processando indicadores fundamentalistas e dados históricos em tempo real.</p>
+        </div>
+        
+        {/* Skeleton Preview */}
+        <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 opacity-20">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="h-32 bg-slate-800 rounded-2xl animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
