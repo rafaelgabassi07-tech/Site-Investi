@@ -62,7 +62,7 @@ export default function Menu() {
   return (
     <div className="space-y-8 pb-24">
       <div className="pt-6 px-4 md:px-0">
-        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">Minha Conta</h2>
+        <h2 className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">Minha Conta</h2>
         
         <div className="flex items-center gap-4 mb-8 bg-white/5 p-4 rounded-3xl border border-white/10">
           <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-blue-500/20">
@@ -77,7 +77,7 @@ export default function Menu() {
       </div>
 
       <div className="px-4 md:px-0">
-        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">Ferramentas</h2>
+        <h2 className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">Ferramentas</h2>
         <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
           {ferramentas.map((item, idx) => (
             <Link key={idx} to={item.to} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group">
@@ -94,7 +94,7 @@ export default function Menu() {
       </div>
 
       <div className="px-4 md:px-0">
-        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">App</h2>
+        <h2 className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-4 ml-2">App</h2>
         <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
           {isInstallable && (
             <button 
@@ -120,7 +120,7 @@ export default function Menu() {
               </div>
               <div className="flex items-center gap-3">
                 {item.badge && (
-                  <span className="px-2 py-0.5 bg-pink-500 text-white text-[10px] font-bold rounded-full">
+                  <span className="px-2 py-0.5 bg-pink-500 text-white text-xxs font-bold rounded-full">
                     {item.badge}
                   </span>
                 )}

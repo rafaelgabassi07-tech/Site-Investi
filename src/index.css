@@ -10,9 +10,20 @@
   --color-nexus-blue: #2563eb;
   --color-nexus-cyan: #06b6d4;
   --color-nexus-emerald: #10b981;
+  
+  --text-xxs: 0.625rem; /* 10px */
+  --text-tiny: 0.5rem; /* 8px */
 }
 
 @layer base {
+  html {
+    font-size: 15px; /* Base for mobile */
+  }
+  @media (min-width: 768px) {
+    html {
+      font-size: 16px; /* Base for desktop */
+    }
+  }
   :root {
     --background: #020617;
     --foreground: #f8fafc;
@@ -101,4 +112,16 @@
 
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .section-spacing {
+    @apply py-6 md:py-12 lg:py-16;
+  }
+  .element-spacing {
+    @apply my-3 md:my-6;
+  }
 }

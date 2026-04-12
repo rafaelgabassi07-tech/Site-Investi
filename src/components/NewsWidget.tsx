@@ -23,7 +23,7 @@ export function NewsWidget() {
     return (
       <div className="card p-8 flex flex-col items-center justify-center min-h-[400px] bg-white/5 border border-white/10 rounded-3xl">
         <div className="w-8 h-8 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 font-black uppercase tracking-widest text-[10px]">Carregando Notícias...</p>
+        <p className="text-slate-500 font-black uppercase tracking-widest text-xxs">Carregando Notícias...</p>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export function NewsWidget() {
               </div>
               
               <div className="flex-1">
-                <span className="inline-block px-3 py-1 bg-slate-800 text-slate-300 text-[10px] font-bold uppercase tracking-wider rounded-lg mb-2">
+                <span className="inline-block px-3 py-1 bg-slate-800 text-slate-300 text-xxs font-bold uppercase tracking-wider rounded-lg mb-2">
                   {displaySource}
                 </span>
                 <h3 className="text-base font-medium text-slate-200 leading-snug line-clamp-2 group-hover:text-blue-400 transition-colors">

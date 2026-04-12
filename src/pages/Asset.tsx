@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper, Building2, Wallet, BarChart3, ShieldCheck, Zap } from 'lucide-react';
 import { AssetIcon } from '../components/ui/AssetIcon';
@@ -107,7 +107,7 @@ export default function Asset() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-white tracking-tight">{assetData.ticker}</h1>
-                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded border border-blue-500/20">Ação</span>
+                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xxs font-black uppercase tracking-widest rounded border border-blue-500/20">Ação</span>
               </div>
               <p className="text-sm text-slate-400 font-medium">{results.name || 'Empresa'}</p>
             </div>
@@ -126,7 +126,7 @@ export default function Asset() {
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
               <div>
-                <div className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Cotação Atual</div>
+                <div className="text-xxs font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Cotação Atual</div>
                 <div className="flex items-baseline gap-3">
                   <span className="text-5xl font-bold text-white tracking-tighter">
                     R$ {typeof results.precoAtual === 'number' ? results.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : results.precoAtual || '0,00'}
@@ -214,10 +214,10 @@ export default function Asset() {
                   <div className={`w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors`}>
                     <ind.icon size={16} />
                   </div>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{ind.label}</span>
+                  <span className="text-xxs font-black text-slate-500 uppercase tracking-widest">{ind.label}</span>
                 </div>
                 <div className="text-xl font-bold text-white tracking-tight mb-1">{ind.value}</div>
-                <div className="text-[9px] font-medium text-slate-600 group-hover:text-slate-400 transition-colors">{ind.desc}</div>
+                <div className="text-tiny font-medium text-slate-600 group-hover:text-slate-400 transition-colors">{ind.desc}</div>
               </motion.div>
             ))}
           </div>
@@ -236,11 +236,11 @@ export default function Asset() {
             
             <div className="grid grid-cols-2 gap-8 mt-8 pt-8 border-t border-slate-800">
               <div>
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Setor</div>
+                <div className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-1">Setor</div>
                 <div className="text-sm font-bold text-white">{results.sector || 'N/A'}</div>
               </div>
               <div>
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Subsetor</div>
+                <div className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-1">Subsetor</div>
                 <div className="text-sm font-bold text-white">{results.subSector || 'N/A'}</div>
               </div>
             </div>
@@ -300,7 +300,7 @@ export default function Asset() {
             </div>
             
             <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
-              <p className="text-[10px] text-slate-500 font-bold leading-relaxed text-center uppercase tracking-wider">
+              <p className="text-xxs text-slate-500 font-bold leading-relaxed text-center uppercase tracking-wider">
                 Análise baseada em fundamentos clássicos de Buy & Hold.
               </p>
             </div>
@@ -322,9 +322,9 @@ export default function Asset() {
                   <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/20 border border-slate-800/50">
                     <div>
                       <div className="text-sm font-bold text-white">R$ {div.amount.toFixed(3)}</div>
-                      <div className="text-[10px] text-slate-500 font-black uppercase mt-0.5">{new Date(div.date).toLocaleDateString('pt-BR')}</div>
+                      <div className="text-xxs text-slate-500 font-black uppercase mt-0.5">{new Date(div.date).toLocaleDateString('pt-BR')}</div>
                     </div>
-                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[9px] font-black uppercase rounded">Pago</span>
+                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-tiny font-black uppercase rounded">Pago</span>
                   </div>
                 ))}
               </div>
@@ -352,8 +352,8 @@ export default function Asset() {
                   >
                     <h3 className="text-xs font-bold text-slate-300 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">{item.title}</h3>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{item.source || 'Nexus'}</span>
-                      <span className="text-[9px] font-bold text-slate-600">{new Date(item.pubDate).toLocaleDateString('pt-BR')}</span>
+                      <span className="text-tiny font-black text-blue-500 uppercase tracking-widest">{item.source || 'Nexus'}</span>
+                      <span className="text-tiny font-bold text-slate-600">{new Date(item.pubDate).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </a>
                 ))}
@@ -388,7 +388,7 @@ export default function Asset() {
           <div className="overflow-x-auto no-scrollbar -mx-8 px-8">
             <table className="w-full text-left border-separate border-spacing-y-2">
               <thead>
-                <tr className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                <tr className="text-xxs font-black text-slate-500 uppercase tracking-[0.2em]">
                   <th className="pb-4 pl-4">Ativo</th>
                   <th className="pb-4 text-right">P/L</th>
                   <th className="pb-4 text-right">P/VP</th>
@@ -412,7 +412,7 @@ export default function Asset() {
                           <AssetIcon assetType="ACAO" ticker={peer.ticker} className="w-full h-full" />
                         </div>
                         <span className={`font-bold ${peer.current ? 'text-blue-400' : 'text-white'}`}>{peer.ticker}</span>
-                        {peer.current && <span className="text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded uppercase tracking-widest">Atual</span>}
+                        {peer.current && <span className="text-tiny font-black bg-blue-500 text-white px-1.5 py-0.5 rounded uppercase tracking-widest">Atual</span>}
                       </div>
                     </td>
                     <td className="py-4 text-right text-sm text-slate-300 font-mono font-bold border-y border-transparent group-hover:border-slate-700">{peer.pl}</td>
@@ -431,8 +431,8 @@ export default function Asset() {
         <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-3xl flex items-start gap-4">
           <AlertCircle size={20} className="text-slate-600 shrink-0 mt-1" />
           <div>
-            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Aviso Legal</h4>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+            <h4 className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Aviso Legal</h4>
+            <p className="text-tiny text-slate-500 leading-relaxed font-medium">
               As informações apresentadas são obtidas de fontes públicas e podem conter atrasos ou imprecisões. Este conteúdo tem caráter meramente informativo e não constitui recomendação de compra, venda ou manutenção de ativos. O investimento em renda variável envolve riscos e rentabilidade passada não é garantia de rentabilidade futura.
             </p>
           </div>

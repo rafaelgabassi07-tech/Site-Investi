@@ -103,7 +103,7 @@ export default function Dividends() {
                   >
                     <div className="flex items-center gap-5">
                       <div className="w-14 h-14 bg-slate-800/50 rounded-xl flex flex-col items-center justify-center border border-slate-800 group-hover:border-emerald-500/30 transition-colors">
-                        <span className="text-[10px] font-bold text-slate-500">{month}</span>
+                        <span className="text-xxs font-bold text-slate-500">{month}</span>
                         <span className="text-xl font-bold text-white">{day}</span>
                       </div>
                       <div>
@@ -111,7 +111,7 @@ export default function Dividends() {
                           {item.ticker}
                         </div>
                         <div className="flex items-center gap-3 mt-1.5">
-                          <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-md uppercase">
+                          <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-xxs font-bold rounded-md uppercase">
                             Provento
                           </span>
                           <span className="text-xs text-slate-500 font-medium">Data Ex: {date.toLocaleDateString('pt-BR')}</span>
@@ -120,7 +120,7 @@ export default function Dividends() {
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-white text-lg">R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                      <div className="text-[10px] text-slate-500 font-bold uppercase mt-1">Por Ação</div>
+                      <div className="text-xxs text-slate-500 font-bold uppercase mt-1">Por Ação</div>
                     </div>
                   </motion.div>
                 );
@@ -152,7 +152,7 @@ export default function Dividends() {
               </div>
               
               <div className="pt-6 border-t border-slate-800/50">
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                <p className="text-xxs text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
                   Os valores acima são baseados no histórico de proventos dos ativos selecionados.
                 </p>
               </div>

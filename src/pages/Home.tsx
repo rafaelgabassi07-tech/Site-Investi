@@ -82,7 +82,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="space-y-24 pb-32">
+    <div className="space-y-24 pb-32 overflow-hidden">
       {/* Market Marquee */}
       <div className="fixed top-20 left-0 right-0 z-40">
         <MarketMarquee />
@@ -113,7 +113,7 @@ export default function Home() {
             className="relative max-w-2xl mx-auto"
           >
             <div className="absolute inset-0 bg-blue-500/20 blur-[100px] -z-10" />
-            <div className="flex items-center gap-3 p-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl focus-within:border-blue-500/50 transition-all">
+            <div className="flex items-center gap-3 p-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl focus-within:border-blue-500/50 transition-all w-full">
               <div className="pl-4 text-slate-500">
                 <Search size={24} />
               </div>
@@ -127,14 +127,14 @@ export default function Home() {
                   }
                 }}
               />
-              <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20">
+              <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 shrink-0">
                 Pesquisar
               </button>
             </div>
             
             {/* Most Searched Tags */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mr-2">Mais buscados:</span>
+              <span className="text-xxs font-bold text-slate-500 uppercase tracking-widest mr-2">Mais buscados:</span>
               {mostSearched.map((asset) => (
                 <Link 
                   key={asset.ticker} 
@@ -174,7 +174,7 @@ export default function Home() {
                         <span className="text-xl font-black text-white tracking-tighter">
                           {data?.price || '---'}
                         </span>
-                        <span className={`text-[10px] font-black ${data?.change?.includes('+') ? 'text-emerald-400' : 'text-red-400'} bg-white/5 px-2 py-0.5 rounded-md`}>
+                        <span className={`text-xxs font-black ${data?.change?.includes('+') ? 'text-emerald-400' : 'text-red-400'} bg-white/5 px-2 py-0.5 rounded-md`}>
                           {data?.change || '0.00%'}
                         </span>
                       </>
@@ -336,7 +336,7 @@ export default function Home() {
                 ) : topGainers.map((asset) => (
                   <Link key={asset.ticker} to={`/asset/${asset.ticker}`} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-800/50 transition-all border border-transparent hover:border-slate-700 group">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 group-hover:text-white transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xxs font-bold text-slate-400 group-hover:text-white transition-colors">
                         {asset.ticker.substring(0, 2)}
                       </div>
                       <span className="font-bold text-slate-200 group-hover:text-white">{asset.ticker}</span>

@@ -53,7 +53,7 @@ export default function News() {
         description={<>Insights e notícias em tempo real via <span className="text-blue-500 font-bold">Invest News Engine</span>.</>}
         icon={Newspaper}
         actions={
-          <div className="px-6 py-3 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+          <div className="px-6 py-3 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-blue-400 text-xxs font-black uppercase tracking-widest flex items-center gap-2">
             <Globe size={14} className="animate-pulse" />
             Global Feed Active
           </div>
@@ -112,7 +112,7 @@ export default function News() {
                     referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-6 left-6 z-20">
-                    <span className="px-4 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl shadow-[0_10px_30px_rgba(37,99,235,0.4)]">
+                    <span className="px-4 py-1.5 bg-blue-600 text-white text-tiny font-black uppercase tracking-[0.2em] rounded-xl shadow-[0_10px_30px_rgba(37,99,235,0.4)]">
                       {displaySource}
                     </span>
                   </div>
@@ -122,7 +122,7 @@ export default function News() {
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
                   <Newspaper size={64} className="text-slate-800" />
                   <div className="absolute top-6 left-6 z-20">
-                    <span className="px-4 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl shadow-[0_10px_30px_rgba(37,99,235,0.4)]">
+                    <span className="px-4 py-1.5 bg-blue-600 text-white text-tiny font-black uppercase tracking-[0.2em] rounded-xl shadow-[0_10px_30px_rgba(37,99,235,0.4)]">
                       {displaySource}
                     </span>
                   </div>
@@ -130,7 +130,7 @@ export default function News() {
               )}
               
               <div className="p-6 md:p-10 flex-1 flex flex-col">
-                <div className="flex items-center gap-3 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4 md:mb-6">
+                <div className="flex items-center gap-3 text-slate-500 text-xxs font-black uppercase tracking-[0.2em] mb-4 md:mb-6">
                   <Clock size={14} className="text-blue-500" />
                   {formatDistanceToNow(displayDate, { addSuffix: true, locale: ptBR })}
                 </div>
@@ -142,7 +142,7 @@ export default function News() {
                 <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Zap size={14} className="text-blue-500" />
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] group-hover:text-white transition-colors duration-500">Ler Reportagem</span>
+                    <span className="text-xxs font-black text-slate-500 uppercase tracking-[0.2em] group-hover:text-white transition-colors duration-500">Ler Reportagem</span>
                   </div>
                   <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 group-hover:shadow-[0_10px_30px_rgba(37,99,235,0.3)] group-hover:scale-110">
                     <ArrowUpRight size={20} />

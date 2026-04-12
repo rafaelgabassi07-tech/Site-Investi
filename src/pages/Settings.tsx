@@ -28,7 +28,7 @@ export default function Settings() {
           ].map((item, idx) => (
             <button 
               key={idx}
-              className={`flex-shrink-0 lg:w-full flex items-center justify-between px-6 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-500 group ${
+              className={`flex-shrink-0 lg:w-full flex items-center justify-between px-6 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xxs transition-all duration-500 group ${
                 item.active 
                   ? 'bg-blue-600 text-white shadow-[0_10px_30px_rgba(37,99,235,0.3)]' 
                   : 'text-slate-500 hover:bg-white/5 hover:text-white'
@@ -60,7 +60,7 @@ export default function Settings() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-3">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Nome de Exibição</label>
+                <label className="block text-xxs font-black text-slate-500 uppercase tracking-[0.2em]">Nome de Exibição</label>
                 <div className="relative group">
                   <input
                     type="text"
@@ -74,7 +74,7 @@ export default function Settings() {
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">E-mail de Acesso</label>
+                <label className="block text-xxs font-black text-slate-500 uppercase tracking-[0.2em]">E-mail de Acesso</label>
                 <div className="relative group">
                   <input
                     type="email"
@@ -127,7 +127,7 @@ export default function Settings() {
                     </div>
                     <div>
                       <p className="text-sm md:text-base font-black text-white uppercase tracking-tight">{pref.label}</p>
-                      <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">{pref.desc}</p>
+                      <p className="text-[9px] md:text-tiny text-slate-500 font-bold uppercase tracking-widest mt-2">{pref.desc}</p>
                     </div>
                   </div>
                   <div className={`w-14 h-7 md:w-16 md:h-8 rounded-full relative cursor-pointer border transition-all duration-500 flex-shrink-0 ${

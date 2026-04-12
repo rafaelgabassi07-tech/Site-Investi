@@ -66,7 +66,7 @@ export default function RecommendedPortfolios() {
                 <portfolio.icon size={28} className={`text-${portfolio.color}-500`} />
               </div>
               <div className="flex gap-2">
-                <span className="px-3 py-1 bg-slate-800 rounded-lg text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-700">
+                <span className="px-3 py-1 bg-slate-800 rounded-lg text-xxs font-bold text-slate-400 uppercase tracking-widest border border-slate-700">
                   Risco: {portfolio.risk}
                 </span>
               </div>
@@ -76,10 +76,10 @@ export default function RecommendedPortfolios() {
             <p className="text-sm text-slate-400 mb-8 leading-relaxed font-medium">{portfolio.description}</p>
 
             <div className="space-y-4 mb-8">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Principais Ativos</p>
+              <p className="text-xxs font-bold text-slate-500 uppercase tracking-[0.2em]">Principais Ativos</p>
               <div className="flex flex-wrap gap-2">
                 {portfolio.assets.map(asset => (
-                  <span key={asset} className="px-2.5 py-1 bg-slate-800/50 border border-slate-800 rounded text-[10px] font-bold text-slate-300">
+                  <span key={asset} className="px-2.5 py-1 bg-slate-800/50 border border-slate-800 rounded text-xxs font-bold text-slate-300">
                     {asset}
                   </span>
                 ))}
@@ -88,7 +88,7 @@ export default function RecommendedPortfolios() {
 
             <div className="flex items-center justify-between pt-8 border-t border-slate-800/50">
               <div>
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Dividend Yield Esperado</div>
+                <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1">Dividend Yield Esperado</div>
                 <div className={`text-2xl font-black text-${portfolio.color}-400`}>{portfolio.yield}</div>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center group-hover:bg-blue-600 transition-all border border-slate-800 group-hover:border-blue-500">

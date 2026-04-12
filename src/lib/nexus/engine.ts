@@ -149,6 +149,8 @@ export async function fetchNews(ticker: string): Promise<NewsItem[]> {
 
 function validarTicker(clean: string): string | null {
   if (!clean) return 'Ticker vazio';
+  const marketTickers = ['^BVSP', '^GSPC', 'USDBRL=X', 'BTC-USD'];
+  if (marketTickers.includes(clean)) return null;
   if (!RE_TICKER.test(clean)) return `Formato inválido: "${clean}"`;
   return null;
 }
@@ -692,8 +694,12 @@ export class NexusEngine {
         });
         clearTimeout(timer);
 
-        if (res.status === 404 || res.status === 410 || res.status === 451) {
+        if (res.status === 404 || res.status === 451) {
           throw new Error(`Critical HTTP ${res.status}`);
+        }
+        if (res.status === 410) {
+          console.warn(`Resource gone (410): ${url}`);
+          return res; // Or handle as needed, e.g., return null or empty response
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res;
@@ -790,6 +796,7 @@ export class NexusEngine {
   ): Promise<{ data: Partial<T>; bytes: number; earlyAbort: boolean }> {
     try {
       const res = await this.fetchWithJitter(source.url, !!source.requireStealth);
+      if (res.status === 410) return { data: {}, bytes: 0, earlyAbort: true };
       if (!res.body) throw new Error('No response body');
 
       const reader  = res.body.getReader();

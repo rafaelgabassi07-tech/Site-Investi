@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Calculator, DollarSign, TrendingUp, ArrowRight, Target, Percent } from 'lucide-react';
+import { Calculator, DollarSign, TrendingUp, ArrowRight, Target, Percent, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -112,19 +112,19 @@ export default function Calculators() {
                 <h3 className="text-lg font-bold text-white mb-4">Parâmetros</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Valor Inicial (R$)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Valor Inicial (R$)</label>
                     <input type="number" value={initialAmount} onChange={(e) => setInitialAmount(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Aporte Mensal (R$)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Aporte Mensal (R$)</label>
                     <input type="number" value={monthlyContribution} onChange={(e) => setMonthlyContribution(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Taxa Anual (%)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Taxa Anual (%)</label>
                     <input type="number" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Período (Anos)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Período (Anos)</label>
                     <input type="number" value={years} onChange={(e) => setYears(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                 </div>
@@ -142,11 +142,11 @@ export default function Calculators() {
                 <h3 className="text-lg font-bold text-white mb-4">Método de Bazin</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Dividendo Médio (5 anos)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Dividendo Médio (5 anos)</label>
                     <input type="number" value={avgDividend} onChange={(e) => setAvgDividend(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Yield Desejado (%)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Yield Desejado (%)</label>
                     <input type="number" value={desiredYield} onChange={(e) => setDesiredYield(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                 </div>
@@ -164,11 +164,11 @@ export default function Calculators() {
                 <h3 className="text-lg font-bold text-white mb-4">Fórmula de Graham</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">VPA (Valor Patrimonial por Ação)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">VPA (Valor Patrimonial por Ação)</label>
                     <input type="number" value={vpa} onChange={(e) => setVpa(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">LPA (Lucro por Ação)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">LPA (Lucro por Ação)</label>
                     <input type="number" value={lpa} onChange={(e) => setLpa(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                 </div>
@@ -186,11 +186,11 @@ export default function Calculators() {
                 <h3 className="text-lg font-bold text-white mb-4">FIRE (Independência)</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Gasto Mensal Desejado (R$)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Gasto Mensal Desejado (R$)</label>
                     <input type="number" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Taxa de Retirada Anual (%)</label>
+                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Taxa de Retirada Anual (%)</label>
                     <input type="number" value={withdrawalRate} onChange={(e) => setWithdrawalRate(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function Calculators() {
                   <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign size={16} className="text-slate-400" />
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Investido</span>
+                      <span className="text-xxs font-black text-slate-500 uppercase tracking-widest">Total Investido</span>
                     </div>
                     <div className="text-2xl font-bold text-white">
                       R$ {compoundResults.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -227,7 +227,7 @@ export default function Calculators() {
                   <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20">
                     <div className="flex items-center gap-2 mb-2">
                       <TrendingUp size={16} className="text-emerald-500" />
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Total em Juros</span>
+                      <span className="text-xxs font-black text-emerald-500 uppercase tracking-widest">Total em Juros</span>
                     </div>
                     <div className="text-2xl font-bold text-emerald-400">
                       R$ {compoundResults.totalInterest.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

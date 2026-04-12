@@ -65,7 +65,7 @@ export default function Portfolio() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="section-spacing space-y-8">
       <PageHeader 
         title="Minha Carteira"
         description={<>Gestão estratégica de ativos e alocação via <span className="text-blue-500 font-bold">Invest Engine</span>.</>}
@@ -84,7 +84,7 @@ export default function Portfolio() {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 element-spacing">
         {menuItems.map((item, idx) => (
           <Link key={idx} to={item.to} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/5 hover:border-white/10">
             <div className="flex items-center gap-4">
@@ -98,9 +98,9 @@ export default function Portfolio() {
         ))}
       </div>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent my-8" />
+      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent element-spacing" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 element-spacing">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

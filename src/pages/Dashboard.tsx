@@ -60,7 +60,7 @@ export default function Dashboard() {
   const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
 
   return (
-    <div className="space-y-10">
+    <div className="section-spacing space-y-8">
       <PageHeader 
         title="Visão Geral"
         description={<>Performance consolidada da sua carteira <span className="text-blue-500 font-semibold">Nexus Invest</span>.</>}
@@ -73,7 +73,7 @@ export default function Dashboard() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 element-spacing">
         <StatCard 
           label="Total Investido"
           value={`R$ ${totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
@@ -103,7 +103,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 element-spacing">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}

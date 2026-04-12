@@ -43,7 +43,7 @@ export default function FixedIncome() {
             {['Todos', 'CDBs', 'LCI/LCA', 'Tesouro Direto', 'Debêntures'].map((type, i) => (
               <button 
                 key={type} 
-                className={`px-6 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-colors ${
+                className={`px-6 py-2.5 rounded-xl border text-xxs font-bold uppercase tracking-widest whitespace-nowrap transition-colors ${
                   i === 0 
                     ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' 
                     : 'bg-slate-800/30 border-slate-800 text-slate-300 hover:bg-slate-800/50'
@@ -66,11 +66,11 @@ export default function FixedIncome() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-widest rounded-md border border-blue-500/20">
+                      <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 text-xxs font-bold uppercase tracking-widest rounded-md border border-blue-500/20">
                         {product.type}
                       </span>
                       {product.taxFree && (
-                        <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-md border border-emerald-500/20">
+                        <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xxs font-bold uppercase tracking-widest rounded-md border border-emerald-500/20">
                           Isento de IR
                         </span>
                       )}
@@ -80,15 +80,15 @@ export default function FixedIncome() {
                   
                   <div className="grid grid-cols-3 sm:flex sm:items-center gap-4 sm:gap-10 bg-slate-900/50 p-5 rounded-2xl border border-slate-800">
                     <div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><TrendingUp size={14} className="text-emerald-500"/> Retorno</div>
+                      <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><TrendingUp size={14} className="text-emerald-500"/> Retorno</div>
                       <div className="text-sm font-black text-emerald-400">{product.rate}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><DollarSign size={14} className="text-blue-500"/> Mínimo</div>
+                      <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><DollarSign size={14} className="text-blue-500"/> Mínimo</div>
                       <div className="text-sm font-black text-white">{product.min}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Calendar size={14} className="text-amber-500"/> Prazo</div>
+                      <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Calendar size={14} className="text-amber-500"/> Prazo</div>
                       <div className="text-sm font-black text-white">{product.maturity}</div>
                     </div>
                   </div>
@@ -115,7 +115,7 @@ export default function FixedIncome() {
                 { label: 'IGP-M (12m)', value: '-3,20%', trend: 'down' },
               ].map((rate, i) => (
                 <div key={i} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{rate.label}</span>
+                  <span className="text-xxs font-bold text-slate-500 uppercase tracking-widest">{rate.label}</span>
                   <span className="text-sm font-black text-white">{rate.value}</span>
                 </div>
               ))}
@@ -129,7 +129,7 @@ export default function FixedIncome() {
             </h4>
             <div className="space-y-6">
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Quanto quer investir?</label>
+                <label className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-3 block">Quanto quer investir?</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">R$</span>
                   <input 
@@ -143,7 +143,7 @@ export default function FixedIncome() {
               </div>
               <button 
                 onClick={handleSimulate}
-                className="w-full py-4 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+                className="w-full py-4 bg-blue-600 text-white rounded-xl text-xxs font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98]"
               >
                 Simular Rendimento
               </button>
@@ -155,15 +155,15 @@ export default function FixedIncome() {
                   className="pt-6 border-t border-slate-800 space-y-4"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Em 1 ano (115% CDI)</span>
+                    <span className="text-xxs font-bold text-slate-500 uppercase">Em 1 ano (115% CDI)</span>
                     <span className="text-sm font-black text-emerald-400">R$ {simulationResult.cdi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Na Poupança</span>
+                    <span className="text-xxs font-bold text-slate-500 uppercase">Na Poupança</span>
                     <span className="text-sm font-black text-slate-400">R$ {simulationResult.poupanca.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                    <p className="text-[10px] text-emerald-400 font-bold text-center uppercase">
+                    <p className="text-xxs text-emerald-400 font-bold text-center uppercase">
                       Você ganha R$ {(simulationResult.cdi - simulationResult.poupanca).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} a mais!
                     </p>
                   </div>

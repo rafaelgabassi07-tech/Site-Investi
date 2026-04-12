@@ -60,9 +60,9 @@ export function MarketMarquee() {
       >
         {doubledStats.map((stat, idx) => (
           <div key={idx} className="flex items-center gap-2 group cursor-default">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{stat.label}</span>
+            <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">{stat.label}</span>
             <span className="text-xs font-mono text-white font-medium">{stat.value}</span>
-            <div className={`flex items-center gap-0.5 text-[10px] font-bold ${stat.color === 'emerald' ? 'text-emerald-500' : 'text-red-500'}`}>
+            <div className={`flex items-center gap-0.5 text-xxs font-bold ${stat.color === 'emerald' ? 'text-emerald-500' : 'text-red-500'}`}>
               {stat.color === 'emerald' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {stat.change}
             </div>
@@ -73,7 +73,7 @@ export function MarketMarquee() {
       {/* Live Indicator Overlay */}
       <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-[#0f172a] via-[#0f172a] to-transparent pl-12 pr-4 flex items-center gap-2 pointer-events-none">
         <div className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${loading ? 'animate-pulse' : ''}`} />
-        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
+        <span className="text-tiny font-black text-emerald-500 uppercase tracking-widest">Live</span>
       </div>
     </div>
   );
