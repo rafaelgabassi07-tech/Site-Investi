@@ -95,7 +95,7 @@ export default function Asset() {
   return (
     <div className="space-y-3 pb-12 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 pt-4 px-4 md:px-0">
+      <div className="flex items-center gap-4 pt-4 px-1 md:px-0">
         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-colors border border-slate-700/50">
           <ArrowLeft size={20} className="text-slate-300" />
         </button>
@@ -118,7 +118,7 @@ export default function Asset() {
         </div>
       </div>
 
-      <div className="px-4 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="px-1 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Left Column: Price & Chart */}
         <div className="lg:col-span-2 space-y-3">
           <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
@@ -364,7 +364,7 @@ export default function Asset() {
       </div>
 
       {/* Comparison Section */}
-      <div className="px-4 md:px-0">
+      <div className="px-1 md:px-0">
         <section className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
@@ -427,7 +427,7 @@ export default function Asset() {
         </section>
       </div>
 
-      <div className="px-4 md:px-0">
+      <div className="px-1 md:px-0">
         <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-3xl flex items-start gap-4">
           <AlertCircle size={20} className="text-slate-600 shrink-0 mt-1" />
           <div>

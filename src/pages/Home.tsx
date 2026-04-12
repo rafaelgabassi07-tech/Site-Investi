@@ -89,7 +89,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="pt-20 md:pt-24 px-4 md:px-0">
+      <section className="pt-20 md:pt-24 px-2 md:px-0">
         <div className="max-w-4xl mx-auto text-center space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -188,7 +188,7 @@ export default function Home() {
       </section>
 
       {/* Market Sentiment & Quick Stats */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3 px-4 md:px-0">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3 px-2 md:px-0">
         <div className="lg:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden group shadow-lg">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
           
@@ -243,7 +243,7 @@ export default function Home() {
       </section>
       
       {/* Rankings Section - Enhanced with Tabs and Real Data */}
-      <section className="space-y-4 px-4 md:px-0">
+      <section className="space-y-4 px-2 md:px-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
@@ -369,7 +369,7 @@ export default function Home() {
       <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
 
       {/* Meus Recursos Section */}
-      <section className="space-y-4 px-4 md:px-0">
+      <section className="space-y-4 px-2 md:px-0">
         <h2 className="text-xl font-bold text-white tracking-tight mb-6">Ferramentas e Recursos</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
