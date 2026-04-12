@@ -74,28 +74,30 @@ export default function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-        <Route path="/" element={user ? <PortfolioProvider><Layout /></PortfolioProvider> : <Navigate to="/login" />}>
-          <Route index element={<Home />} />
-          <Route path="portfolio" element={<Portfolio />} />
-          <Route path="search" element={<Search />} />
-          <Route path="ranking" element={<Ranking />} />
-          <Route path="screener" element={<Screener />} />
-          <Route path="menu" element={<Menu />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="news" element={<News />} />
-          <Route path="dividends" element={<Dividends />} />
-          <Route path="calculators" element={<Calculators />} />
-          <Route path="recommended" element={<RecommendedPortfolios />} />
-          <Route path="asset/:ticker" element={<Asset />} />
-          <Route path="renda-fixa" element={<FixedIncome />} />
-          <Route path="compare" element={<Compare />} />
-          <Route path="rebalance" element={<Rebalance />} />
-          <Route path="taxes" element={<Taxes />} />
-        </Route>
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+          <Route path="/" element={user ? <PortfolioProvider><Layout /></PortfolioProvider> : <Navigate to="/login" />}>
+            <Route index element={<Home />} />
+            <Route path="portfolio" element={<Portfolio />} />
+            <Route path="search" element={<Search />} />
+            <Route path="ranking" element={<Ranking />} />
+            <Route path="screener" element={<Screener />} />
+            <Route path="menu" element={<Menu />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="news" element={<News />} />
+            <Route path="dividends" element={<Dividends />} />
+            <Route path="calculators" element={<Calculators />} />
+            <Route path="recommended" element={<RecommendedPortfolios />} />
+            <Route path="asset/:ticker" element={<Asset />} />
+            <Route path="renda-fixa" element={<FixedIncome />} />
+            <Route path="compare" element={<Compare />} />
+            <Route path="rebalance" element={<Rebalance />} />
+            <Route path="taxes" element={<Taxes />} />
+          </Route>
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }

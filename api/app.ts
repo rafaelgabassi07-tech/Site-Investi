@@ -3,7 +3,6 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
 import { NexusEngine } from "../src/lib/nexus/engine";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -145,6 +144,7 @@ export async function createServer() {
 
     // Vite middleware for development
     if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+      const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: "custom",
@@ -163,11 +163,21 @@ export async function createServer() {
         }
       });
     } else {
+      // In production (including Vercel), we serve static files from 'dist'
+      // Note: On Vercel, the static files are usually served by Vercel's edge, 
+      // but this fallback is useful for other environments or if the rewrite fails.
       const distPath = path.join(process.cwd(), 'dist');
-      app.use(express.static(distPath));
-      app.get('*', (_req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
-      });
+      if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.get('*', (_req, res) => {
+          const indexPath = path.join(distPath, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+          } else {
+            res.status(404).send('Not Found');
+          }
+        });
+      }
     }
 
     return { app, PORT };
