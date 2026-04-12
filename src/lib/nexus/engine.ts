@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import yahooFinance from 'yahoo-finance2';
+import yahooFinanceRaw from 'yahoo-finance2';
+const yahooFinance = yahooFinanceRaw as any;
 
 // ════════════════════════════════════════════════════════════════════════════
 // 1. TIPAGENS E CONTRATOS
