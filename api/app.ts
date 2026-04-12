@@ -109,12 +109,30 @@ export async function createServer() {
       try {
         const results = await Promise.all(tickers.map(t => NexusEngine.fetchAtivo(t, 'ACAO')));
         const stats = results.map((r, idx) => ({
+          ticker: tickers[idx],
           label: idx === 0 ? 'IBOVESPA' : idx === 1 ? 'S&P 500' : idx === 2 ? 'DÓLAR' : 'BITCOIN',
+          price: typeof r.results.precoAtual === 'number' ? r.results.precoAtual.toLocaleString('pt-BR') : r.results.precoAtual,
           value: typeof r.results.precoAtual === 'number' ? r.results.precoAtual.toLocaleString('pt-BR') : r.results.precoAtual,
           change: r.results.variacaoDay || '0.00%',
           color: r.results.variacaoDay?.startsWith('-') ? 'red' : 'emerald'
         }));
         res.json(stats);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+    app.get("/api/download-engine", (_req, res) => {
+      try {
+        const filePath = path.resolve(__dirname, '../src/lib/nexus/engine.ts');
+        if (fs.existsSync(filePath)) {
+          res.setHeader('Content-Type', 'text/typescript');
+          res.setHeader('Content-Disposition', 'attachment; filename=nexus-engine-scraper.ts');
+          const fileStream = fs.createReadStream(filePath);
+          fileStream.pipe(res);
+        } else {
+          res.status(404).json({ error: "Arquivo do motor não encontrado." });
+        }
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
       }

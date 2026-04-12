@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import yahooFinance from 'yahoo-finance2';
 
 // ════════════════════════════════════════════════════════════════════════════
 // 1. TIPAGENS E CONTRATOS
@@ -545,6 +546,12 @@ interface YahooFundamentalsData {
   grossMargins?: number;
   operatingMargins?: number;
   debtToEquity?: number;
+  about?: string;
+  sector?: string;
+  subSector?: string;
+  enterpriseValue?: number;
+  forwardPE?: number;
+  pegRatio?: number;
 }
 
 async function fetchJson(url: string, timeoutMs: number): Promise<any> {
@@ -562,62 +569,65 @@ async function fetchJson(url: string, timeoutMs: number): Promise<any> {
   }
 }
 
-async function yahooQuote(ticker: string, timeoutMs: number): Promise<YahooQuoteData | null> {
+async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
   for (const symbol of symbols) {
     try {
-      const meta = await Promise.any(
-        YAHOO_HOSTS.map(async host => {
-          const json = await fetchJson(
-            `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d&includePrePost=false`,
-            timeoutMs,
-          );
-          const m = json?.chart?.result?.[0]?.meta;
-          if (!m?.regularMarketPrice) throw new Error('Sem meta');
-          return m;
-        })
-      );
-      const prev = meta.chartPreviousClose ?? meta.regularMarketPreviousClose;
+      const quote = await yahooFinance.quote(symbol);
+      if (!quote || !quote.regularMarketPrice) continue;
+      
       return {
-        regularMarketPrice:          meta.regularMarketPrice,
-        regularMarketChangePercent:  prev ? ((meta.regularMarketPrice - prev) / prev) * 100 : undefined,
-        trailingPE:                  meta.trailingPE,
-        priceToBook:                 meta.priceToBook,
-        bookValue:                   meta.bookValue,
-        epsTrailingTwelveMonths:     meta.epsTrailingTwelveMonths,
-        trailingAnnualDividendYield: meta.trailingAnnualDividendYield,
-        marketCap:                   meta.marketCap,
+        regularMarketPrice:          quote.regularMarketPrice,
+        regularMarketChangePercent:  quote.regularMarketChangePercent,
+        trailingPE:                  quote.trailingPE,
+        priceToBook:                 quote.priceToBook,
+        bookValue:                   quote.bookValue,
+        epsTrailingTwelveMonths:     quote.epsTrailingTwelveMonths,
+        trailingAnnualDividendYield: quote.trailingAnnualDividendYield,
+        marketCap:                   quote.marketCap,
       };
-    } catch { continue; }
+    } catch (e) { 
+      console.warn(`[YAHOO] Erro ao buscar quote para ${symbol}:`, (e as Error).message);
+      continue; 
+    }
   }
   return null;
 }
 
-async function yahooFundamentals(ticker: string, timeoutMs: number): Promise<YahooFundamentalsData> {
+async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<YahooFundamentalsData> {
   const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
-  const modules  = 'financialData,defaultKeyStatistics';
   for (const symbol of symbols) {
     try {
-      const json = await Promise.any(
-        YAHOO_HOSTS.map(host =>
-          fetchJson(
-            `https://${host}.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${modules}`,
-            timeoutMs,
-          )
-        )
-      );
-      const fd = json?.quoteSummary?.result?.[0]?.financialData;
-      if (!fd) continue;
+      const result = await yahooFinance.quoteSummary(symbol, {
+        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
+      });
+      
+      const fd = result?.financialData;
+      const ks = result?.defaultKeyStatistics;
+      const ap = result?.assetProfile;
+      
+      if (!fd && !ks && !ap) continue;
+      
       return {
-        profitMargins:    fd.profitMargins?.raw,
-        returnOnEquity:   fd.returnOnEquity?.raw,
-        revenuePerShare:  fd.revenuePerShare?.raw,
-        returnOnAssets:   fd.returnOnAssets?.raw,
-        grossMargins:     fd.grossMargins?.raw,
-        operatingMargins: fd.operatingMargins?.raw,
-        debtToEquity:     fd.debtToEquity?.raw,
+        profitMargins:    fd?.profitMargins,
+        returnOnEquity:   fd?.returnOnEquity,
+        revenuePerShare:  fd?.revenuePerShare,
+        returnOnAssets:   fd?.returnOnAssets,
+        grossMargins:     fd?.grossMargins,
+        operatingMargins: fd?.operatingMargins,
+        debtToEquity:     fd?.debtToEquity,
+        // Novos campos
+        about:            ap?.longBusinessSummary,
+        sector:           ap?.sector,
+        subSector:        ap?.industry,
+        enterpriseValue:  ks?.enterpriseValue,
+        forwardPE:        ks?.forwardPE,
+        pegRatio:         ks?.pegRatio,
       };
-    } catch { continue; }
+    } catch (e) { 
+      console.warn(`[YAHOO] Erro ao buscar fundamentos para ${symbol}:`, (e as Error).message);
+      continue; 
+    }
   }
   return {};
 }
@@ -1191,11 +1201,21 @@ export class NexusEngine {
       fill('lpa',           quote.epsTrailingTwelveMonths);
       fill('dividendYield', quote.trailingAnnualDividendYield != null
         ? (quote.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
+      fill('marketCap',     quote.marketCap);
+      fill('name',          quote.longName || quote.shortName);
     }
     if (fund) {
       fill('margemLiquida',  fund.profitMargins    != null ? (fund.profitMargins    * 100).toFixed(2) + '%' : undefined);
       fill('margemBruta',    fund.grossMargins     != null ? (fund.grossMargins     * 100).toFixed(2) + '%' : undefined);
       fill('roe',            fund.returnOnEquity   != null ? (fund.returnOnEquity   * 100).toFixed(2) + '%' : undefined);
+      fill('roa',            fund.returnOnAssets   != null ? (fund.returnOnAssets   * 100).toFixed(2) + '%' : undefined);
+      fill('dividaLiquidaEbitda', fund.debtToEquity != null ? fund.debtToEquity.toFixed(2) : undefined);
+      fill('about',          fund.about);
+      fill('sector',         fund.sector);
+      fill('subSector',      fund.subSector);
+      fill('enterpriseValue', fund.enterpriseValue);
+      fill('forwardPE',      fund.forwardPE);
+      fill('pegRatio',       fund.pegRatio);
     }
 
     const totalTimeMs = performance.now() - startTime;
@@ -1233,30 +1253,23 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        const json = await Promise.any(
-          YAHOO_HOSTS.map(host =>
-            fetchJson(
-              `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`,
-              this._options.fetchTimeoutMs,
-            )
-          )
-        );
+        const result = await yahooFinance.chart(symbol, {
+          period1: range, // yahoo-finance2 handles '1y', '1mo', etc.
+          interval: interval as any,
+        });
         
-        const result = json?.chart?.result?.[0];
-        if (!result || !result.timestamp || !result.indicators?.quote?.[0]) continue;
+        if (!result || !result.quotes || result.quotes.length === 0) continue;
         
-        const timestamps = result.timestamp;
-        const quote = result.indicators.quote[0];
-        
-        return timestamps.map((ts: number, i: number) => ({
-          date: new Date(ts * 1000).toISOString(),
-          open: quote.open[i],
-          high: quote.high[i],
-          low: quote.low[i],
-          close: quote.close[i],
-          volume: quote.volume[i],
+        return result.quotes.map((q: any) => ({
+          date: q.date.toISOString(),
+          open: q.open,
+          high: q.high,
+          low: q.low,
+          close: q.close,
+          volume: q.volume,
         })).filter((d: any) => d.close !== null && d.close !== undefined);
-      } catch {
+      } catch (e) {
+        console.warn(`[YAHOO] Erro ao buscar histórico para ${symbol}:`, (e as Error).message);
         continue;
       }
     }
@@ -1269,23 +1282,21 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        const json = await Promise.any(
-          YAHOO_HOSTS.map(host =>
-            fetchJson(
-              `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=5y&interval=1mo&events=div&includePrePost=false`,
-              this._options.fetchTimeoutMs,
-            )
-          )
-        );
+        const result = await yahooFinance.chart(symbol, {
+          period1: '5y',
+          interval: '1mo',
+          events: 'div',
+        });
         
-        const events = json?.chart?.result?.[0]?.events?.dividends;
-        if (!events) continue;
+        const events = result?.events?.dividends;
+        if (!events || events.length === 0) continue;
         
-        return Object.values(events).map((d: any) => ({
-          date: new Date(d.date * 1000).toISOString(),
+        return events.map((d: any) => ({
+          date: d.date.toISOString(),
           amount: d.amount,
         })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      } catch {
+      } catch (e) {
+        console.warn(`[YAHOO] Erro ao buscar dividendos para ${symbol}:`, (e as Error).message);
         continue;
       }
     }
@@ -1293,23 +1304,23 @@ export class NexusEngine {
   }
 
   static async searchTicker(query: string): Promise<any[]> {
-    const endpoints = [
-      `https://query2.finance.yahoo.com/v2/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`,
-      `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`,
-    ];
-    for (const url of endpoints) {
-      try {
-        const json = await fetchJson(url, this._options.fetchTimeoutMs);
-        return (json?.quotes ?? []).map((q: any) => ({
-          ...q,
-          ticker: q.symbol,
-          name: q.shortname || q.longname || q.symbol,
-          exchange: q.exchange,
-          type: q.quoteType
-        }));
-      } catch { continue; }
+    try {
+      const result = await yahooFinance.search(query, {
+        quotesCount: 10,
+        newsCount: 0
+      });
+      
+      return (result?.quotes ?? []).map((q: any) => ({
+        ...q,
+        ticker: q.symbol,
+        name: q.shortname || q.longname || q.symbol,
+        exchange: q.exchange,
+        type: q.quoteType
+      }));
+    } catch (e) {
+      console.warn(`[YAHOO] Erro ao buscar ticker para ${query}:`, (e as Error).message);
+      return [];
     }
-    return [];
   }
 
   static async executeBatch<T>(
