@@ -1,4 +1,4 @@
-import { Settings as SettingsIcon, User, Bell, Shield, ChevronRight, Lock, EyeOff, Moon } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, ChevronRight, Lock, EyeOff, Moon, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { motion } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -6,6 +6,29 @@ import { PageHeader } from '../components/ui/PageHeader';
 export default function Settings() {
   const { user } = useAuth();
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
+
+  const handleClearCache = async () => {
+    if (window.confirm('Deseja limpar o cache e recarregar o aplicativo? Isso pode resolver problemas de carregamento.')) {
+      try {
+        // Clear all caches
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        
+        // Unregister all service workers
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+        
+        // Reload page
+        window.location.reload();
+      } catch (error) {
+        console.error('Erro ao limpar cache:', error);
+        alert('Ocorreu um erro ao tentar limpar o cache.');
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
       <PageHeader 
@@ -140,6 +163,38 @@ export default function Settings() {
                   </div>
                 </div>
               ))}
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="card p-6 md:p-8 relative overflow-hidden border-red-500/10"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-[100px] -z-10" />
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-red-600/10 rounded-2xl flex items-center justify-center text-red-500 border border-red-500/20">
+                <RefreshCw size={24} />
+              </div>
+              <h3 className="text-2xl font-black text-white uppercase tracking-tight">Manutenção</h3>
+            </div>
+
+            <div className="p-6 bg-red-500/5 rounded-3xl border border-red-500/10 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="space-y-2">
+                <p className="text-sm font-black text-white uppercase tracking-tight">Limpar Cache do App</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                  Se o aplicativo estiver apresentando erros ou não atualizar, tente limpar o cache local.
+                </p>
+              </div>
+              <button 
+                onClick={handleClearCache}
+                className="px-8 py-4 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 rounded-xl font-black uppercase tracking-widest text-xxs transition-all duration-500 flex items-center gap-3 group"
+              >
+                <Trash2 size={16} className="group-hover:scale-110 transition-transform" />
+                Limpar Cache
+              </button>
             </div>
           </motion.div>
         </div>
