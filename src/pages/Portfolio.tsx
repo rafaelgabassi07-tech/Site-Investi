@@ -343,21 +343,56 @@ export default function Portfolio() {
                   className="space-y-6 flex-1"
                 >
                   <div className="flex items-center justify-between p-5 bg-slate-800/30 rounded-xl border border-slate-800 group hover:border-blue-500/30 transition-all duration-300">
-                    <span className="text-sm font-medium text-slate-400">Ticker Ativo</span>
-                    <span className="text-2xl font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">{assetDetails.ticker}</span>
+                    <div>
+                      <span className="text-sm font-medium text-slate-400 block mb-1">Ticker Ativo</span>
+                      <span className="text-2xl font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">{assetDetails.ticker}</span>
+                    </div>
+                    {assetDetails.results.name && (
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-slate-400 block mb-1">Empresa</span>
+                        <span className="text-lg font-semibold text-slate-200">{assetDetails.results.name}</span>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(assetDetails.results || {}).slice(0, 8).map(([key, value], idx) => (
+                  {assetDetails.results.about && (
+                    <div className="p-5 bg-slate-800/30 rounded-xl border border-slate-800">
+                      <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                        <Info size={16} className="text-blue-400" /> Sobre a Empresa
+                      </h4>
+                      <p className="text-sm text-slate-400 leading-relaxed line-clamp-4 hover:line-clamp-none transition-all">
+                        {assetDetails.results.about}
+                      </p>
+                      <div className="flex gap-4 mt-4 pt-4 border-t border-slate-800/50">
+                        {assetDetails.results.sector && (
+                          <div>
+                            <span className="text-xs text-slate-500 block">Setor</span>
+                            <span className="text-sm text-slate-300">{assetDetails.results.sector}</span>
+                          </div>
+                        )}
+                        {assetDetails.results.subSector && (
+                          <div>
+                            <span className="text-xs text-slate-500 block">Subsetor</span>
+                            <span className="text-sm text-slate-300">{assetDetails.results.subSector}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {Object.entries(assetDetails.results || {})
+                      .filter(([key]) => !['name', 'about', 'sector', 'subSector'].includes(key))
+                      .map(([key, value], idx) => (
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: idx * 0.05 }}
+                        transition={{ delay: idx * 0.02 }}
                         key={key} 
-                        className="p-4 bg-slate-800/30 border border-slate-800 rounded-xl hover:border-slate-700 transition-all duration-300 group"
+                        className="p-3 bg-slate-800/30 border border-slate-800 rounded-xl hover:border-slate-700 transition-all duration-300 group"
                       >
-                        <p className="text-xs font-medium text-slate-400 mb-2 group-hover:text-blue-400 transition-colors">{key}</p>
-                        <p className="text-sm font-semibold text-white">{value as string}</p>
+                        <p className="text-[11px] uppercase tracking-wider font-medium text-slate-500 mb-1 group-hover:text-blue-400 transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
+                        <p className="text-sm font-semibold text-white truncate" title={String(value)}>{value as string}</p>
                       </motion.div>
                     ))}
                   </div>

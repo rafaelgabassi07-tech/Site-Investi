@@ -11,6 +11,7 @@ export default function Ranking() {
   const [selectedType, setSelectedType] = useState('ACAO');
   const [loading, setLoading] = useState(false);
   const [rankingData, setRankingData] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const categories = [
     { title: 'Dividend Yield', icon: DollarSign, color: 'emerald', description: 'Ativos que mais pagam dividendos.' },
@@ -41,6 +42,16 @@ export default function Ranking() {
     }
   };
 
+  const filteredCategories = categories.filter(cat => 
+    cat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cat.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredRankingData = rankingData.filter(item =>
+    item.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-3 pb-12 max-w-7xl mx-auto">
       <AnimatePresence mode="wait">
@@ -59,7 +70,21 @@ export default function Ranking() {
                 icon={Award}
               />
 
-              <div className="flex p-1 bg-slate-900 border border-slate-800 rounded-2xl shadow-inner">
+              <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="relative w-full md:w-64 group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search size={16} className="text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Filtrar rankings..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  />
+                </div>
+
+                <div className="flex p-1 bg-slate-900 border border-slate-800 rounded-2xl shadow-inner">
                 {[
                   { label: 'Ações', value: 'ACAO' },
                   { label: 'FIIs', value: 'FII' },
@@ -80,9 +105,10 @@ export default function Ranking() {
                 ))}
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {categories.map((cat, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filteredCategories.map((cat, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -121,7 +147,10 @@ export default function Ranking() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-6">
                 <button 
-                  onClick={() => setSelectedCategory(null)}
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSearchQuery('');
+                  }}
                   className="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-all border border-slate-700 shadow-sm group"
                 >
                   <ChevronLeft size={24} className="text-slate-400 group-hover:text-white transition-colors" />
@@ -135,9 +164,24 @@ export default function Ranking() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xxs font-black text-slate-400 uppercase tracking-widest">Dados em Tempo Real</span>
+              <div className="flex items-center gap-4">
+                <div className="relative w-full md:w-64 group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search size={16} className="text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Buscar no ranking..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-medium text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xxs font-black text-slate-400 uppercase tracking-widest">Dados em Tempo Real</span>
+                </div>
               </div>
             </div>
 
@@ -152,7 +196,7 @@ export default function Ranking() {
             ) : (
               <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
                 <div className="grid grid-cols-1 divide-y divide-slate-800/50">
-                  {rankingData.map((item, idx) => (
+                  {filteredRankingData.map((item, idx) => (
                     <motion.div
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -195,14 +239,30 @@ export default function Ranking() {
                   ))}
                 </div>
                 
-                {rankingData.length === 0 && (
+                {rankingData.length === 0 ? (
                   <div className="p-20 text-center space-y-4">
                     <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto border border-slate-800">
                       <Search className="text-slate-600" size={24} />
                     </div>
                     <p className="text-slate-500 font-bold text-sm">Nenhum dado encontrado para este ranking.</p>
                   </div>
-                )}
+                ) : filteredRankingData.length === 0 ? (
+                  <div className="p-20 text-center space-y-6">
+                    <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto border border-slate-800">
+                      <Search className="text-slate-600" size={24} />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-slate-400 font-bold text-sm">Nenhum ativo encontrado no ranking para "{searchQuery}"</p>
+                      <p className="text-slate-600 text-xs font-medium">Deseja buscar este ativo em todo o mercado?</p>
+                    </div>
+                    <Link 
+                      to={`/search?q=${encodeURIComponent(searchQuery)}`}
+                      className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-blue-600/20"
+                    >
+                      Buscar em Todo o Mercado <ArrowUpRight size={14} />
+                    </Link>
+                  </div>
+                ) : null}
               </div>
             )}
             

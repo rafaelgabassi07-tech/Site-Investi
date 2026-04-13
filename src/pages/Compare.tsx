@@ -36,9 +36,14 @@ export default function Compare() {
     { label: 'P/VP', key: 'pvp' },
     { label: 'Dividend Yield', key: 'dividendYield' },
     { label: 'ROE', key: 'roe' },
+    { label: 'ROA', key: 'roa' },
     { label: 'VPA', key: 'vpa' },
     { label: 'LPA', key: 'lpa' },
     { label: 'Margem Líquida', key: 'margemLiquida' },
+    { label: 'Margem Bruta', key: 'margemBruta' },
+    { label: 'Dívida/EBITDA', key: 'dividaLiquidaEbitda' },
+    { label: 'PEG Ratio', key: 'pegRatio' },
+    { label: 'Forward P/E', key: 'forwardPE' },
   ];
 
   const compareValues = (val1: any, val2: any, key: string) => {

@@ -1,7 +1,8 @@
 import { useContext } from 'react';
 import { PortfolioContext } from '../contexts/PortfolioContext';
+import { Transaction, PortfolioItem } from '../types';
 
-export type { Transaction, PortfolioItem } from '../contexts/PortfolioContext';
+export type { Transaction, PortfolioItem };
 
 export function usePortfolio() {
   const context = useContext(PortfolioContext);

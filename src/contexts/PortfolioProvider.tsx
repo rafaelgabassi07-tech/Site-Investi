@@ -1,49 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { calculateAdvancedPortfolio, TaxMonth } from '../lib/portfolioCalc';
+import { calculateAdvancedPortfolio } from '../lib/portfolioCalc';
+import { financeService } from '../services/financeService';
 
-export interface Transaction {
-  id: string;
-  ticker: string;
-  type: 'BUY' | 'SELL';
-  assetType: string;
-  quantity: number;
-  price: number;
-  date: string;
-  broker?: string;
-  user_id: string;
-}
-
-export interface PortfolioItem {
-  ticker: string;
-  assetType: string;
-  totalQuantity: number;
-  averagePrice: number;
-  totalInvested: number;
-  currentPrice?: number;
-  currentValue?: number;
-  profit?: number;
-  profitPercentage?: number;
-}
-
-interface PortfolioContextType {
-  transactions: Transaction[];
-  portfolio: PortfolioItem[];
-  taxLedger: Record<string, TaxMonth>;
-  quotaHistory: any[];
-  loading: boolean;
-  refresh: () => Promise<void>;
-}
-
-export const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
-
-export function usePortfolio() {
-  const context = useContext(PortfolioContext);
-  if (context === undefined) {
-    throw new Error('usePortfolio must be used within a PortfolioProvider');
-  }
-  return context;
-}
+import { Transaction, PortfolioItem, TaxMonth } from '../types';
+import { PortfolioContext } from './PortfolioContext';
+import { parseFinanceValue } from '../lib/utils';
 
 export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -56,20 +18,14 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     try {
       const updated = await Promise.all(items.map(async item => {
         try {
-          const res = await fetch(`/api/asset/${item.ticker}?type=${item.assetType}`);
-          if (!res.ok) throw new Error();
-          const data = await res.json();
+          const data = await financeService.getAssetDetails(item.ticker, item.assetType);
           
-          let currentPrice = 0;
           const results = data.results || {};
+          let currentPrice = parseFinanceValue(results.precoAtual);
           
-          if (typeof results.precoAtual === 'number') {
-            currentPrice = results.precoAtual;
-          } else if (typeof results.precoAtual === 'string') {
-            currentPrice = parseFloat(results.precoAtual.replace(',', '.'));
-          } else {
+          if (currentPrice === 0) {
             const val = results['Valor de Mercado'] || results['Preço'] || results['Cotação'];
-            if (val) currentPrice = parseFloat(String(val).replace(',', '.'));
+            if (val) currentPrice = parseFinanceValue(val);
           }
 
           if (currentPrice === 0) currentPrice = item.averagePrice;

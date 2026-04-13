@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import yahooFinanceRaw from 'yahoo-finance2';
-const yahooFinance = yahooFinanceRaw as any;
 
-// ════════════════════════════════════════════════════════════════════════════
+// Instantiate yahooFinance to avoid "Call new YahooFinance() first" error
+const yahooFinance = new (yahooFinanceRaw as any)();
+
 // 1. TIPAGENS E CONTRATOS
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -121,21 +122,39 @@ export function normalizeBRNumber(raw: string): number | string {
   if (limpo.includes('%')) return limpo;
 
   let mult = 1;
-  const ult = limpo[limpo.length - 1];
-  if      (ult === 'K') { mult = 1_000;         limpo = limpo.slice(0, -1); }
-  else if (ult === 'M') { mult = 1_000_000;     limpo = limpo.slice(0, -1); }
-  else if (ult === 'B') { mult = 1_000_000_000; limpo = limpo.slice(0, -1); }
+  if (limpo.endsWith('K')) { mult = 1_000; limpo = limpo.slice(0, -1); }
+  else if (limpo.endsWith('M') || limpo.endsWith('MILHÕES') || limpo.endsWith('MILHOES')) { mult = 1_000_000; limpo = limpo.replace(/M(ILHÕES|ILHOES)?$/, ''); }
+  else if (limpo.endsWith('B') || limpo.endsWith('BILHÕES') || limpo.endsWith('BILHOES')) { mult = 1_000_000_000; limpo = limpo.replace(/B(ILHÕES|ILHOES)?$/, ''); }
 
-  limpo = limpo.replace(RE_MILHAR, '').replace(RE_DECIMAL, '.');
+  limpo = limpo.replace(RE_MILHAR, '').replace(RE_DECIMAL, '.').trim();
   const num = parseFloat(limpo);
   return isNaN(num) ? raw.trim() : num * mult;
 }
 
 export function inferAssetType(ticker: string): ExtendedAssetType {
   const clean = canonicalizeTicker(ticker);
+  if (!clean) return 'ACAO';
+
+  // Crypto detection
+  if (clean.includes('-USD') || clean.includes('-BTC') || clean.includes('-ETH')) return 'CRYPTO';
+  
+  // BDR detection (usually 4 letters + 34/35)
   if (RE_BDR.test(clean)) return 'BDR';
-  if (clean.endsWith('11')) return ETFS_CONHECIDOS.has(clean) ? 'ETF' : 'FII';
+  
+  // FII and ETF detection (ends in 11)
+  if (clean.endsWith('11')) {
+    return ETFS_CONHECIDOS.has(clean) ? 'ETF' : 'FII';
+  }
+  
+  // FII detection (ends in 12)
   if (clean.endsWith('12')) return 'FII';
+  
+  // Brazilian Stocks (4 letters + number 3, 4, 5, 6)
+  if (/^[A-Z]{4}[3-6]$/.test(clean)) return 'ACAO';
+  
+  // US Stocks (1-5 letters, no numbers at the end)
+  if (/^[A-Z]{1,5}$/.test(clean)) return 'STOCK';
+  
   return 'ACAO';
 }
 
@@ -468,25 +487,25 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
   name: 'B3_ACAO',
   schema: B3Schema,
   rules: [
-    { name: 'precoAtual',    anchors: ['Preço Atual', 'Cotação', 'cotacao'],            extractRegex: /_card-body[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield', anchors: ['Dividend Yield', 'DY', 'Yield'],               extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</,      formatter: COMMON_FORMATTERS.pct },
-    { name: 'pl',            anchors: ['P/L', 'P/Lucro', 'Preço/Lucro'],               extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pvp',           anchors: ['P/VP', 'P/Valor Patrimonial'],                  extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'vpa',           anchors: ['VPA', 'Valor Patrimonial por Ação'],            extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'lpa',           anchors: ['LPA', 'Lucro por Ação'],                        extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'roe',           anchors: ['ROE', 'Retorno sobre Patrimônio'],              extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'roic',          anchors: ['ROIC'],                                          extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'margemLiquida', anchors: ['Margem Líquida', 'Margem Liquida'],             extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'margemBruta',   anchors: ['Margem Bruta'],                                 extractRegex: /_card-body[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'evEbitda',      anchors: ['EV/EBITDA'],                                    extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pEbit',         anchors: ['P/EBIT'],                                       extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'psr',           anchors: ['PSR'],                                          extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pAtivo',        anchors: ['P/Ativo'],                                      extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pCapGiro',      anchors: ['P/Cap. Giro', 'P/Capital de Giro'],             extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'dividaLiquidaEbitda', anchors: ['Dív. Líq. / EBITDA', 'Divida Liquida / EBITDA'], extractRegex: /_card-body[\s\S]*?>\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day'], extractRegex: /_card-body[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'sector',        anchors: ['Setor'],                                        extractRegex: /_card-body[\s\S]*?>\s*([\w\s&]+)\s*</ },
-    { name: 'subSector',     anchors: ['Subsetor'],                                     extractRegex: /_card-body[\s\S]*?>\s*([\w\s&]+)\s*</ },
+    { name: 'precoAtual',    anchors: ['Preço Atual', 'Cotação', 'cotacao'],            extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
+    { name: 'dividendYield', anchors: ['Dividend Yield', 'DY', 'Yield'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</,      formatter: COMMON_FORMATTERS.pct },
+    { name: 'pl',            anchors: ['P/L', 'P/Lucro', 'Preço/Lucro'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pvp',           anchors: ['P/VP', 'P/Valor Patrimonial'],                  extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'vpa',           anchors: ['VPA', 'Valor Patrimonial por Ação'],            extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'lpa',           anchors: ['LPA', 'Lucro por Ação'],                        extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'roe',           anchors: ['ROE', 'Retorno sobre Patrimônio'],              extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'roic',          anchors: ['ROIC'],                                          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'margemLiquida', anchors: ['Margem Líquida', 'Margem Liquida'],             extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'margemBruta',   anchors: ['Margem Bruta'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'evEbitda',      anchors: ['EV/EBITDA'],                                    extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pEbit',         anchors: ['P/EBIT'],                                       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'psr',           anchors: ['PSR'],                                          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pAtivo',        anchors: ['P/Ativo'],                                      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'pCapGiro',      anchors: ['P/Cap. Giro', 'P/Capital de Giro'],             extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'dividaLiquidaEbitda', anchors: ['Dív. Líq. / EBITDA', 'Divida Liquida / EBITDA'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
+    { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'sector',        anchors: ['Setor</span>', 'SETOR</span>'],                           extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
+    { name: 'subSector',     anchors: ['Subsetor</span>', 'Segmento</span>', 'SEGMENTO</span>'],       extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',         anchors: ['Sobre a Empresa', 'Descrição'],                 extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
@@ -495,16 +514,16 @@ export const fiiTemplate: ExtractorTemplate<FIIData> = {
   name: 'B3_FII',
   schema: FIISchema,
   rules: [
-    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'valorPatrimonial',  anchors: ['Valor Patrimonial', 'VP/Cota'],         extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'ultimoRendimento',  anchors: ['Último Rendimento', 'Rendimento'],      extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'vacanciaFisica',    anchors: ['Vacância Física', 'Vacância'],          extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: /_card-body[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'sector',            anchors: ['Segmento'],                             extractRegex: /_card-body[\s\S]*?>\s*([\w\s&]+)\s*</ },
+    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação', 'cotacao'],              extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'valorPatrimonial',  anchors: ['Valor Patrimonial', 'VP/Cota', 'VALOR PATRIMONIAL'],         extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i,    formatter: COMMON_FORMATTERS.num },
+    { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'ultimoRendimento',  anchors: ['Último Rendimento', 'Rendimento', 'ÚLTIMO RENDIMENTO'],      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'vacanciaFisica',    anchors: ['Vacância Física', 'Vacância', 'VACÂNCIA'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'variacaoDay',       anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day', 'Variação (12M)'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'sector',            anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Setor</span>', 'SETOR</span>'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',             anchors: ['Sobre o Fundo', 'Descrição'],           extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
@@ -514,12 +533,12 @@ export const etfTemplate: ExtractorTemplate<ETFData> = {
   name: 'B3_ETF',
   schema: ETFSchema,
   rules: [
-    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+[KMB]?)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa Admin'],  extractRegex: /_card-body[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: /_card-body[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa Admin'],  extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'about',             anchors: ['Sobre o ETF', 'Descrição'],             extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
@@ -572,11 +591,20 @@ interface YahooFundamentalsData {
 
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
+  console.log(`[YAHOO] Fetching quote for ${ticker}, trying symbols: ${symbols.join(', ')}`);
   for (const symbol of symbols) {
     try {
       const quote = await yahooFinance.quote(symbol);
-      if (!quote || !quote.regularMarketPrice) continue;
+      if (!quote) {
+        console.log(`[YAHOO] No quote found for ${symbol}`);
+        continue;
+      }
+      if (!quote.regularMarketPrice) {
+        console.log(`[YAHOO] Quote found for ${symbol} but no regularMarketPrice`);
+        continue;
+      }
       
+      console.log(`[YAHOO] Successfully fetched quote for ${symbol}: ${quote.regularMarketPrice}`);
       return {
         regularMarketPrice:          quote.regularMarketPrice,
         regularMarketChangePercent:  quote.regularMarketChangePercent,
@@ -601,7 +629,7 @@ async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<Ya
   const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
   for (const symbol of symbols) {
     try {
-      const result = await (yahooFinance as any).quoteSummary(symbol, {
+      const result = await yahooFinance.quoteSummary(symbol, {
         modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
       });
       
@@ -1163,91 +1191,104 @@ export class NexusEngine {
     cacheStatus: string;
     news?: NewsItem[];
     metrics: any;
+    type: ExtendedAssetType;
   }> {
-    const cleanTicker = canonicalizeTicker(ticker);
-    const erroVal     = validarTicker(cleanTicker);
-    if (erroVal) {
-      return { ticker: cleanTicker, results: {}, cacheStatus: 'ERROR', metrics: { error: erroVal } };
+    try {
+      const cleanTicker = canonicalizeTicker(ticker);
+      const erroVal     = validarTicker(cleanTicker);
+      if (erroVal) {
+        return { ticker: cleanTicker, results: {}, cacheStatus: 'ERROR', metrics: { error: erroVal }, type };
+      }
+      const preset  = ASSET_PRESETS[type] || ASSET_PRESETS.ACAO;
+      const t       = cleanTicker.toLowerCase();
+      const sources: ScrapeSource<any>[] = preset ? [
+        { url: `${preset.i10Base}/${t}/`, template: preset.template, requireStealth: true },
+        { url: `${preset.siBase}/${t}/`,  template: preset.template, requireStealth: true },
+      ] : [];
+
+      const startTime = performance.now();
+      const startCpu  = safeCpuStart();
+
+      const [scrapeResult, yahooResult, yahooFund, newsResult] = await Promise.allSettled([
+        this.execute(sources),
+        yahooQuote(cleanTicker, this._options.fetchTimeoutMs),
+        yahooFundamentals(cleanTicker, this._options.fetchTimeoutMs),
+        includeNews ? this.fetchNews(cleanTicker) : Promise.resolve(undefined),
+      ]);
+
+      const scrape   = scrapeResult.status === 'fulfilled' ? scrapeResult.value : { data: {}, bytes: 0, earlyAbort: false, cacheStatus: 'ERROR' };
+      const quote    = yahooResult.status  === 'fulfilled' ? yahooResult.value  : null;
+      const fund     = yahooFund.status    === 'fulfilled' ? yahooFund.value    : {};
+      const newsData = newsResult.status   === 'fulfilled' ? newsResult.value   : undefined;
+      const combined = { ...scrape.data } as Record<string, any>;
+
+      const fill = (k: string, v: unknown) => {
+        if (combined[k] !== undefined || v == null) return;
+        const s = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
+        if (!VALORES_INVALIDOS.has(s)) combined[k] = s;
+      };
+
+      if (quote) {
+        const q = quote as any;
+        fill('precoAtual',    q.regularMarketPrice);
+        fill('variacaoDay',   q.regularMarketChangePercent != null
+          ? q.regularMarketChangePercent.toFixed(2) + '%' : undefined);
+        fill('pl',            q.trailingPE);
+        fill('pvp',           q.priceToBook);
+        fill('vpa',           q.bookValue);
+        fill('lpa',           q.epsTrailingTwelveMonths);
+        fill('dividendYield', q.trailingAnnualDividendYield != null
+          ? (q.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
+        fill('marketCap',     q.marketCap);
+        fill('name',          q.longName || q.shortName);
+      }
+      if (fund) {
+        fill('margemLiquida',  fund.profitMargins    != null ? (fund.profitMargins    * 100).toFixed(2) + '%' : undefined);
+        fill('margemBruta',    fund.grossMargins     != null ? (fund.grossMargins     * 100).toFixed(2) + '%' : undefined);
+        fill('roe',            fund.returnOnEquity   != null ? (fund.returnOnEquity   * 100).toFixed(2) + '%' : undefined);
+        fill('roa',            fund.returnOnAssets   != null ? (fund.returnOnAssets   * 100).toFixed(2) + '%' : undefined);
+        fill('dividaLiquidaEbitda', fund.debtToEquity != null ? fund.debtToEquity.toFixed(2) : undefined);
+        fill('about',          fund.about);
+        fill('sector',         fund.sector);
+        fill('subSector',      fund.subSector);
+        fill('enterpriseValue', fund.enterpriseValue);
+        fill('forwardPE',      fund.forwardPE);
+        fill('pegRatio',       fund.pegRatio);
+      }
+
+      const totalTimeMs = performance.now() - startTime;
+      const sources_used: string[] = [];
+      if (scrapeResult.status === 'fulfilled' && Object.keys(scrape.data).length > 0) sources_used.push('Scraper');
+      if (quote) sources_used.push('YahooFinance');
+      if (Object.keys(fund).length) sources_used.push('YahooFundamentals');
+
+      return {
+        ticker:      cleanTicker,
+        results:     combined,
+        cacheStatus: scrape.cacheStatus || 'MISS',
+        ...(newsData ? { news: newsData } : {}),
+        type,
+        metrics: {
+          totalTimeMs,
+          bytesProcessed:    scrape.bytes,
+          foundKeys:         Object.keys(combined),
+          successRate:       preset ? Object.keys(combined).length / preset.template.rules.length : 0,
+          earlyAbort:        scrape.earlyAbort,
+          source:            sources_used.join(' + ') || 'None',
+          cpuUsageMs:        safeCpuDeltaMs(startCpu),
+          estimatedMemoryMb: Number((scrape.bytes / 1024 / 1024).toFixed(2)),
+        },
+      };
+    } catch (e) {
+      console.error(`[Nexus] Fatal error fetching ${ticker}:`, e);
+      return {
+        ticker,
+        results: {},
+        cacheStatus: 'ERROR',
+        type,
+        metrics: { error: (e as Error).message }
+      };
     }
-    const preset  = ASSET_PRESETS[type] || ASSET_PRESETS.ACAO;
-    const t       = cleanTicker.toLowerCase();
-    const sources: ScrapeSource<any>[] = preset ? [
-      { url: `${preset.i10Base}/${t}/`, template: preset.template, requireStealth: true },
-      { url: `${preset.siBase}/${t}/`,  template: preset.template, requireStealth: true },
-    ] : [];
-
-    const startTime = performance.now();
-    const startCpu  = safeCpuStart();
-
-    const [scrapeResult, yahooResult, yahooFund, newsResult] = await Promise.allSettled([
-      this.execute(sources),
-      yahooQuote(cleanTicker, this._options.fetchTimeoutMs),
-      yahooFundamentals(cleanTicker, this._options.fetchTimeoutMs),
-      includeNews ? this.fetchNews(cleanTicker) : Promise.resolve(undefined),
-    ]);
-
-    const scrape   = scrapeResult.status === 'fulfilled' ? scrapeResult.value : { data: {}, bytes: 0, earlyAbort: false, cacheStatus: 'ERROR' };
-    const quote    = yahooResult.status  === 'fulfilled' ? yahooResult.value  : null;
-    const fund     = yahooFund.status    === 'fulfilled' ? yahooFund.value    : {};
-    const newsData = newsResult.status   === 'fulfilled' ? newsResult.value   : undefined;
-    const combined = { ...scrape.data } as Record<string, any>;
-
-    const fill = (k: string, v: unknown) => {
-      if (combined[k] !== undefined || v == null) return;
-      const s = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
-      if (!VALORES_INVALIDOS.has(s)) combined[k] = s;
-    };
-
-    if (quote) {
-      const q = quote as any;
-      fill('precoAtual',    q.regularMarketPrice);
-      fill('variacaoDay',   q.regularMarketChangePercent != null
-        ? q.regularMarketChangePercent.toFixed(2) + '%' : undefined);
-      fill('pl',            q.trailingPE);
-      fill('pvp',           q.priceToBook);
-      fill('vpa',           q.bookValue);
-      fill('lpa',           q.epsTrailingTwelveMonths);
-      fill('dividendYield', q.trailingAnnualDividendYield != null
-        ? (q.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
-      fill('marketCap',     q.marketCap);
-      fill('name',          q.longName || q.shortName);
-    }
-    if (fund) {
-      fill('margemLiquida',  fund.profitMargins    != null ? (fund.profitMargins    * 100).toFixed(2) + '%' : undefined);
-      fill('margemBruta',    fund.grossMargins     != null ? (fund.grossMargins     * 100).toFixed(2) + '%' : undefined);
-      fill('roe',            fund.returnOnEquity   != null ? (fund.returnOnEquity   * 100).toFixed(2) + '%' : undefined);
-      fill('roa',            fund.returnOnAssets   != null ? (fund.returnOnAssets   * 100).toFixed(2) + '%' : undefined);
-      fill('dividaLiquidaEbitda', fund.debtToEquity != null ? fund.debtToEquity.toFixed(2) : undefined);
-      fill('about',          fund.about);
-      fill('sector',         fund.sector);
-      fill('subSector',      fund.subSector);
-      fill('enterpriseValue', fund.enterpriseValue);
-      fill('forwardPE',      fund.forwardPE);
-      fill('pegRatio',       fund.pegRatio);
-    }
-
-    const totalTimeMs = performance.now() - startTime;
-    const sources_used: string[] = [];
-    if (scrapeResult.status === 'fulfilled' && Object.keys(scrape.data).length > 0) sources_used.push('Scraper');
-    if (quote) sources_used.push('YahooFinance');
-    if (Object.keys(fund).length) sources_used.push('YahooFundamentals');
-
-    return {
-      ticker:      cleanTicker,
-      results:     combined,
-      cacheStatus: scrape.cacheStatus || 'MISS',
-      ...(newsData ? { news: newsData } : {}),
-      metrics: {
-        totalTimeMs,
-        bytesProcessed:    scrape.bytes,
-        foundKeys:         Object.keys(combined),
-        successRate:       Object.keys(combined).length / preset.template.rules.length,
-        earlyAbort:        scrape.earlyAbort,
-        source:            sources_used.join(' + ') || 'None',
-        cpuUsageMs:        safeCpuDeltaMs(startCpu),
-        estimatedMemoryMb: Number((scrape.bytes / 1024 / 1024).toFixed(2)),
-      },
-    };
   }
 
   static async fetchB3(ticker: string): Promise<{ data: Partial<B3Data>; bytes: number; earlyAbort: boolean; cacheStatus: string }> {
@@ -1261,7 +1302,7 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        const result = await (yahooFinance as any).chart(symbol, {
+        const result = await yahooFinance.chart(symbol, {
           period1: range, // yahoo-finance2 handles '1y', '1mo', etc.
           interval: interval as any,
         });
@@ -1290,7 +1331,7 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        const result = await (yahooFinance as any).chart(symbol, {
+        const result = await yahooFinance.chart(symbol, {
           period1: '5y',
           interval: '1mo',
           events: 'div',
@@ -1313,18 +1354,50 @@ export class NexusEngine {
 
   static async searchTicker(query: string): Promise<any[]> {
     try {
-      const result = await (yahooFinance as any).search(query, {
-        quotesCount: 10,
+      const isBrazilian = query.length >= 4 && query.length <= 6 && !query.includes('.');
+      const searchQuery = isBrazilian ? `${query}.SA` : query;
+      
+      const result = await yahooFinance.search(searchQuery, {
+        quotesCount: 6,
         newsCount: 0
       });
       
-      return (result?.quotes ?? []).map((q: any) => ({
-        ...q,
-        ticker: q.symbol,
-        name: q.shortname || q.longname || q.symbol,
-        exchange: q.exchange,
-        type: q.quoteType
+      let quotes = result?.quotes ?? [];
+      
+      // If no results and we tried with .SA, try without .SA
+      if (quotes.length === 0 && isBrazilian) {
+        const fallbackResult = await yahooFinance.search(query, {
+          quotesCount: 6,
+          newsCount: 0
+        });
+        quotes = fallbackResult?.quotes ?? [];
+      }
+
+      const enrichedQuotes = await Promise.all(quotes.map(async (q: any) => {
+        try {
+          const quoteData = await yahooQuote(q.symbol, 2000);
+          return {
+            ...q,
+            ticker: q.symbol,
+            name: q.shortname || q.longname || q.symbol,
+            exchange: q.exchange,
+            type: q.quoteType,
+            price: quoteData?.regularMarketPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+            change: quoteData?.regularMarketChangePercent ? `${quoteData.regularMarketChangePercent > 0 ? '+' : ''}${quoteData.regularMarketChangePercent.toFixed(2)}%` : undefined,
+            positive: quoteData?.regularMarketChangePercent ? quoteData.regularMarketChangePercent >= 0 : undefined
+          };
+        } catch (e) {
+          return {
+            ...q,
+            ticker: q.symbol,
+            name: q.shortname || q.longname || q.symbol,
+            exchange: q.exchange,
+            type: q.quoteType
+          };
+        }
       }));
+      
+      return enrichedQuotes;
     } catch (e) {
       console.warn(`[YAHOO] Erro ao buscar ticker para ${query}:`, (e as Error).message);
       return [];

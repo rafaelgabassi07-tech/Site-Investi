@@ -1,31 +1,4 @@
-import { Transaction, PortfolioItem } from '../hooks/usePortfolio';
-
-export interface CorporateEvent {
-  ticker: string;
-  date: string;
-  type: 'SPLIT' | 'INPLIT' | 'DIVIDEND';
-  factor?: number; // e.g., 4 for a 1:4 split (1 share becomes 4), 0.1 for 10:1 inplit
-  value?: number;
-}
-
-export interface TaxMonth {
-  month: string; // YYYY-MM
-  salesAcoes: number;
-  profitAcoes: number;
-  salesFIIs: number;
-  profitFIIs: number;
-  lossCarryforwardAcoes: number;
-  lossCarryforwardFIIs: number;
-  taxDueAcoes: number;
-  taxDueFIIs: number;
-  isExemptAcoes: boolean;
-}
-
-export interface PortfolioEngineResult {
-  currentPositions: PortfolioItem[];
-  taxLedger: Record<string, TaxMonth>;
-  quotaHistory: { date: string; quotaValue: number; totalPatrimony: number }[];
-}
+import { Transaction, PortfolioItem, CorporateEvent, TaxMonth, PortfolioEngineResult } from '../types';
 
 /**
  * Motor Core de Gestão de Portfólio

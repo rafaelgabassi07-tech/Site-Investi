@@ -18,26 +18,31 @@ export default function Dividends() {
         // Use portfolio tickers or defaults
         const tickers = portfolio.length > 0 
           ? portfolio.map(p => p.ticker)
-          : ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'MXRF11', 'BBDC4', 'ABEV3'];
+          : ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'MXRF11', 'BBDC4', 'ABEV3', 'WEGE3', 'SANB11', 'TAEE11'];
         
         const results = await Promise.all(
-          tickers.slice(0, 10).map(async (ticker) => {
+          tickers.slice(0, 15).map(async (ticker) => {
             try {
               const divs = await financeService.getAssetDividends(ticker);
-              // Filter only recent/upcoming if possible, but Yahoo returns historical
-              // For a real "Agenda", we'd need a different source or filter
-              return divs.slice(0, 3).map(d => ({
+              if (!divs || !Array.isArray(divs)) return [];
+              
+              return divs.map(d => ({
                 ...d,
                 ticker,
-                name: ticker // We'd need a name mapping or fetch details
+                name: ticker
               }));
-            } catch {
+            } catch (err) {
+              console.warn(`Failed to fetch dividends for ${ticker}`, err);
               return [];
             }
           })
         );
 
-        const flatDividends = results.flat().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // Sort by date descending
+        const flatDividends = results.flat()
+          .filter(d => d && d.date && d.amount)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
         setDividends(flatDividends);
       } catch (error) {
         console.error('Error fetching dividends:', error);

@@ -187,8 +187,8 @@ export default function Layout() {
             </nav>
 
             {/* Actions */}
-            <div className="flex items-center gap-4">
-              {/* Search Bar */}
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Search Bar (Desktop) */}
               <form onSubmit={handleSearch} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-[#0f172a] border border-slate-800 rounded-xl focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all duration-300">
                 <Search size={16} className="text-slate-500" />
                 <input 
@@ -199,6 +199,14 @@ export default function Layout() {
                   className="bg-transparent border-none outline-none text-sm font-medium text-white placeholder:text-slate-500 w-40 xl:w-56"
                 />
               </form>
+
+              {/* Search Button (Mobile) */}
+              <button 
+                onClick={() => navigate('/search')}
+                className="lg:hidden p-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl border border-white/10 transition-all"
+              >
+                <Search size={20} />
+              </button>
 
               <Link 
                 to="/settings" 

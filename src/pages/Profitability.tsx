@@ -1,7 +1,7 @@
 import { PageHeader } from '../components/ui/PageHeader';
 import { TrendingUp, Calendar, ArrowUpRight, ArrowDownRight, BarChart3, PieChart, Activity } from 'lucide-react';
 import { motion } from 'motion/react';
-import { usePortfolio } from '../contexts/PortfolioContext';
+import { usePortfolio } from '../hooks/usePortfolio';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function Profitability() {

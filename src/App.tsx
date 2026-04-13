@@ -26,7 +26,7 @@ import Profitability from './pages/Profitability';
 import Favorites from './pages/Favorites';
 import BeginnersGuide from './pages/BeginnersGuide';
 
-import { PortfolioProvider } from './contexts/PortfolioContext';
+import { PortfolioProvider } from './contexts/PortfolioProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {

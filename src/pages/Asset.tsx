@@ -5,6 +5,7 @@ import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
+import { parseFinanceValue } from '../lib/utils';
 
 export default function Asset() {
   const { ticker } = useParams();
@@ -87,25 +88,25 @@ export default function Asset() {
     );
   }
 
-  const results = assetData.results;
-  const isPositive = results.variacaoDay ? !results.variacaoDay.startsWith('-') : true;
+  const results = assetData?.results || {};
+  const isPositive = results.variacaoDay && typeof results.variacaoDay === 'string' 
+    ? !results.variacaoDay.startsWith('-') 
+    : true;
 
   const indicators = [
     { label: 'Dividend Yield', value: results.dividendYield || 'N/A', icon: Wallet, color: 'emerald', desc: 'Rendimento de Dividendos' },
     { label: 'P/L', value: results.pl || 'N/A', icon: BarChart3, color: 'blue', desc: 'Preço sobre Lucro' },
     { label: 'P/VP', value: results.pvp || 'N/A', icon: TrendingUp, color: 'indigo', desc: 'Preço sobre Valor Patr.' },
     { label: 'ROE', value: results.roe || 'N/A', icon: Activity, color: 'purple', desc: 'Retorno sobre Patrimônio' },
+    { label: 'ROA', value: results.roa || 'N/A', icon: Activity, color: 'cyan', desc: 'Retorno sobre Ativos' },
     { label: 'VPA', value: results.vpa || 'N/A', icon: Building2, color: 'cyan', desc: 'Valor Patr. por Ação' },
     { label: 'LPA', value: results.lpa || 'N/A', icon: TrendingUp, color: 'emerald', desc: 'Lucro por Ação' },
     { label: 'Margem Líq.', value: results.margemLiquida || 'N/A', icon: ShieldCheck, color: 'blue', desc: 'Eficiência de Lucro' },
-    { label: 'Dívida/EBITDA', value: results.dividaLiquidaEbitda || 'N/A', icon: Zap, desc: 'Alavancagem' },
+    { label: 'Margem Bruta', value: results.margemBruta || 'N/A', icon: ShieldCheck, color: 'indigo', desc: 'Lucro Bruto' },
+    { label: 'Dívida/EBITDA', value: results.dividaLiquidaEbitda || 'N/A', icon: Zap, color: 'red', desc: 'Alavancagem' },
+    { label: 'PEG Ratio', value: results.pegRatio || 'N/A', icon: BarChart3, color: 'purple', desc: 'Preço/Lucro ao Crescimento' },
+    { label: 'Forward P/E', value: results.forwardPE || 'N/A', icon: TrendingUp, color: 'blue', desc: 'P/L Projetado' },
   ];
-
-  const safeParse = (v: any) => {
-    if (typeof v === 'number') return v;
-    if (typeof v === 'string') return parseFloat(v.replace('%', '').replace(',', '.')) || 0;
-    return 0;
-  };
 
   return (
     <div className="space-y-3 pb-12 max-w-5xl mx-auto">
@@ -117,12 +118,14 @@ export default function Asset() {
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center p-2 shadow-xl border border-slate-800">
-              <AssetIcon assetType="ACAO" ticker={assetData.ticker} className="w-full h-full" />
+              <AssetIcon assetType={(assetData as any).type || "ACAO"} ticker={assetData.ticker} className="w-full h-full" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-white tracking-tight">{assetData.ticker}</h1>
-                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xxs font-black uppercase tracking-widest rounded border border-blue-500/20">Ação</span>
+                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xxs font-black uppercase tracking-widest rounded border border-blue-500/20">
+                  {(assetData as any).type || "Ativo"}
+                </span>
               </div>
               <p className="text-sm text-slate-400 font-medium">{results.name || 'Empresa'}</p>
             </div>
@@ -276,27 +279,27 @@ export default function Asset() {
             <div className="space-y-4">
               {[
                 { label: 'P/L abaixo de 15', check: () => {
-                  const val = safeParse(results.pl);
+                  const val = parseFinanceValue(results.pl);
                   return val > 0 && val < 15;
                 }},
                 { label: 'P/VP abaixo de 2.0', check: () => {
-                  const val = safeParse(results.pvp);
+                  const val = parseFinanceValue(results.pvp);
                   return val > 0 && val < 2;
                 }},
                 { label: 'Dividend Yield > 6%', check: () => {
-                  const val = safeParse(results.dividendYield);
+                  const val = parseFinanceValue(results.dividendYield);
                   return val >= 6;
                 }},
                 { label: 'ROE acima de 10%', check: () => {
-                  const val = safeParse(results.roe);
+                  const val = parseFinanceValue(results.roe);
                   return val >= 10;
                 }},
                 { label: 'Margem Líquida > 10%', check: () => {
-                  const val = safeParse(results.margemLiquida);
+                  const val = parseFinanceValue(results.margemLiquida);
                   return val >= 10;
                 }},
                 { label: 'Dívida Controlada', check: () => {
-                  const val = safeParse(results.dividaLiquidaEbitda);
+                  const val = parseFinanceValue(results.dividaLiquidaEbitda);
                   return val > 0 && val < 3;
                 }},
               ].map((item, idx) => {
@@ -413,7 +416,7 @@ export default function Asset() {
               </thead>
               <tbody>
                 {[
-                  { ticker: assetData.ticker, pl: results.pl, pvp: results.pvp, dy: results.dividendYield?.replace('%', ''), roe: results.roe?.replace('%', ''), current: true },
+                  { ticker: assetData.ticker, pl: results.pl, pvp: results.pvp, dy: results.dividendYield?.toString().replace('%', ''), roe: results.roe?.toString().replace('%', ''), current: true },
                   ...peers
                 ].map((peer, i) => (
                   <tr 

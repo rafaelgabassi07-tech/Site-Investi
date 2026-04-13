@@ -25,60 +25,76 @@ export interface NewsItem {
   source: string;
 }
 
+async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 2): Promise<Response> {
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      if (retries > 0 && response.status >= 500) {
+        console.warn(`[FINANCE] Retrying ${url} due to status ${response.status}. Retries left: ${retries - 1}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return fetchWithRetry(url, options, retries - 1);
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return response;
+  } catch (error) {
+    if (retries > 0 && (error instanceof TypeError || (error as any).name === 'AbortError')) {
+      console.warn(`[FINANCE] Retrying ${url} due to network error: ${error.message}. Retries left: ${retries - 1}`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw error;
+  }
+}
+
 export const financeService = {
-  async getAssetDetails(ticker: string, assetType: string = 'ACAO'): Promise<AssetDetails> {
-    const res = await fetch(`/api/asset/${ticker}?type=${assetType}`);
-    if (!res.ok) throw new Error('Failed to fetch asset details');
+  async getAssetDetails(ticker: string, assetType?: string): Promise<AssetDetails> {
+    const encodedTicker = encodeURIComponent(ticker);
+    const url = assetType ? `/api/asset/${encodedTicker}?type=${encodeURIComponent(assetType)}` : `/api/asset/${encodedTicker}`;
+    const res = await fetchWithRetry(url);
     return res.json();
   },
 
   async getAssetHistory(ticker: string, period: string = '1y'): Promise<HistoryPoint[]> {
-    const res = await fetch(`/api/history/${ticker}?period=${period}`);
-    if (!res.ok) throw new Error('Failed to fetch asset history');
+    const res = await fetchWithRetry(`/api/history/${encodeURIComponent(ticker)}?period=${encodeURIComponent(period)}`);
     return res.json();
   },
 
   async getAssetDividends(ticker: string): Promise<any[]> {
-    const res = await fetch(`/api/dividends/${ticker}`);
-    if (!res.ok) throw new Error('Failed to fetch asset dividends');
+    const res = await fetchWithRetry(`/api/dividends/${encodeURIComponent(ticker)}`);
     return res.json();
   },
 
   async getNews(ticker?: string): Promise<NewsItem[]> {
-    const url = ticker ? `/api/news?ticker=${ticker}` : '/api/news';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch news');
+    const url = ticker ? `/api/news?ticker=${encodeURIComponent(ticker)}` : '/api/news';
+    const res = await fetchWithRetry(url);
     return res.json();
   },
 
   async getRanking(category: string, type: string = 'ACAO'): Promise<any[]> {
-    const res = await fetch(`/api/ranking?category=${encodeURIComponent(category)}&type=${type}`);
-    if (!res.ok) throw new Error('Failed to fetch ranking');
+    const res = await fetchWithRetry(`/api/ranking?category=${encodeURIComponent(category)}&type=${type}`);
     return res.json();
   },
 
   async getPeers(ticker: string, type: string = 'ACAO'): Promise<any[]> {
-    const res = await fetch(`/api/peers/${ticker}?type=${type}`);
-    if (!res.ok) throw new Error('Failed to fetch peers');
+    const res = await fetchWithRetry(`/api/peers/${encodeURIComponent(ticker)}?type=${encodeURIComponent(type)}`);
     return res.json();
   },
 
   async getScreener(filters: any, type: string = 'ACAO'): Promise<any[]> {
     const params = new URLSearchParams({ type, ...filters });
-    const res = await fetch(`/api/screener?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch screener');
+    const res = await fetchWithRetry(`/api/screener?${params.toString()}`);
     return res.json();
   },
 
   async search(query: string): Promise<any[]> {
-    const res = await fetch(`/api/search?q=${query}`);
-    if (!res.ok) throw new Error('Failed to search');
+    const res = await fetchWithRetry(`/api/search?q=${encodeURIComponent(query)}`);
     return res.json();
   },
 
   async getMarketStats(): Promise<any[]> {
-    const res = await fetch('/api/market-stats');
-    if (!res.ok) throw new Error('Failed to fetch market stats');
+    const res = await fetchWithRetry('/api/market-stats');
     return res.json();
   }
 };

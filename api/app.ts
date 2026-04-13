@@ -3,8 +3,9 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { NexusEngine } from "../src/lib/nexus/engine.js";
+import { NexusEngine, inferAssetType } from "../src/lib/nexus/engine.ts";
 
+console.log("[SERVER] Starting initialization...");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -20,73 +21,91 @@ export async function createServer() {
     app.use(cors());
     app.use(express.json());
 
+    app.get("/api/health", (_req, res) => {
+      res.json({ status: "ok", time: new Date().toISOString() });
+    });
+
     // API Routes
     app.get("/api/asset/:ticker", async (req, res) => {
       const { ticker } = req.params;
       const { type } = req.query;
-      console.log(`[API] Fetching asset: ${ticker}, type=${type}`);
+      const resolvedType = type ? (type as any) : inferAssetType(ticker);
+      console.log(`[API] [${new Date().toISOString()}] GET /api/asset/${ticker} type=${resolvedType}`);
       try {
-        const data = await NexusEngine.fetchAtivo(ticker, (type as any) || 'ACAO');
+        const data = await NexusEngine.fetchAtivo(ticker, resolvedType);
+        console.log(`[API] [${new Date().toISOString()}] SUCCESS /api/asset/${ticker}`);
         res.json(data);
       } catch (error) {
-        console.error(`[API] Error fetching asset ${ticker}:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/asset/${ticker}:`, error);
+        res.status(500).json({ 
+          error: "Failed to fetch asset details", 
+          details: error instanceof Error ? error.message : String(error) 
+        });
       }
     });
 
     app.get("/api/history/:ticker", async (req, res) => {
       const { ticker } = req.params;
       const { period } = req.query;
-      console.log(`[API] Fetching history: ${ticker}, period=${period}`);
+      console.log(`[API] [${new Date().toISOString()}] GET /api/history/${ticker} period=${period}`);
       try {
         const data = await NexusEngine.fetchHistoricoGrafico(ticker, (period as any) || '1y');
+        console.log(`[API] [${new Date().toISOString()}] SUCCESS /api/history/${ticker}`);
         res.json(data);
       } catch (error) {
-        console.error(`[API] Error fetching history ${ticker}:`, error);
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/history/${ticker}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
 
     app.get("/api/dividends/:ticker", async (req, res) => {
       const { ticker } = req.params;
+      console.log(`[API] [${new Date().toISOString()}] GET /api/dividends/${ticker}`);
       try {
         const data = await NexusEngine.fetchDividends(ticker);
+        console.log(`[API] [${new Date().toISOString()}] SUCCESS /api/dividends/${ticker}`);
         res.json(data);
       } catch (error) {
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/dividends/${ticker}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
 
     app.get("/api/search", async (req, res) => {
       const { q } = req.query;
-      console.log(`[API] Searching: ${q}`);
+      console.log(`[API] [${new Date().toISOString()}] GET /api/search q=${q}`);
       try {
         const result = await NexusEngine.searchTicker(q as string);
+        console.log(`[API] [${new Date().toISOString()}] SUCCESS /api/search q=${q} results=${result.length}`);
         res.json(result);
       } catch (error) {
-        console.error(`[API] Error searching ${q}:`, error);
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/search q=${q}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
 
     app.get("/api/news", async (req, res) => {
       const { ticker } = req.query;
+      console.log(`[API] [${new Date().toISOString()}] GET /api/news ticker=${ticker}`);
       try {
         const result = await NexusEngine.fetchNews((ticker as string) || "IBOVESPA");
+        console.log(`[API] [${new Date().toISOString()}] SUCCESS /api/news ticker=${ticker}`);
         res.json(result);
       } catch (error) {
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/news ticker=${ticker}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
 
     app.get("/api/ranking", async (req, res) => {
       const { category, type } = req.query;
-      console.log(`[API] Fetching ranking: category=${category}, type=${type}`);
+      console.log(`[API] [${new Date().toISOString()}] GET /api/ranking category=${category}, type=${type}`);
       try {
         const result = await NexusEngine.fetchRanking((category as string) || "Dividend Yield", (type as any) || "ACAO");
+        console.log(`[API] [${new Date().toISOString()}] SUCCESS /api/ranking category=${category} results=${result.length}`);
         res.json(result);
       } catch (error) {
-        console.error(`[API] Error fetching ranking:`, error);
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/ranking:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
@@ -94,10 +113,13 @@ export async function createServer() {
     app.get("/api/peers/:ticker", async (req, res) => {
       const { ticker } = req.params;
       const { type } = req.query;
+      console.log(`[API] [${new Date().toISOString()}] GET /api/peers/${ticker} type=${type}`);
       try {
         const result = await NexusEngine.fetchPeers(ticker, (type as any) || "ACAO");
+        console.log(`[API] [${new Date().toISOString()}] SUCCESS /api/peers/${ticker}`);
         res.json(result);
       } catch (error) {
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/peers/${ticker}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
@@ -113,7 +135,7 @@ export async function createServer() {
     });
 
     app.get("/api/market-stats", async (_req, res) => {
-      const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD"];
+      const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD", "IFIX.SA"];
       console.log(`[API] Fetching market stats for: ${tickers.join(', ')}`);
       try {
         const results = await Promise.all(tickers.map(async (t) => {
@@ -129,9 +151,16 @@ export async function createServer() {
           const preco = r.results?.precoAtual;
           const variacao = r.results?.variacaoDay || '0.00%';
           
+          let label = '';
+          if (idx === 0) label = 'IBOVESPA';
+          else if (idx === 1) label = 'S&P 500';
+          else if (idx === 2) label = 'DÓLAR';
+          else if (idx === 3) label = 'BITCOIN';
+          else if (idx === 4) label = 'IFIX';
+
           return {
             ticker: tickers[idx],
-            label: idx === 0 ? 'IBOVESPA' : idx === 1 ? 'S&P 500' : idx === 2 ? 'DÓLAR' : 'BITCOIN',
+            label,
             price: typeof preco === 'number' ? preco.toLocaleString('pt-BR') : (preco || '---'),
             value: typeof preco === 'number' ? preco.toLocaleString('pt-BR') : (preco || '---'),
             change: variacao,
@@ -221,8 +250,24 @@ export async function createServer() {
       }
     }
 
+    // Global Error Handler
+    app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+      console.error(`[SERVER ERROR] [${new Date().toISOString()}]`, err);
+      res.status(500).json({ 
+        error: 'Internal Server Error', 
+        message: err.message,
+        path: req.path
+      });
+    });
+
     return { app, PORT };
   })();
+
+  serverPromise.then(() => {
+    console.log("[SERVER] Server promise resolved successfully");
+  }).catch((err) => {
+    console.error("[SERVER] Server promise failed:", err);
+  });
 
   return serverPromise;
 }
