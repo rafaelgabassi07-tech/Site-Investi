@@ -37,7 +37,7 @@ export function PortfolioSummary() {
     }
     if (portfolio.length > 0) fetchDividends();
     else setLoadingDivs(false);
-  }, [portfolio]);
+  }, [portfolio, quotaHistory]);
 
   const totalDividends = dividends.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 

@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { NexusEngine, inferAssetType } from "../src/lib/nexus/engine.js";
+import { NexusEngine, inferAssetType } from "../dist/src/lib/nexus/engine.js";
 
 console.log("[SERVER] Starting initialization...");
 const __filename = fileURLToPath(import.meta.url);
