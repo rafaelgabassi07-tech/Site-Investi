@@ -1,3 +1,4 @@
+import { PortfolioSummary } from '../components/PortfolioSummary';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { Search, Loader2, Briefcase, ChevronRight, Globe, BarChart2, PieChart as PieIcon, DollarSign, TrendingUp, BarChart3, List, HelpCircle, TrendingDown, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -100,84 +101,7 @@ export default function Portfolio() {
 
       <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent element-spacing" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 element-spacing">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-lg"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[60px] -z-10" />
-          <p className="text-sm font-medium text-slate-400 mb-2">Patrimônio Atual</p>
-          <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-            R$ {currentTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </h3>
-          <div className={`flex items-center gap-1 mt-3 text-sm font-semibold ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {totalProfit >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-            R$ {Math.abs(totalProfit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({totalProfitPercentage.toFixed(2)}%)
-          </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.1 }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-lg"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/5 blur-[60px] -z-10" />
-          <p className="text-sm font-medium text-slate-400 mb-2">Total Investido</p>
-          <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-            R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </h3>
-          <p className="text-sm text-slate-500 font-medium mt-3">Baseado em {totalAssets} ativos</p>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden hidden lg:block shadow-lg"
-        >
-          <div className="absolute inset-0 flex items-center justify-center opacity-20">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={allocationData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={70}
-                  paddingAngle={5}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {allocationData.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
-                  itemStyle={{ color: '#fff' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="text-sm font-medium text-slate-400 mb-4">Alocação de Ativos</p>
-          <div className="space-y-3 relative z-10 max-h-[120px] overflow-y-auto no-scrollbar">
-            {allocationData.map((item: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                  <span className="text-xs font-medium text-slate-300">{item.name}</span>
-                </div>
-                <span className="text-xs font-semibold text-white">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
+      <PortfolioSummary />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div 
@@ -191,7 +115,7 @@ export default function Portfolio() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-full">
                 <thead>
-                  <tr className="bg-slate-800/30 border-b border-slate-800">
+                  <tr className="border-b border-slate-800">
                     <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ativo</th>
                     <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Qtd.</th>
                     <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Preço Médio</th>

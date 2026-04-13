@@ -1181,6 +1181,20 @@ export class NexusEngine {
     return filtered;
   }
 
+  static async searchSuggestions(query: string) {
+    try {
+      const result = await yahooFinance.search(query);
+      return result.quotes.slice(0, 5).map((q: any) => ({
+        ticker: q.symbol,
+        name: q.shortname || q.longname,
+        type: q.quoteType
+      }));
+    } catch (error) {
+      console.error('Error in searchSuggestions:', error);
+      return [];
+    }
+  }
+
   static async fetchAtivo(
     ticker: string,
     type: ExtendedAssetType = 'ACAO',

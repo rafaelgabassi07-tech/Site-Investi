@@ -97,6 +97,21 @@ export async function createServer() {
       }
     });
 
+    app.get("/api/search-suggestions", async (req, res) => {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.json([]);
+      }
+      try {
+        // Use NexusEngine to fetch suggestions
+        const result = await NexusEngine.searchSuggestions(q);
+        res.json(result);
+      } catch (error) {
+        console.error(`[API] Error fetching search suggestions for ${q}:`, error);
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
     app.get("/api/ranking", async (req, res) => {
       const { category, type } = req.query;
       console.log(`[API] [${new Date().toISOString()}] GET /api/ranking category=${category}, type=${type}`);
@@ -251,7 +266,7 @@ export async function createServer() {
     }
 
     // Global Error Handler
-    app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
       console.error(`[SERVER ERROR] [${new Date().toISOString()}]`, err);
       res.status(500).json({ 
         error: 'Internal Server Error', 

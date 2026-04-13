@@ -22,6 +22,22 @@ export default function Home() {
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Investidor';
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (searchQuery.length > 2) {
+      const timer = setTimeout(async () => {
+        const response = await fetch(`/api/search-suggestions?q=${encodeURIComponent(searchQuery)}`);
+        const data = await response.json();
+        setSuggestions(data);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery]);
+
   const [marketStats, setMarketStats] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [sentiment, setSentiment] = useState({ score: 50, label: 'Neutro', color: 'slate', desc: 'O mercado aguarda novas direções.' });
@@ -168,23 +184,43 @@ export default function Home() {
               <input 
                 type="text" 
                 placeholder="Busque ativos..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 min-w-0 bg-transparent border-none outline-none py-3 px-3 text-sm md:text-lg text-white placeholder:text-slate-600"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    navigate(`/search?q=${encodeURIComponent((e.target as HTMLInputElement).value)}`);
+                  if (e.key === 'Enter' && searchQuery) {
+                    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
                   }
                 }}
               />
               <button 
                 onClick={() => {
-                  const input = document.querySelector('input[placeholder="Busque ativos..."]') as HTMLInputElement;
-                  if (input?.value) navigate(`/search?q=${encodeURIComponent(input.value)}`);
+                  if (searchQuery) navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
                 }}
                 className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 text-xs md:text-sm"
               >
                 Pesquisar
               </button>
             </div>
+            
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <div className="absolute w-full mt-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                {suggestions.map((s) => (
+                  <Link 
+                    key={s.ticker} 
+                    to={`/asset/${s.ticker}`}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-slate-800/50 transition-colors"
+                  >
+                    <div>
+                      <div className="font-bold text-white text-sm">{s.ticker}</div>
+                      <div className="text-xs text-slate-500">{s.name}</div>
+                    </div>
+                    <div className="text-xs text-slate-600 uppercase">{s.type}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
             
             {/* Most Searched Tags */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
@@ -364,8 +400,8 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Main Ranking Card */}
-          <div className="md:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+          <div className="md:col-span-2 overflow-hidden">
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <Star size={18} className="text-amber-500 fill-amber-500" />
                 Maiores Dividend Yield
