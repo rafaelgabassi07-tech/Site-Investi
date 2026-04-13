@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { NexusEngine, inferAssetType } from "../dist/src/lib/nexus/engine.js";
+import { NexusEngine, inferAssetType } from "../src/lib/nexus/engine";
 
 console.log("[SERVER] Starting initialization...");
 const __filename = fileURLToPath(import.meta.url);
@@ -155,7 +155,9 @@ export async function createServer() {
       try {
         const results = await Promise.all(tickers.map(async (t) => {
           try {
-            return await NexusEngine.fetchAtivo(t, 'ACAO');
+            const data = await NexusEngine.fetchAtivo(t, 'ACAO');
+            console.log(`[API] Market stat for ${t}:`, JSON.stringify(data.results));
+            return data;
           } catch (e) {
             console.error(`[API] Error fetching market stat for ${t}:`, e);
             return { ticker: t, results: {}, cacheStatus: 'ERROR' };
