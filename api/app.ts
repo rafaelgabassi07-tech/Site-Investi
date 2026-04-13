@@ -24,10 +24,12 @@ export async function createServer() {
     app.get("/api/asset/:ticker", async (req, res) => {
       const { ticker } = req.params;
       const { type } = req.query;
+      console.log(`[API] Fetching asset: ${ticker}, type=${type}`);
       try {
         const data = await NexusEngine.fetchAtivo(ticker, (type as any) || 'ACAO');
         res.json(data);
       } catch (error) {
+        console.error(`[API] Error fetching asset ${ticker}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
@@ -35,10 +37,12 @@ export async function createServer() {
     app.get("/api/history/:ticker", async (req, res) => {
       const { ticker } = req.params;
       const { period } = req.query;
+      console.log(`[API] Fetching history: ${ticker}, period=${period}`);
       try {
         const data = await NexusEngine.fetchHistoricoGrafico(ticker, (period as any) || '1y');
         res.json(data);
       } catch (error) {
+        console.error(`[API] Error fetching history ${ticker}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
@@ -55,10 +59,12 @@ export async function createServer() {
 
     app.get("/api/search", async (req, res) => {
       const { q } = req.query;
+      console.log(`[API] Searching: ${q}`);
       try {
         const result = await NexusEngine.searchTicker(q as string);
         res.json(result);
       } catch (error) {
+        console.error(`[API] Error searching ${q}:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });
@@ -108,18 +114,33 @@ export async function createServer() {
 
     app.get("/api/market-stats", async (_req, res) => {
       const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD"];
+      console.log(`[API] Fetching market stats for: ${tickers.join(', ')}`);
       try {
-        const results = await Promise.all(tickers.map(t => NexusEngine.fetchAtivo(t, 'ACAO')));
-        const stats = results.map((r, idx) => ({
-          ticker: tickers[idx],
-          label: idx === 0 ? 'IBOVESPA' : idx === 1 ? 'S&P 500' : idx === 2 ? 'DÓLAR' : 'BITCOIN',
-          price: typeof r.results.precoAtual === 'number' ? r.results.precoAtual.toLocaleString('pt-BR') : r.results.precoAtual,
-          value: typeof r.results.precoAtual === 'number' ? r.results.precoAtual.toLocaleString('pt-BR') : r.results.precoAtual,
-          change: r.results.variacaoDay || '0.00%',
-          color: r.results.variacaoDay?.startsWith('-') ? 'red' : 'emerald'
+        const results = await Promise.all(tickers.map(async (t) => {
+          try {
+            return await NexusEngine.fetchAtivo(t, 'ACAO');
+          } catch (e) {
+            console.error(`[API] Error fetching market stat for ${t}:`, e);
+            return { ticker: t, results: {}, cacheStatus: 'ERROR' };
+          }
         }));
+
+        const stats = results.map((r: any, idx) => {
+          const preco = r.results?.precoAtual;
+          const variacao = r.results?.variacaoDay || '0.00%';
+          
+          return {
+            ticker: tickers[idx],
+            label: idx === 0 ? 'IBOVESPA' : idx === 1 ? 'S&P 500' : idx === 2 ? 'DÓLAR' : 'BITCOIN',
+            price: typeof preco === 'number' ? preco.toLocaleString('pt-BR') : (preco || '---'),
+            value: typeof preco === 'number' ? preco.toLocaleString('pt-BR') : (preco || '---'),
+            change: variacao,
+            color: variacao.startsWith('-') ? 'red' : 'emerald'
+          };
+        });
         res.json(stats);
       } catch (error) {
+        console.error(`[API] Critical error in market-stats:`, error);
         res.status(500).json({ error: (error as Error).message });
       }
     });

@@ -941,7 +941,7 @@ export class NexusEngine {
       
       // Buscamos dados básicos para esses ativos
       const results = await this.executeBatch(
-        tickers.map(ticker => async () => {
+        tickers.map((ticker: string) => async () => {
           try {
             const data = await this.fetchAtivo(ticker, type);
             return {
@@ -1096,7 +1096,7 @@ export class NexusEngine {
     const tickers = popularTickers[type] || popularTickers.ACAO;
     
     const results = await this.executeBatch(
-      tickers.map(ticker => async () => {
+      tickers.map((ticker: string) => async () => {
         try {
           const data = await this.fetchAtivo(ticker, type);
           return {
@@ -1400,7 +1400,7 @@ export async function runNexusBatch(
   includeNews? : boolean,
 ): Promise<any[]> {
   return NexusEngine.executeBatch(
-    tickers.map(ticker => async () => {
+    tickers.map((ticker: string) => async () => {
       const t0 = performance.now();
       try {
         const result = await NexusEngine.fetchAtivo(ticker, type, includeNews);
@@ -1439,7 +1439,7 @@ export async function runNexusBatchAuto(
   includeNews?: boolean,
 ): Promise<any[]> {
   return NexusEngine.executeBatch(
-    tickers.map(ticker => async () => {
+    tickers.map((ticker: string) => async () => {
       const type = inferAssetType(ticker);
       const t0   = performance.now();
       try {
