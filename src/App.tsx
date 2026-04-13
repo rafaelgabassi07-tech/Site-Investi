@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Portfolio from './pages/Portfolio';
+import PortfolioSummaryPage from './pages/PortfolioSummaryPage';
 import Transactions from './pages/Transactions';
 import News from './pages/News';
 import Settings from './pages/Settings';
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="/" element={user ? <PortfolioProvider><Layout /></PortfolioProvider> : <Navigate to="/login" />}>
             <Route index element={<Home />} />
             <Route path="portfolio" element={<Portfolio />} />
+            <Route path="portfolio/resumo" element={<PortfolioSummaryPage />} />
             <Route path="search" element={<Search />} />
             <Route path="ranking" element={<Ranking />} />
             <Route path="screener" element={<Screener />} />

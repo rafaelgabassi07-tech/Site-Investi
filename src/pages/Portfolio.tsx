@@ -1,4 +1,3 @@
-import { PortfolioSummary } from '../components/PortfolioSummary';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { Search, Loader2, Briefcase, ChevronRight, Globe, BarChart2, PieChart as PieIcon, DollarSign, TrendingUp, BarChart3, List, HelpCircle, TrendingDown, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -56,7 +55,7 @@ export default function Portfolio() {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
   const menuItems = [
-    { icon: PieIcon, label: 'Resumo', to: '/portfolio' },
+    { icon: PieIcon, label: 'Resumo', to: '/portfolio/resumo' },
     { icon: DollarSign, label: 'Proventos', to: '/dividends' },
     { icon: TrendingUp, label: 'Rentabilidade', to: '#' },
     { icon: BarChart3, label: 'Evolução do Patrimônio', to: '#' },
@@ -101,7 +100,8 @@ export default function Portfolio() {
 
       <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent element-spacing" />
 
-      <PortfolioSummary />
+
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div 

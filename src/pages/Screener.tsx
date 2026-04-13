@@ -76,7 +76,7 @@ export default function Screener() {
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Filters Sidebar */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 space-y-6 shadow-sm">
+          <div className="p-6 space-y-6">
             <div className="flex items-center gap-3 mb-2">
               <SlidersHorizontal size={18} className="text-blue-500" />
               <h3 className="text-sm font-semibold text-white">Filtros</h3>
@@ -217,7 +217,7 @@ export default function Screener() {
                   </div>
                 </div>
 
-                <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>

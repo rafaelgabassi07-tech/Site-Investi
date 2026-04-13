@@ -115,7 +115,7 @@ export default function Ranking() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.05 }}
                   onClick={() => handleCategoryClick(cat.title)}
-                  className="group relative p-4 bg-[#0f172a] border border-slate-800 rounded-3xl flex flex-col gap-4 hover:border-slate-700 transition-all cursor-pointer shadow-sm hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden"
+                  className="group relative p-4 flex flex-col gap-4 transition-all cursor-pointer hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden"
                 >
                   <div className={`absolute top-0 right-0 w-32 h-32 bg-${cat.color}-500/5 blur-[40px] -z-10 group-hover:bg-${cat.color}-500/10 transition-all`} />
                   
@@ -194,7 +194,7 @@ export default function Ranking() {
                 <p className="text-slate-500 font-black text-xs uppercase tracking-[0.2em] animate-pulse">Calculando Ranking...</p>
               </div>
             ) : (
-              <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
+              <div className="overflow-hidden">
                 <div className="grid grid-cols-1 divide-y divide-slate-800/50">
                   {filteredRankingData.map((item, idx) => (
                     <motion.div
