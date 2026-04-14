@@ -17,11 +17,11 @@
 
 @layer base {
   html {
-    font-size: 15px; /* Base for mobile */
+    font-size: 14px; /* Base for mobile */
   }
   @media (min-width: 768px) {
     html {
-      font-size: 16px; /* Base for desktop */
+      font-size: 15px; /* Base for desktop */
     }
   }
   :root {
@@ -120,9 +120,9 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .section-spacing {
-    @apply py-6 md:py-12 lg:py-16;
+    @apply py-3 md:py-6 lg:py-8;
   }
   .element-spacing {
-    @apply my-3 md:my-6;
+    @apply my-2 md:my-4;
   }
 }

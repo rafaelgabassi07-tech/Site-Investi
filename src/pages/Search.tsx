@@ -122,18 +122,18 @@ export default function Search() {
 
       <div className="space-y-4 pt-4">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
             {hasSearched ? `Resultados para "${debouncedQuery}"` : 'Ativos em Destaque'}
           </h3>
           {hasSearched && results.length > 0 && (
-            <span className="text-xxs font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+            <span className="text-[9px] font-black text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 uppercase tracking-widest">
               {results.length} ENCONTRADOS
             </span>
           )}
         </div>
         
-        <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-          <div className="divide-y divide-slate-800/50">
+        <div className="overflow-hidden">
+          <div className="divide-y divide-slate-800/30">
             <AnimatePresence mode="popLayout">
               {(hasSearched ? results : mostSearched).map((asset, idx) => {
                 const ticker = asset.symbol || asset.ticker;
@@ -145,27 +145,25 @@ export default function Search() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: idx * 0.03 }}
-                      className="p-5 flex items-center justify-between group cursor-pointer hover:bg-slate-800/30 transition-all relative"
+                      transition={{ delay: idx * 0.02 }}
+                      className="py-4 px-2 flex items-center justify-between group cursor-pointer hover:bg-slate-800/20 transition-all rounded-2xl"
                     >
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 scale-y-0 group-hover:scale-y-100 transition-transform origin-top" />
-                      
-                      <div className="flex items-center gap-5">
+                      <div className="flex items-center gap-4">
                         <AssetIcon 
                           assetType={mapQuoteTypeToAssetType(asset)} 
                           ticker={ticker} 
-                          className="w-12 h-12" 
+                          className="w-10 h-10" 
                         />
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-black text-white text-lg tracking-tight group-hover:text-blue-400 transition-colors">
+                            <span className="font-black text-white text-base tracking-tight group-hover:text-blue-400 transition-colors">
                               {ticker.replace('.SA', '')}
                             </span>
-                            <span className="px-1.5 py-0.5 bg-slate-800 text-slate-500 text-[8px] font-black uppercase tracking-tighter rounded border border-slate-700">
+                            <span className="px-1.5 py-0.5 bg-slate-800/50 text-slate-500 text-[8px] font-black uppercase tracking-tighter rounded border border-slate-800">
                               {asset.exchange || 'B3'}
                             </span>
                           </div>
-                          <div className="text-xs font-bold text-slate-500 mt-0.5 uppercase tracking-wider line-clamp-1">
+                          <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider line-clamp-1">
                             {asset.shortname || asset.name || ticker}
                           </div>
                         </div>
@@ -173,17 +171,17 @@ export default function Search() {
 
                       <div className="text-right">
                         <div className="flex items-center gap-3 justify-end">
-                          <span className="font-black text-white text-lg tracking-tighter">
+                          <span className="font-black text-white text-base tracking-tighter">
                             {asset.currency || 'R$'} {asset.price || '---'}
                           </span>
                           {asset.change && (
-                            <span className={`flex items-center text-xxs font-black px-1.5 py-0.5 rounded ${asset.positive !== false ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                            <span className={`flex items-center text-[9px] font-black px-1.5 py-0.5 rounded ${asset.positive !== false ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
                               {asset.change}
-                              {asset.positive !== false ? <ArrowUpRight size={12} className="ml-0.5" /> : <ArrowDownRight size={12} className="ml-0.5" />}
+                              {asset.positive !== false ? <ArrowUpRight size={10} className="ml-0.5" /> : <ArrowDownRight size={10} className="ml-0.5" />}
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] font-black text-slate-600 mt-1 uppercase tracking-widest">
+                        <div className="text-[9px] font-black text-slate-600 mt-1 uppercase tracking-[0.15em]">
                           {asset.type || asset.quoteType || 'EQUITY'}
                         </div>
                       </div>

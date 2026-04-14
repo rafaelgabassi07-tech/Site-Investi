@@ -10,19 +10,24 @@ const THEMES = ['Todos', 'Mercado', 'Negócios', 'Criptomoedas', 'Política', 'E
 
 export default function News() {
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTheme, setActiveTheme] = useState('Todos');
 
   useEffect(() => {
-    financeService.getNews()
-      .then(data => {
-        setNews(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    financeService.getNews().then(async (newsData) => {
+      setNews(newsData);
+      setLoading(false);
+      
+      // Analyze news after loading
+      if (newsData.length > 0) {
+        const analysisData = await financeService.analyzeNews(newsData);
+        setAnalysis(analysisData);
+      }
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
   }, []);
 
   const filteredNews = news.filter(item => {
@@ -59,6 +64,33 @@ export default function News() {
           </div>
         }
       />
+
+      {analysis && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 md:p-6 bg-blue-600/5 border border-blue-500/20 rounded-2xl flex flex-col md:flex-row items-center gap-4 md:gap-6"
+        >
+          <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-blue-600 flex items-center justify-center shrink-0 shadow-[0_0_30px_rgba(37,99,235,0.4)]">
+            <Zap size={24} className="text-white animate-pulse" />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+              <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nexus Intelligence Report</span>
+              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                analysis.sentiment === 'Bullish' ? 'bg-emerald-500/20 text-emerald-400' :
+                analysis.sentiment === 'Bearish' ? 'bg-red-500/20 text-red-400' :
+                'bg-slate-500/20 text-slate-400'
+              }`}>
+                {analysis.sentiment} ({analysis.score}%)
+              </span>
+            </div>
+            <p className="text-sm md:text-base font-bold text-slate-200 leading-relaxed italic">
+              "{analysis.summary}"
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar">

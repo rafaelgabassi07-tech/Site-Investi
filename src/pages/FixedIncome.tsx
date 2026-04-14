@@ -1,60 +1,167 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PageHeader } from '../components/ui/PageHeader';
-import { ShieldCheck, TrendingUp, Calendar, DollarSign, Calculator } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ShieldCheck, TrendingUp, Calendar, DollarSign, Calculator, Info, ArrowRight, Wallet } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function FixedIncome() {
-  const [amount, setAmount] = useState('1000');
+  const [amount, setAmount] = useState('10000');
+  const [monthly, setMonthly] = useState('1000');
+  const [period, setPeriod] = useState('12'); // months
   const [simulationResult, setSimulationResult] = useState<any>(null);
 
   const products = [
-    { name: 'CDB Banco Master', type: 'CDB', rate: '130% CDI', min: 'R$ 1.000', maturity: '2 Anos', risk: 'Baixo' },
-    { name: 'LCA Banco Inter', type: 'LCA', rate: 'IPCA + 6,5%', min: 'R$ 500', maturity: '3 Anos', risk: 'Baixo', taxFree: true },
-    { name: 'Tesouro Selic 2029', type: 'Tesouro', rate: 'Selic + 0,15%', min: 'R$ 140', maturity: '2029', risk: 'Muito Baixo' },
-    { name: 'Debênture Simpar', type: 'Debênture', rate: 'CDI + 2,5%', min: 'R$ 1.000', maturity: '5 Anos', risk: 'Médio', taxFree: true },
-    { name: 'CDB XP Investimentos', type: 'CDB', rate: '115% CDI', min: 'R$ 100', maturity: '1 Ano', risk: 'Baixo' },
+    { name: 'Tesouro Selic 2029', type: 'Tesouro', rate: 'Selic + 0,15%', min: 'R$ 145,00', maturity: '2029', risk: 'Muito Baixo', liquidity: 'D+1' },
+    { name: 'CDB Banco Master', type: 'CDB', rate: '125% CDI', min: 'R$ 1.000,00', maturity: '2 Anos', risk: 'Baixo', liquidity: 'Vencimento' },
+    { name: 'LCA Banco Inter', type: 'LCA', rate: '92% CDI', min: 'R$ 500,00', maturity: '1 Ano', risk: 'Baixo', taxFree: true, liquidity: '90 dias' },
+    { name: 'Tesouro IPCA+ 2029', type: 'Tesouro', rate: 'IPCA + 6,25%', min: 'R$ 40,00', maturity: '2029', risk: 'Baixo', liquidity: 'D+1' },
+    { name: 'Debênture Incentivada Vale', type: 'Debênture', rate: 'IPCA + 7,5%', min: 'R$ 1.000,00', maturity: '2032', risk: 'Médio', taxFree: true, liquidity: 'Mercado Secundário' },
   ];
 
   const handleSimulate = () => {
-    const val = parseFloat(amount.replace(/[^\d.]/g, '')) || 0;
-    const cdi = 0.1065; // 10.65%
-    const years = 1;
+    const p = parseFloat(amount.replace(/[^\d.]/g, '')) || 0;
+    const pmt = parseFloat(monthly.replace(/[^\d.]/g, '')) || 0;
+    const n = parseInt(period) || 12;
     
-    const result = {
-      cdi: val * (1 + cdi * 1.15 * years), // 115% CDI
-      poupanca: val * (1 + 0.0617 * years), // ~6.17%
-      profit: (val * cdi * 1.15 * years)
+    const cdiAnual = 0.1065; // 10.65%
+    const selicAnual = 0.1075; // 10.75%
+    const ipcaAnual = 0.0450; // 4.5%
+    const poupancaAnual = 0.0617; // 6.17%
+
+    const calculateFV = (initial: number, monthly: number, rateAnual: number, months: number) => {
+      const r = Math.pow(1 + rateAnual, 1/12) - 1;
+      const fvInitial = initial * Math.pow(1 + r, months);
+      const fvMonthly = r === 0 ? monthly * months : monthly * ((Math.pow(1 + r, months) - 1) / r);
+      return fvInitial + fvMonthly;
+    };
+
+    const res = {
+      poupanca: calculateFV(p, pmt, poupancaAnual, n),
+      cdi100: calculateFV(p, pmt, cdiAnual, n),
+      cdi120: calculateFV(p, pmt, cdiAnual * 1.2, n),
+      tesouroIPCA: calculateFV(p, pmt, ipcaAnual + 0.06, n),
+      totalInvested: p + (pmt * n)
     };
     
-    setSimulationResult(result);
+    setSimulationResult(res);
   };
 
   return (
-    <div className="space-y-3 pb-12">
+    <div className="space-y-4 pb-12">
       <PageHeader 
         title="Renda Fixa"
         description="Encontre as melhores taxas para investir com segurança e previsibilidade."
         icon={ShieldCheck}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 space-y-3">
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            {['Todos', 'CDBs', 'LCI/LCA', 'Tesouro Direto', 'Debêntures'].map((type, i) => (
-              <button 
-                key={type} 
-                className={`px-6 py-2.5 rounded-xl border text-xxs font-bold uppercase tracking-widest whitespace-nowrap transition-colors ${
-                  i === 0 
-                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' 
-                    : 'bg-slate-800/30 border-slate-800 text-slate-300 hover:bg-slate-800/50'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          {/* Simulator Section */}
+          <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-6 md:p-8 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10" />
+            
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-inner">
+                <Calculator size={24} className="text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">Simulador de Investimentos</h3>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Compare Renda Fixa vs. Poupança</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Valor Inicial</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">R$</span>
+                  <input 
+                    type="number" 
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl pl-10 pr-4 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-bold" 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Aporte Mensal</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">R$</span>
+                  <input 
+                    type="number" 
+                    value={monthly}
+                    onChange={(e) => setMonthly(e.target.value)}
+                    className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl pl-10 pr-4 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-bold" 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Prazo (Meses)</label>
+                <input 
+                  type="number" 
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-bold" 
+                />
+              </div>
+            </div>
+
+            <button 
+              onClick={handleSimulate}
+              className="w-full py-5 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-3"
+            >
+              Calcular Rendimento
+              <ArrowRight size={18} />
+            </button>
+
+            <AnimatePresence>
+              {simulationResult && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-10 pt-10 border-t border-slate-800/50 space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl">
+                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">Resultado em Renda Fixa (120% CDI)</p>
+                      <p className="text-3xl font-black text-white tracking-tighter">
+                        R$ {simulationResult.cdi120.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <div className="mt-4 flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                        <TrendingUp size={16} />
+                        Lucro de R$ {(simulationResult.cdi120 - simulationResult.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <div className="p-6 bg-slate-800/20 border border-slate-800 rounded-3xl">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Resultado na Poupança</p>
+                      <p className="text-3xl font-black text-slate-300 tracking-tighter">
+                        R$ {simulationResult.poupanca.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <div className="mt-4 text-slate-500 text-xs font-bold">
+                        Diferença de R$ {(simulationResult.cdi120 - simulationResult.poupanca).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center gap-4">
+                    <Info size={20} className="text-blue-500 shrink-0" />
+                    <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider">
+                      Investindo em Renda Fixa, você teria um patrimônio <span className="text-emerald-400">{( (simulationResult.cdi120 / simulationResult.poupanca - 1) * 100 ).toFixed(1)}% maior</span> do que na poupança no final do período.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
+          {/* Product List */}
           <div className="space-y-3">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Oportunidades de Mercado</h3>
+              <span className="text-[9px] font-black text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 uppercase tracking-widest">
+                {products.length} ATIVOS
+              </span>
+            </div>
+            
             {products.map((product, idx) => (
               <motion.div 
                 key={idx}
@@ -63,32 +170,38 @@ export default function FixedIncome() {
                 transition={{ delay: idx * 0.05 }}
                 className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 hover:border-blue-500/30 transition-all group cursor-pointer shadow-lg"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 text-xxs font-bold uppercase tracking-widest rounded-md border border-blue-500/20">
-                        {product.type}
-                      </span>
-                      {product.taxFree && (
-                        <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xxs font-bold uppercase tracking-widest rounded-md border border-emerald-500/20">
-                          Isento de IR
-                        </span>
-                      )}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-blue-500 group-hover:border-blue-500/50 transition-colors">
+                      <Wallet size={20} />
                     </div>
-                    <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors tracking-tight">{product.name}</h3>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase tracking-tighter rounded border border-blue-500/20">
+                          {product.type}
+                        </span>
+                        {product.taxFree && (
+                          <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-tighter rounded border border-emerald-500/20">
+                            Isento
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors tracking-tight">{product.name}</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Liquidez: {product.liquidity}</p>
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-3 sm:flex sm:items-center gap-4 sm:gap-10 bg-slate-900/50 p-5 rounded-2xl border border-slate-800">
+                  <div className="grid grid-cols-3 gap-4 md:gap-10 bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50">
                     <div>
-                      <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><TrendingUp size={14} className="text-emerald-500"/> Retorno</div>
+                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">Retorno</div>
                       <div className="text-sm font-black text-emerald-400">{product.rate}</div>
                     </div>
                     <div>
-                      <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><DollarSign size={14} className="text-blue-500"/> Mínimo</div>
+                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">Mínimo</div>
                       <div className="text-sm font-black text-white">{product.min}</div>
                     </div>
                     <div>
-                      <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Calendar size={14} className="text-amber-500"/> Prazo</div>
+                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">Venc.</div>
                       <div className="text-sm font-black text-white">{product.maturity}</div>
                     </div>
                   </div>
@@ -98,78 +211,40 @@ export default function FixedIncome() {
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-6 relative overflow-hidden shadow-lg">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[60px] -z-10" />
-            <h3 className="text-lg font-bold text-white mb-8 flex items-center gap-3">
+        <div className="space-y-4">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-[2rem] p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                 <TrendingUp size={16} className="text-blue-500" />
               </div>
               Taxas de Referência
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {[
-                { label: 'Selic', value: '10,75%', trend: 'stable' },
-                { label: 'CDI', value: '10,65%', trend: 'stable' },
-                { label: 'IPCA (12m)', value: '4,50%', trend: 'up' },
-                { label: 'IGP-M (12m)', value: '-3,20%', trend: 'down' },
+                { label: 'Selic', value: '10,75%', trend: 'Estável' },
+                { label: 'CDI', value: '10,65%', trend: 'Estável' },
+                { label: 'IPCA (12m)', value: '4,50%', trend: 'Alta' },
+                { label: 'IGP-M (12m)', value: '-3,20%', trend: 'Baixa' },
               ].map((rate, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
-                  <span className="text-xxs font-bold text-slate-500 uppercase tracking-widest">{rate.label}</span>
-                  <span className="text-sm font-black text-white">{rate.value}</span>
+                <div key={i} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-2xl border border-slate-800 group hover:border-slate-700 transition-colors">
+                  <div>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">{rate.label}</span>
+                    <span className="text-[8px] font-bold text-slate-600 uppercase tracking-tighter">{rate.trend}</span>
+                  </div>
+                  <span className="text-base font-black text-white">{rate.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/20 rounded-[2rem] p-6 shadow-lg">
-            <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-3">
-              <Calculator size={18} className="text-blue-400" />
-              Simulador Rápido
-            </h4>
-            <div className="space-y-6">
-              <div>
-                <label className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-3 block">Quanto quer investir?</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">R$</span>
-                  <input 
-                    type="text" 
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="1.000,00" 
-                    className="w-full bg-[#0f172a] border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" 
-                  />
-                </div>
-              </div>
-              <button 
-                onClick={handleSimulate}
-                className="w-full py-4 bg-blue-600 text-white rounded-xl text-xxs font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98]"
-              >
-                Simular Rendimento
-              </button>
-
-              {simulationResult && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="pt-6 border-t border-slate-800 space-y-4"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="text-xxs font-bold text-slate-500 uppercase">Em 1 ano (115% CDI)</span>
-                    <span className="text-sm font-black text-emerald-400">R$ {simulationResult.cdi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xxs font-bold text-slate-500 uppercase">Na Poupança</span>
-                    <span className="text-sm font-black text-slate-400">R$ {simulationResult.poupanca.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                    <p className="text-xxs text-emerald-400 font-bold text-center uppercase">
-                      Você ganha R$ {(simulationResult.cdi - simulationResult.poupanca).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} a mais!
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-[2rem] p-6 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <ShieldCheck size={20} className="text-emerald-500" />
+              <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest">Garantia FGC</h4>
             </div>
+            <p className="text-xs text-slate-400 leading-relaxed font-medium">
+              CDBs, LCIs e LCAs contam com a proteção do Fundo Garantidor de Créditos para valores de até R$ 250 mil por CPF e por instituição financeira.
+            </p>
           </div>
         </div>
       </div>

@@ -100,7 +100,7 @@ export default function Calculators() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="lg:col-span-1 space-y-3 bg-white/5 border border-white/10 p-6 rounded-3xl">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             {activeCalc === 'COMPOUND' && (
               <motion.div 
                 key="compound"
@@ -200,7 +200,7 @@ export default function Calculators() {
         </div>
 
         <div className="lg:col-span-2 space-y-3">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             {activeCalc === 'COMPOUND' && (
               <motion.div 
                 key="res-compound"

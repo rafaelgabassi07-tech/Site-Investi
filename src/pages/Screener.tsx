@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Filter, Search, Loader2, ArrowUpDown, ChevronRight, SlidersHorizontal } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { financeService } from '../services/financeService';
 import { AssetIcon } from '../components/ui/AssetIcon';
@@ -177,7 +177,7 @@ export default function Screener() {
 
         {/* Results Area */}
         <div className="lg:col-span-3">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             {!hasSearched ? (
               <motion.div 
                 initial={{ opacity: 0 }}

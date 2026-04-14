@@ -37,7 +37,7 @@ export default function Menu() {
 
   const ferramentas = [
     { icon: Briefcase, label: 'Minha Carteira', to: '/portfolio' },
-    { icon: TrendingUp, label: 'Rentabilidade', to: '/profitability' },
+    { icon: TrendingUp, label: 'Rentabilidade', to: '/portfolio/rentabilidade' },
     { icon: Search, label: 'Buscar Ativos', to: '/search' },
     { icon: GitCompare, label: 'Comparar Ativos', to: '/compare' },
     { icon: Filter, label: 'Busca Avançada (Screener)', to: '/screener' },
@@ -45,7 +45,7 @@ export default function Menu() {
     { icon: FileText, label: 'Motor Fiscal & DARF', to: '/taxes' },
     { icon: Heart, label: 'Favoritos', to: '/favorites' },
     { icon: Newspaper, label: 'Últimas Notícias', to: '/news' },
-    { icon: Calendar, label: 'Agenda de Dividendos', to: '/dividends' },
+    { icon: Calendar, label: 'Agenda de Dividendos', to: '/portfolio/proventos' },
     { icon: Award, label: 'Carteiras Recomendadas', to: '/recommended' },
     { icon: Calculator, label: 'Calculadoras', to: '/calculators' },
     { icon: ShieldCheck, label: 'Renda Fixa', to: '/renda-fixa' },

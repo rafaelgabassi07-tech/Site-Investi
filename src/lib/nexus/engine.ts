@@ -958,12 +958,12 @@ export class NexusEngine {
       // Como não temos uma API direta de ranking, vamos buscar os top ativos do Yahoo Finance
       // ou simular baseado em uma lista pré-definida de ativos populares se a busca falhar.
       const popularTickers: any = {
-        ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3'],
-        FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11'],
-        BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34'],
-        ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'],
-        STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'BRK-B'],
-        CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD']
+        ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3', 'GGBR4', 'SUZB3', 'JBSS3', 'BRFS3', 'LREN3'],
+        FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 'KNIP11', 'DEVA11', 'RECR11', 'VGIR11', 'TGAR11', 'MALV11'],
+        BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'DISB34', 'NFLX34', 'PYPL34'],
+        ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'GOLD11', 'EURP11'],
+        STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'BRK-B', 'V', 'JPM', 'UNH', 'MA', 'PG', 'HD'],
+        CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'DOT-USD', 'MATIC-USD', 'LINK-USD']
       };
 
       const tickers = popularTickers[type] || popularTickers.ACAO;
@@ -976,7 +976,7 @@ export class NexusEngine {
             return {
               ticker: ticker,
               name: data.results.name || ticker,
-              value: data.results.dividendYield || data.results.pl || 'N/A',
+              value: 'N/A',
               subValue: `R$ ${data.results.precoAtual || '0,00'}`,
               raw: data.results
             };
@@ -990,42 +990,65 @@ export class NexusEngine {
 
       // Ordenação baseada na categoria
       let sorted = [...filteredResults];
-      if (category.toLowerCase().includes('dividend') || category.toLowerCase().includes('yield')) {
-        sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw?.dividendYield);
-          const v2 = safeParse(b.raw?.dividendYield);
-          return v2 - v1;
-        });
-      } else if (category.toLowerCase().includes('pl') || category.toLowerCase().includes('baratas')) {
-        sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw?.pl) || 999;
-          const v2 = safeParse(b.raw?.pl) || 999;
-          return v1 - v2;
-        });
-      } else if (category.toLowerCase().includes('altas') || category.toLowerCase().includes('gainers')) {
-        sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw?.variacaoDay);
-          const v2 = safeParse(b.raw?.variacaoDay);
-          return v2 - v1;
-        });
-      } else if (category.toLowerCase().includes('roe')) {
-        sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw?.roe);
-          const v2 = safeParse(b.raw?.roe);
-          return v2 - v1;
-        });
-      } else if (category.toLowerCase().includes('margem')) {
-        sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw?.margemLiquida);
-          const v2 = safeParse(b.raw?.margemLiquida);
-          return v2 - v1;
-        });
-      } else if (category.toLowerCase().includes('pvp')) {
+      const cat = category.toLowerCase();
+
+      if (cat.includes('dividend') || cat.includes('yield') || cat.includes('bazin')) {
+        sorted.sort((a, b) => safeParse(b.raw?.dividendYield) - safeParse(a.raw?.dividendYield));
+        sorted.forEach(s => s.value = s.raw?.dividendYield || '0,00%');
+      } else if (cat.includes('pl') || cat.includes('baratas') || cat.includes('graham')) {
+        if (cat.includes('graham')) {
+          // Graham Formula: sqrt(22.5 * VPA * LPA)
+          sorted.forEach(s => {
+            const vpa = safeParse(s.raw?.vpa);
+            const lpa = safeParse(s.raw?.lpa);
+            if (vpa > 0 && lpa > 0) {
+              const grahamValue = Math.sqrt(22.5 * vpa * lpa);
+              const preco = safeParse(s.raw?.precoAtual);
+              const discount = preco > 0 ? ((grahamValue - preco) / grahamValue) * 100 : 0;
+              s.value = `R$ ${grahamValue.toFixed(2)}`;
+              s.subValue = `${discount.toFixed(1)}% de desconto`;
+              s.sortVal = discount;
+            } else {
+              s.sortVal = -999;
+            }
+          });
+          sorted.sort((a, b) => b.sortVal - a.sortVal);
+        } else {
+          sorted.sort((a, b) => {
+            const v1 = safeParse(a.raw?.pl) || 999;
+            const v2 = safeParse(b.raw?.pl) || 999;
+            return (v1 > 0 && v2 > 0) ? v1 - v2 : v2 - v1;
+          });
+          sorted.forEach(s => s.value = s.raw?.pl || 'N/A');
+        }
+      } else if (cat.includes('altas') || cat.includes('flame')) {
+        sorted.sort((a, b) => safeParse(b.raw?.variacaoDay) - safeParse(a.raw?.variacaoDay));
+        sorted.forEach(s => s.value = s.raw?.variacaoDay || '0,00%');
+      } else if (cat.includes('roe') || cat.includes('trophy')) {
+        sorted.sort((a, b) => safeParse(b.raw?.roe) - safeParse(a.raw?.roe));
+        sorted.forEach(s => s.value = s.raw?.roe || '0,00%');
+      } else if (cat.includes('margem') || cat.includes('pie')) {
+        sorted.sort((a, b) => safeParse(b.raw?.margemLiquida) - safeParse(a.raw?.margemLiquida));
+        sorted.forEach(s => s.value = s.raw?.margemLiquida || '0,00%');
+      } else if (cat.includes('pvp')) {
         sorted.sort((a, b) => {
           const v1 = safeParse(a.raw?.pvp) || 999;
           const v2 = safeParse(b.raw?.pvp) || 999;
-          return v1 - v2;
+          return (v1 > 0 && v2 > 0) ? v1 - v2 : v2 - v1;
         });
+        sorted.forEach(s => s.value = s.raw?.pvp || 'N/A');
+      } else if (cat.includes('capitalização') || cat.includes('maiores')) {
+        sorted.sort((a, b) => (b.raw?.marketCap || 0) - (a.raw?.marketCap || 0));
+        sorted.forEach(s => s.value = s.raw?.marketCap ? `R$ ${(s.raw.marketCap / 1e9).toFixed(2)}B` : 'N/A');
+      } else if (cat.includes('prejuízo') || cat.includes('buy and hold')) {
+        // Filter by positive margins and ROE
+        sorted = sorted.filter(s => safeParse(s.raw?.margemLiquida) > 0 && safeParse(s.raw?.roe) > 0);
+        sorted.sort((a, b) => safeParse(b.raw?.roe) - safeParse(a.raw?.roe));
+        sorted.forEach(s => s.value = s.raw?.roe || '0,00%');
+      } else {
+        // Default sorting by DY if unknown
+        sorted.sort((a, b) => safeParse(b.raw?.dividendYield) - safeParse(a.raw?.dividendYield));
+        sorted.forEach(s => s.value = s.raw?.dividendYield || '0,00%');
       }
 
       const finalData = sorted.slice(0, 10);
@@ -1184,11 +1207,25 @@ export class NexusEngine {
 
   static async searchSuggestions(query: string) {
     try {
-      const result = await yahooFinance.search(query);
-      return result.quotes.slice(0, 5).map((q: any) => ({
-        ticker: q.symbol,
-        name: q.shortname || q.longname,
-        type: q.quoteType
+      const q = query.toUpperCase();
+      const result = await yahooFinance.search(q);
+      
+      // Prioritize Brazilian assets if query looks like a ticker
+      let quotes = result.quotes;
+      if (/^[A-Z]{4}[0-9]{1,2}$/.test(q)) {
+        quotes = quotes.sort((a, b) => {
+          const aIsBr = a.symbol.endsWith('.SA');
+          const bIsBr = b.symbol.endsWith('.SA');
+          if (aIsBr && !bIsBr) return -1;
+          if (!aIsBr && bIsBr) return 1;
+          return 0;
+        });
+      }
+
+      return quotes.slice(0, 6).map((q: any) => ({
+        ticker: q.symbol.replace('.SA', ''),
+        name: q.shortname || q.longname || q.symbol,
+        type: q.quoteType || 'EQUITY'
       }));
     } catch (error) {
       console.error('Error in searchSuggestions:', error);

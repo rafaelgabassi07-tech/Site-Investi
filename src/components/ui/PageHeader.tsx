@@ -19,15 +19,15 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
     >
       <div className="flex items-center gap-5">
         {Icon && (
-          <div className="w-14 h-14 bg-gradient-to-br from-blue-600/20 to-cyan-500/20 rounded-2xl flex items-center justify-center text-blue-500 border border-blue-500/30 shadow-xl shadow-blue-500/10">
-            <Icon size={28} strokeWidth={2.5} />
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-600/20 to-cyan-500/20 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/30 shadow-xl shadow-blue-500/10">
+            <Icon className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
           </div>
         )}
         <div>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-white mb-2 uppercase italic leading-none">
+          <h2 className="text-xl md:text-2xl font-black tracking-tighter text-white mb-1 uppercase italic leading-none">
             {title}
           </h2>
-          <div className="text-slate-400 font-bold text-sm md:text-base tracking-tight max-w-xl">
+          <div className="text-slate-400 font-bold text-xs md:text-sm tracking-tight max-w-xl">
             {description}
           </div>
         </div>

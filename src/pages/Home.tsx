@@ -1,7 +1,5 @@
 import { TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, HelpCircle, Filter, Star, TrendingDown, Bitcoin, Building2, DollarSign, Globe } from 'lucide-react';
-import Dashboard from './Dashboard';
 import { NewsWidget } from '../components/NewsWidget';
-import { MarketMarquee } from '../components/MarketMarquee';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -24,19 +22,47 @@ export default function Home() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => {
-    if (searchQuery.length > 2) {
+    if (searchQuery.length > 1) {
       const timer = setTimeout(async () => {
-        const response = await fetch(`/api/search-suggestions?q=${encodeURIComponent(searchQuery)}`);
-        const data = await response.json();
-        setSuggestions(data);
-      }, 300);
+        try {
+          const response = await fetch(`/api/search-suggestions?q=${encodeURIComponent(searchQuery)}`);
+          const data = await response.json();
+          setSuggestions(data);
+          setSelectedIndex(-1);
+        } catch (err) {
+          console.error('Error fetching suggestions:', err);
+        }
+      }, 200);
       return () => clearTimeout(timer);
     } else {
       setSuggestions([]);
+      setSelectedIndex(-1);
     }
   }, [searchQuery]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev));
+    } else if (e.key === 'Enter') {
+      if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+        navigate(`/asset/${suggestions[selectedIndex].ticker}`);
+        setSearchQuery('');
+        setSuggestions([]);
+      } else if (searchQuery) {
+        navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+        setSuggestions([]);
+      }
+    } else if (e.key === 'Escape') {
+      setSuggestions([]);
+    }
+  };
 
   const [marketStats, setMarketStats] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -135,36 +161,28 @@ export default function Home() {
 
   return (
     <div className="space-y-6 pb-12 overflow-hidden">
-      {/* Market Marquee */}
-      <div className="fixed top-20 left-0 right-0 z-40">
-        <MarketMarquee />
-      </div>
-
       {/* Hero Section */}
-      <section className="pt-20 md:pt-24">
+      <section className="pt-8 md:pt-12">
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="flex justify-center"
+            className="flex justify-center mb-6"
           >
-            <Logo size={80} showText className="flex-col gap-4" />
+            <Logo size={64} showText className="flex-col gap-3" />
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="space-y-4"
+            className="space-y-3"
           >
-            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-[0.9] uppercase italic">
-              Ajudamos você a <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400 drop-shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-                investir melhor
-              </span>
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-tighter leading-none uppercase italic">
+              Ajudamos você a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400 drop-shadow-[0_0_15px_rgba(37,99,235,0.3)]">investir melhor</span>
             </h1>
-            <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-bold tracking-tight">
+            <p className="text-slate-400 text-base md:text-lg max-w-xl mx-auto font-bold tracking-tight opacity-80">
               Pesquise pelo ativo desejado para ter acesso a cotação, fundamentos e gráficos em tempo real.
             </p>
           </motion.div>
@@ -183,15 +201,11 @@ export default function Home() {
               </div>
               <input 
                 type="text" 
-                placeholder="Busque ativos..." 
+                placeholder="Busque ativos (ex: PETR4, VALE3, BTC)..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="flex-1 min-w-0 bg-transparent border-none outline-none py-3 px-3 text-sm md:text-lg text-white placeholder:text-slate-600"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery) {
-                    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-                  }
-                }}
               />
               <button 
                 onClick={() => {
@@ -204,23 +218,65 @@ export default function Home() {
             </div>
             
             {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="absolute w-full mt-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                {suggestions.map((s) => (
-                  <Link 
-                    key={s.ticker} 
-                    to={`/asset/${s.ticker}`}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-slate-800/50 transition-colors"
-                  >
-                    <div>
-                      <div className="font-bold text-white text-sm">{s.ticker}</div>
-                      <div className="text-xs text-slate-500">{s.name}</div>
-                    </div>
-                    <div className="text-xs text-slate-600 uppercase">{s.type}</div>
-                  </Link>
-                ))}
-              </div>
-            )}
+            <AnimatePresence>
+              {suggestions.length > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute w-full mt-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                >
+                  <div className="p-2 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Sugestões Inteligentes</span>
+                    <span className="text-[10px] text-slate-600 px-2">↑↓ para navegar</span>
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto no-scrollbar">
+                    {suggestions.map((s, idx) => (
+                      <Link 
+                        key={s.ticker} 
+                        to={`/asset/${s.ticker}`}
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSuggestions([]);
+                        }}
+                        className={`flex items-center justify-between px-4 py-3 transition-all ${
+                          selectedIndex === idx ? 'bg-blue-600/20 border-l-4 border-blue-500' : 'hover:bg-slate-800/50 border-l-4 border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-bold text-white border border-slate-700">
+                            {s.ticker.substring(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-white text-sm flex items-center gap-2">
+                              {s.ticker}
+                              {s.price && <span className="text-[10px] font-mono text-slate-400">R$ {s.price}</span>}
+                            </div>
+                            <div className="text-xs text-slate-500 truncate max-w-[200px]">{s.name}</div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="text-[10px] font-black text-slate-600 uppercase tracking-tighter bg-slate-800 px-1.5 py-0.5 rounded">{s.type}</div>
+                          {s.change && (
+                            <span className={`text-[10px] font-bold ${s.positive ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {s.change}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  {searchQuery && (
+                    <Link 
+                      to={`/search?q=${encodeURIComponent(searchQuery)}`}
+                      className="block p-3 text-center text-xs font-bold text-blue-500 hover:bg-blue-500/10 transition-colors border-t border-slate-800"
+                    >
+                      Ver todos os resultados para "{searchQuery}"
+                    </Link>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {/* Most Searched Tags */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
@@ -279,7 +335,7 @@ export default function Home() {
 
       {/* Market Sentiment & Quick Stats */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden group shadow-lg">
+        <div className="lg:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl p-4 md:p-6 relative overflow-hidden group shadow-lg">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
           
           <div className="flex items-center justify-between mb-8">
@@ -298,9 +354,14 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-10">
-            <div className="relative w-48 h-24 overflow-hidden">
-              {/* Gauge Background */}
-              <svg className="w-48 h-24" viewBox="0 0 100 50">
+            <div className="relative w-64 h-32 flex items-center justify-center">
+              {/* Background Glow */}
+              <div className={`absolute inset-0 blur-[60px] opacity-20 transition-all duration-1000 ${
+                sentiment.color === 'emerald' ? 'bg-emerald-500' : sentiment.color === 'red' ? 'bg-red-500' : 'bg-slate-500'
+              }`} />
+              
+              <svg className="w-full h-full" viewBox="0 0 100 50">
+                {/* Background Path */}
                 <path 
                   d="M 10 50 A 40 40 0 0 1 90 50" 
                   fill="none" 
@@ -308,62 +369,81 @@ export default function Home() {
                   strokeWidth="8" 
                   strokeLinecap="round"
                 />
-                {/* Active Path */}
+                
+                {/* Segments Indicators */}
+                <path d="M 10 50 A 40 40 0 0 1 26 15.4" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
+                <path d="M 26 15.4 A 40 40 0 0 1 50 10" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
+                <path d="M 50 10 A 40 40 0 0 1 74 15.4" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
+                <path d="M 74 15.4 A 40 40 0 0 1 90 50" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
+                
+                {/* Active Path with Gradient */}
+                <defs>
+                  <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="50%" stopColor="#f59e0b" />
+                    <stop offset="100%" stopColor="#10b981" />
+                  </linearGradient>
+                </defs>
+                
                 <path 
                   d="M 10 50 A 40 40 0 0 1 90 50" 
                   fill="none" 
-                  stroke={sentiment.color === 'emerald' ? '#10b981' : sentiment.color === 'red' ? '#ef4444' : '#64748b'} 
+                  stroke="url(#gaugeGradient)" 
                   strokeWidth="8" 
                   strokeLinecap="round"
-                  strokeDasharray={`${(sentiment.score / 100) * 125.6} 125.6`}
+                  strokeDasharray="125.6"
+                  strokeDashoffset={125.6 - (sentiment.score / 100) * 125.6}
                   className="transition-all duration-1000 ease-out"
                 />
               </svg>
               
               {/* Needle */}
-              <div 
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-20 bg-white origin-bottom transition-transform duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.5)] z-10" 
-                style={{ transform: `translateX(-50%) rotate(${(sentiment.score / 100) * 180 - 90}deg)` }}
-              />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-slate-900 z-20" />
+              <motion.div 
+                initial={{ rotate: -90 }}
+                animate={{ rotate: (sentiment.score / 100) * 180 - 90 }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-24 origin-bottom z-10"
+              >
+                <div className="w-full h-full bg-gradient-to-t from-white to-transparent rounded-full shadow-[0_0_15px_rgba(255,255,255,0.8)]" />
+              </motion.div>
+              
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-900 border-4 border-white rounded-full z-20 shadow-xl" />
               
               {/* Labels */}
-              <div className="absolute bottom-0 left-2 text-[10px] font-bold text-red-500">MEDO</div>
-              <div className="absolute bottom-0 right-2 text-[10px] font-bold text-emerald-500">GANÂNCIA</div>
+              <div className="absolute -bottom-2 left-4 text-[9px] font-black text-red-500 uppercase tracking-widest">Extremo Medo</div>
+              <div className="absolute -bottom-2 right-4 text-[9px] font-black text-emerald-500 uppercase tracking-widest">Extrema Ganância</div>
             </div>
             
-            <div className="flex-1 space-y-3 text-center md:text-left">
-              <div className={`inline-block px-3 py-1 rounded-lg text-xs font-semibold ${
-                sentiment.color === 'emerald' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' :
-                sentiment.color === 'red' ? 'bg-red-500/10 border border-red-500/20 text-red-400' :
-                'bg-slate-500/10 border border-slate-500/20 text-slate-400'
-              }`}>
-                {sentiment.label}
+            <div className="flex-1 space-y-4 text-center md:text-left">
+              <div className="space-y-1">
+                <div className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+                  sentiment.color === 'emerald' ? 'text-emerald-500' : sentiment.color === 'red' ? 'text-red-500' : 'text-slate-500'
+                }`}>
+                  Status do Mercado
+                </div>
+                <h3 className="text-4xl font-black text-white tracking-tighter italic flex items-baseline gap-2">
+                  {sentiment.label}
+                  <span className="text-slate-600 text-xl font-medium not-italic">({sentiment.score})</span>
+                </h3>
               </div>
-              <h3 className="text-3xl font-black text-white tracking-tighter italic">Score: {sentiment.score}<span className="text-slate-600 text-xl">/100</span></h3>
-              <p className="text-sm text-slate-400 leading-relaxed max-w-md">
+              <p className="text-sm text-slate-400 leading-relaxed max-w-md font-medium">
                 {sentiment.desc}
               </p>
+              <div className="flex items-center gap-4 pt-2">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Ontem</span>
+                  <span className="text-sm font-bold text-white">42 (Medo)</span>
+                </div>
+                <div className="w-px h-8 bg-slate-800" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Semana Passada</span>
+                  <span className="text-sm font-bold text-white">58 (Neutro)</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 md:p-8 text-white relative overflow-hidden group shadow-lg shadow-blue-500/10">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 group-hover:bg-white/20 transition-all" />
-          <Zap size={48} className="text-white/20 absolute -bottom-4 -right-4 rotate-12 group-hover:scale-110 transition-transform" />
-          
-          <h3 className="text-lg font-bold mb-3 tracking-tight">Nexus PRO</h3>
-          <p className="text-blue-100 text-sm leading-relaxed mb-6 font-medium">
-            Desbloqueie o potencial máximo dos seus investimentos com ferramentas exclusivas de análise e gestão.
-          </p>
-          <button className="w-full py-3 bg-white text-blue-700 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors">
-            Conhecer o PRO
-          </button>
-        </div>
-      </section>
-
-      <section id="dashboard" className="scroll-mt-32">
-        <Dashboard />
       </section>
       
       {/* Rankings Section - Enhanced with Tabs and Real Data */}
@@ -499,8 +579,15 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-[#0f172a] border border-slate-800 rounded-3xl p-8 shadow-2xl"
+              className="relative w-full max-w-lg bg-[#0f172a] border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
             >
+              <button 
+                onClick={() => setShowSentimentInfo(false)}
+                className="absolute top-4 right-4 p-2 text-slate-500 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                   <Info size={24} className="text-blue-500" />
@@ -584,7 +671,7 @@ export default function Home() {
             { icon: Briefcase, label: 'Minha Carteira', to: '/portfolio', color: 'emerald' },
             { icon: Newspaper, label: 'Últimas Notícias', to: '/news', color: 'purple' },
             { icon: Award, label: 'Rankings', to: '/ranking', color: 'amber' },
-            { icon: Calendar, label: 'Dividendos', to: '/dividends', color: 'pink' },
+            { icon: Calendar, label: 'Dividendos', to: '/portfolio/proventos', color: 'pink' },
             { icon: Award, label: 'Recomendadas', to: '/recommended', color: 'indigo' },
             { icon: BarChart3, label: 'Calculadoras', to: '/calculators', color: 'cyan' },
             { icon: Shield, label: 'Renda Fixa', to: '/renda-fixa', color: 'orange' },

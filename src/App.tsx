@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
 import Portfolio from './pages/Portfolio';
 import PortfolioSummaryPage from './pages/PortfolioSummaryPage';
 import Transactions from './pages/Transactions';
@@ -29,6 +28,9 @@ import BeginnersGuide from './pages/BeginnersGuide';
 
 import { PortfolioProvider } from './contexts/PortfolioProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ScrollToTop } from './components/ScrollToTop';
+
+import PortfolioLayout from './components/PortfolioLayout';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -36,6 +38,7 @@ export default function App() {
   const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
+    window.history.scrollRestoration = 'manual';
     const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
     if (!isConfigured) {
       setConfigError('Erro de Configuração: As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram encontradas no painel de Settings.');
@@ -81,19 +84,29 @@ export default function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <ScrollToTop />
         <Routes>
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
           <Route path="/" element={user ? <PortfolioProvider><Layout /></PortfolioProvider> : <Navigate to="/login" />}>
             <Route index element={<Home />} />
-            <Route path="portfolio" element={<Portfolio />} />
-            <Route path="portfolio/resumo" element={<PortfolioSummaryPage />} />
+            
+            {/* Portfolio Section with Shared Layout */}
+            <Route path="portfolio" element={<PortfolioLayout />}>
+              <Route index element={<Portfolio />} />
+              <Route path="resumo" element={<PortfolioSummaryPage />} />
+              <Route path="lancamentos" element={<Transactions />} />
+              <Route path="proventos" element={<Dividends />} />
+              <Route path="rentabilidade" element={<Profitability />} />
+            </Route>
+
             <Route path="search" element={<Search />} />
             <Route path="ranking" element={<Ranking />} />
             <Route path="screener" element={<Screener />} />
             <Route path="menu" element={<Menu />} />
             <Route path="settings" element={<Settings />} />
             <Route path="news" element={<News />} />
-            <Route path="dividends" element={<Dividends />} />
+            <Route path="dividends" element={<Navigate to="/portfolio/proventos" replace />} />
+            <Route path="profitability" element={<Navigate to="/portfolio/rentabilidade" replace />} />
             <Route path="calculators" element={<Calculators />} />
             <Route path="recommended" element={<RecommendedPortfolios />} />
             <Route path="asset/:ticker" element={<Asset />} />
@@ -102,7 +115,6 @@ export default function App() {
             <Route path="rebalance" element={<Rebalance />} />
             <Route path="taxes" element={<Taxes />} />
             <Route path="about" element={<About />} />
-            <Route path="profitability" element={<Profitability />} />
             <Route path="favorites" element={<Favorites />} />
             <Route path="guide" element={<BeginnersGuide />} />
           </Route>

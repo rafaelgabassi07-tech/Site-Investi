@@ -47,8 +47,14 @@ export function MarketMarquee() {
   // Duplicate stats for seamless looping
   const doubledStats = [...displayStats, ...displayStats];
 
+  // Check if market is open (B3: Mon-Fri, 10:00 - 17:00 BRT)
+  const brtTime = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+  const day = brtTime.getDay();
+  const hour = brtTime.getHours();
+  const isMarketOpen = day >= 1 && day <= 5 && hour >= 10 && hour < 17;
+
   return (
-    <div className="w-full bg-[#0f172a]/80 backdrop-blur-md border-b border-white/5 h-10 flex items-center overflow-hidden relative z-40">
+    <div className="w-full bg-[#0f172a] border-b border-white/5 h-10 flex items-center overflow-hidden relative z-40">
       <motion.div 
         className="flex items-center gap-8 whitespace-nowrap px-4"
         animate={{ x: [0, -1000] }}
@@ -70,10 +76,12 @@ export function MarketMarquee() {
         ))}
       </motion.div>
       
-      {/* Live Indicator Overlay */}
+      {/* Market Status Indicator Overlay */}
       <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-[#0f172a] via-[#0f172a] to-transparent pl-12 pr-4 flex items-center gap-2 pointer-events-none">
-        <div className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${loading ? 'animate-pulse' : ''}`} />
-        <span className="text-tiny font-black text-emerald-500 uppercase tracking-widest">Live</span>
+        <div className={`w-1.5 h-1.5 rounded-full ${isMarketOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
+        <span className={`text-tiny font-black uppercase tracking-widest ${isMarketOpen ? 'text-emerald-500' : 'text-slate-500'}`} title="Simulação baseada no horário de Brasília (B3)">
+          {isMarketOpen ? 'Mercado Aberto' : 'Mercado Fechado'}
+        </span>
       </div>
     </div>
   );

@@ -1,19 +1,19 @@
 import { usePortfolio } from '../hooks/usePortfolio';
-import { Search, Loader2, Briefcase, ChevronRight, Globe, BarChart2, PieChart as PieIcon, DollarSign, TrendingUp, BarChart3, List, HelpCircle, TrendingDown, Plus } from 'lucide-react';
+import { Search, Loader2, Briefcase, ChevronRight, Globe, BarChart2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails } from '../services/financeService';
-import Transactions from './Transactions';
-import { Link } from 'react-router-dom';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { Link, useNavigate } from 'react-router-dom';
+import { PortfolioNav } from '../components/PortfolioNav';
 
 export default function Portfolio() {
   const { portfolio, loading } = usePortfolio();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [assetDetails, setAssetDetails] = useState<AssetDetails | null>(null);
   const [fetchingDetails, setFetchingDetails] = useState(false);
+  const navigate = useNavigate();
 
   const handleFetchDetails = async (ticker: string, assetType: string) => {
     setSelectedTicker(ticker);
@@ -35,47 +35,15 @@ export default function Portfolio() {
     </div>
   );
 
-  const totalInvested = portfolio.reduce((acc, item) => acc + item.totalInvested, 0);
-  const currentTotalValue = portfolio.reduce((acc, item) => acc + (item.currentValue || item.totalInvested), 0);
-  const totalProfit = currentTotalValue - totalInvested;
-  const totalProfitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
-  const totalAssets = portfolio.length;
-
-  // Pie Chart Data
-  const allocationData = portfolio.reduce((acc: any[], item) => {
-    const existing = acc.find(a => a.name === item.assetType);
-    if (existing) {
-      existing.value += item.currentValue || item.totalInvested;
-    } else {
-      acc.push({ name: item.assetType, value: item.currentValue || item.totalInvested });
-    }
-    return acc;
-  }, []).sort((a, b) => b.value - a.value);
-
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
-
-  const menuItems = [
-    { icon: PieIcon, label: 'Resumo', to: '/portfolio/resumo' },
-    { icon: DollarSign, label: 'Proventos', to: '/dividends' },
-    { icon: TrendingUp, label: 'Rentabilidade', to: '#' },
-    { icon: BarChart3, label: 'Evolução do Patrimônio', to: '#' },
-    { icon: Briefcase, label: 'Ativos na carteira', to: '#' },
-    { icon: List, label: 'Meus ativos', to: '#' },
-    { icon: HelpCircle, label: 'Dúvidas comuns', to: '#' },
-  ];
-
   return (
-    <div className="section-spacing space-y-4">
+    <div className="space-y-4">
       <PageHeader 
-        title="Minha Carteira"
+        title="Meus Ativos"
         description={<>Gestão estratégica de ativos e alocação via <span className="text-blue-500 font-bold">Invest Engine</span>.</>}
         icon={Briefcase}
         actions={
           <button 
-            onClick={() => {
-              const el = document.getElementById('transactions-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onClick={() => navigate('/portfolio/lancamentos')}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20"
           >
             <Plus size={16} />
@@ -83,25 +51,6 @@ export default function Portfolio() {
           </button>
         }
       />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 element-spacing">
-        {menuItems.map((item, idx) => (
-          <Link key={idx} to={item.to} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/5 hover:border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:bg-slate-800 transition-colors">
-                <item.icon size={18} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
-              </div>
-              <span className="text-slate-200 font-medium text-sm">{item.label}</span>
-            </div>
-            <ChevronRight size={16} className="text-slate-600" />
-          </Link>
-        ))}
-      </div>
-
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent element-spacing" />
-
-
-
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div 
@@ -236,12 +185,12 @@ export default function Portfolio() {
               </h3>
               {assetDetails && (
                 <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg text-xs font-semibold">
-                  Live Data
+                  Tempo Real
                 </div>
               )}
             </div>
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               {fetchingDetails ? (
                 <motion.div 
                   key="loading"
@@ -257,7 +206,7 @@ export default function Portfolio() {
                     </div>
                   </div>
                   <p className="text-sm font-semibold text-white">Sincronizando Dados...</p>
-                  <p className="text-xs mt-2 font-medium text-slate-400">Buscando cotações em tempo real</p>
+                  <p className="text-xs mt-2 font-medium text-slate-400">Tempo real</p>
                 </motion.div>
               ) : assetDetails ? (
                 <motion.div 
@@ -367,11 +316,6 @@ export default function Portfolio() {
           <span>Status: Optimal</span>
         </div>
       </motion.div>
-
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent my-12" />
-      <div id="transactions-section">
-        <Transactions />
-      </div>
     </div>
   );
 }

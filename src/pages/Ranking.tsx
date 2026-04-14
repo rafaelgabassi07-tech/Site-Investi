@@ -14,18 +14,18 @@ export default function Ranking() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const categories = [
-    { title: 'Dividend Yield', icon: DollarSign, color: 'emerald', description: 'Ativos que mais pagam dividendos.' },
-    { title: 'Menores PLs', icon: ArrowDownRight, color: 'blue', description: 'Ativos com menor relação Preço/Lucro.' },
-    { title: 'Nunca Tiveram Prejuízo', icon: Shield, color: 'indigo', description: 'Empresas com histórico sólido de lucros.' },
-    { title: 'Maior Capitalização', icon: TrendingUp, color: 'purple', description: 'As maiores empresas da bolsa.' },
-    { title: 'Mais Baratas (Graham)', icon: Gem, color: 'amber', description: 'Ativos descontados pelo método Graham.' },
-    { title: 'Margem Líquida', icon: PieChart, color: 'cyan', description: 'Empresas mais eficientes em transformar receita em lucro.' },
-    { title: 'Melhores Para Buy And Hold', icon: Target, color: 'rose', description: 'Seleção Nexus para longo prazo.' },
-    { title: 'As mais queridas', icon: Heart, color: 'pink', description: 'Ativos mais favoritados pelos usuários.' },
-    { title: 'Mais Baratas (Bazin)', icon: Zap, color: 'yellow', description: 'Oportunidades pelo método Décio Bazin.' },
-    { title: 'Maiores ROEs', icon: Trophy, color: 'orange', description: 'Maior retorno sobre o patrimônio líquido.' },
-    { title: 'Maiores Altas (30d)', icon: Flame, color: 'red', description: 'Ativos com melhor performance recente.' },
-    { title: 'Crescimento de Lucro', icon: Zap, color: 'emerald', description: 'Empresas que mais cresceram seus lucros.' },
+    { title: 'Dividend Yield', icon: DollarSign, color: 'emerald', description: 'Ativos que mais pagam dividendos.', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-500', glow: 'group-hover:bg-emerald-500/10' },
+    { title: 'Menores PLs', icon: ArrowDownRight, color: 'blue', description: 'Ativos com menor relação Preço/Lucro.', bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-500', glow: 'group-hover:bg-blue-500/10' },
+    { title: 'Nunca Tiveram Prejuízo', icon: Shield, color: 'indigo', description: 'Empresas com histórico sólido de lucros.', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-500', glow: 'group-hover:bg-indigo-500/10' },
+    { title: 'Maior Capitalização', icon: TrendingUp, color: 'purple', description: 'As maiores empresas da bolsa.', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-500', glow: 'group-hover:bg-purple-500/10' },
+    { title: 'Mais Baratas (Graham)', icon: Gem, color: 'amber', description: 'Ativos descontados pelo método Graham.', bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-500', glow: 'group-hover:bg-amber-500/10' },
+    { title: 'Margem Líquida', icon: PieChart, color: 'cyan', description: 'Empresas mais eficientes em transformar receita em lucro.', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-500', glow: 'group-hover:bg-cyan-500/10' },
+    { title: 'Melhores Para Buy And Hold', icon: Target, color: 'rose', description: 'Seleção Nexus para longo prazo.', bg: 'bg-rose-500/10', border: 'border-rose-500/20', text: 'text-rose-500', glow: 'group-hover:bg-rose-500/10' },
+    { title: 'As mais queridas', icon: Heart, color: 'pink', description: 'Ativos mais favoritados pelos usuários.', bg: 'bg-pink-500/10', border: 'border-pink-500/20', text: 'text-pink-500', glow: 'group-hover:bg-pink-500/10' },
+    { title: 'Mais Baratas (Bazin)', icon: Zap, color: 'yellow', description: 'Oportunidades pelo método Décio Bazin.', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-500', glow: 'group-hover:bg-yellow-500/10' },
+    { title: 'Maiores ROEs', icon: Trophy, color: 'orange', description: 'Maior retorno sobre o patrimônio líquido.', bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-500', glow: 'group-hover:bg-orange-500/10' },
+    { title: 'Maiores Altas (30d)', icon: Flame, color: 'red', description: 'Ativos com melhor performance recente.', bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-500', glow: 'group-hover:bg-red-500/10' },
+    { title: 'Crescimento de Lucro', icon: Zap, color: 'emerald', description: 'Empresas que mais cresceram seus lucros.', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-500', glow: 'group-hover:bg-emerald-500/10' },
   ];
 
   const handleCategoryClick = async (cat: string) => {
@@ -54,7 +54,7 @@ export default function Ranking() {
 
   return (
     <div className="space-y-3 pb-12 max-w-7xl mx-auto">
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         {!selectedCategory ? (
           <motion.div
             key="categories"
@@ -117,10 +117,10 @@ export default function Ranking() {
                   onClick={() => handleCategoryClick(cat.title)}
                   className="group relative p-4 flex flex-col gap-4 transition-all cursor-pointer hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden"
                 >
-                  <div className={`absolute top-0 right-0 w-32 h-32 bg-${cat.color}-500/5 blur-[40px] -z-10 group-hover:bg-${cat.color}-500/10 transition-all`} />
+                  <div className={`absolute top-0 right-0 w-32 h-32 ${cat.bg} blur-[40px] -z-10 ${cat.glow} transition-all`} />
                   
-                  <div className={`w-14 h-14 rounded-2xl bg-${cat.color}-500/10 flex items-center justify-center border border-${cat.color}-500/20 group-hover:scale-110 transition-transform duration-500`}>
-                    <cat.icon size={24} className={`text-${cat.color}-500`} />
+                  <div className={`w-14 h-14 rounded-2xl ${cat.bg} flex items-center justify-center border ${cat.border} group-hover:scale-110 transition-transform duration-500`}>
+                    <cat.icon size={24} className={cat.text} />
                   </div>
                   
                   <div>
@@ -217,22 +217,22 @@ export default function Ranking() {
                           </div>
                           
                           <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center p-2 shadow-xl border border-slate-800 group-hover:scale-110 transition-transform duration-500">
+                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1.5 shadow-lg border border-slate-800 group-hover:scale-110 transition-transform duration-500">
                               <AssetIcon assetType={selectedType as any} ticker={item.ticker} className="w-full h-full" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-black text-white text-xl tracking-tight group-hover:text-blue-400 transition-colors">{item.ticker}</span>
-                                {idx === 0 && <Trophy size={14} className="text-amber-400" />}
+                                <span className="font-black text-white text-base tracking-tight group-hover:text-blue-400 transition-colors">{item.ticker}</span>
+                                {idx === 0 && <Trophy size={12} className="text-amber-400" />}
                               </div>
-                              <div className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{item.name}</div>
+                              <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">{item.name}</div>
                             </div>
                           </div>
                         </div>
 
                         <div className="text-right">
-                          <div className="text-2xl font-black text-white tracking-tighter">{item.value}</div>
-                          <div className="text-xxs font-black text-slate-600 mt-1 uppercase tracking-[0.2em]">{item.subValue}</div>
+                          <div className="text-lg font-black text-white tracking-tighter">{item.value}</div>
+                          <div className="text-[9px] font-black text-slate-600 mt-0.5 uppercase tracking-[0.2em]">{item.subValue}</div>
                         </div>
                       </Link>
                     </motion.div>

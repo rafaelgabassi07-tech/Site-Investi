@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Loader2, History, ArrowUpRight, ArrowDownRight, Calendar, Tag, DollarSign, Layers, Trash2 } from 'lucide-react';
+import { Plus, Loader2, History, ArrowUpRight, ArrowDownRight, Calendar, Tag, DollarSign, Layers, Trash2, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { AssetIcon } from '../components/ui/AssetIcon';
+import { PortfolioNav } from '../components/PortfolioNav';
+import * as XLSX from 'xlsx';
 
 export default function Transactions() {
   const { transactions } = usePortfolio();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [ticker, setTicker] = useState('');
   const [type, setType] = useState<'BUY' | 'SELL'>('BUY');
   const [assetType, setAssetType] = useState('ACAO');
@@ -36,17 +39,27 @@ export default function Transactions() {
 
       if (isConfigured) {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Usuário não autenticado');
+        if (!user) throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
 
         const { error } = await supabase
           .from('transactions')
           .insert({
-            ...newTransaction,
-            user_id: user.id,
-            id: undefined // Let Supabase generate the ID
+            ticker: newTransaction.ticker,
+            type: newTransaction.type,
+            asset_type: newTransaction.assetType,
+            quantity: newTransaction.quantity,
+            price: newTransaction.price,
+            date: newTransaction.date,
+            user_id: user.id
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Erro Supabase:', error);
+          if (error.code === '42P01') {
+            throw new Error('A tabela "transactions" não foi encontrada no Supabase. Consulte o arquivo DATABASE.md para instruções de configuração.');
+          }
+          throw error;
+        }
       } else {
         // Fallback to localStorage
         const existingTxs = JSON.parse(localStorage.getItem('invest_transactions') || '[]');
@@ -68,12 +81,131 @@ export default function Transactions() {
     }
   };
 
+  const handleExport = () => {
+    const dataToExport = transactions.map(tx => ({
+      Data: new Date(tx.date).toLocaleDateString('pt-BR'),
+      Ticker: tx.ticker,
+      Tipo: tx.type === 'BUY' ? 'Compra' : 'Venda',
+      Quantidade: tx.quantity,
+      Preço: tx.price,
+      Total: tx.quantity * tx.price,
+      'Tipo de Ativo': tx.assetType
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transações");
+    XLSX.writeFile(wb, `Nexus_Invest_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws) as any[];
+
+        const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const newTxs: any[] = [];
+
+        for (const row of data) {
+          // Mapeamento básico para compatibilidade B3/Nexus
+          const ticker = row.Ticker || row['Código de Negociação'] || row['Ativo'];
+          const type = (row.Tipo || row['Movimentação'] || '').toUpperCase().includes('VENDA') ? 'SELL' : 'BUY';
+          const quantity = parseFloat(row.Quantidade || row['Qtd.'] || 0);
+          const price = parseFloat(row.Preço || row['Preço Unitário'] || 0);
+          const dateStr = row.Data || row['Data do Pregão'];
+          
+          let date;
+          if (typeof dateStr === 'number') {
+            // Excel date format
+            date = new Date((dateStr - 25569) * 86400 * 1000).toISOString();
+          } else {
+            const parts = dateStr.split('/');
+            date = parts.length === 3 ? new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).toISOString() : new Date().toISOString();
+          }
+
+          if (ticker && quantity > 0) {
+            newTxs.push({
+              id: crypto.randomUUID(),
+              ticker: ticker.toString().toUpperCase(),
+              type,
+              assetType: row['Tipo de Ativo'] || 'ACAO',
+              quantity,
+              price,
+              date
+            });
+          }
+        }
+
+        if (newTxs.length === 0) throw new Error('Nenhuma transação válida encontrada no arquivo.');
+
+        if (isConfigured) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('Usuário não autenticado');
+
+          const { error } = await supabase.from('transactions').insert(
+            newTxs.map(tx => ({
+              ticker: tx.ticker,
+              type: tx.type,
+              asset_type: tx.assetType,
+              quantity: tx.quantity,
+              price: tx.price,
+              date: tx.date,
+              user_id: user.id
+            }))
+          );
+          if (error) throw error;
+        } else {
+          const existingTxs = JSON.parse(localStorage.getItem('invest_transactions') || '[]');
+          const combined = [...existingTxs, ...newTxs];
+          localStorage.setItem('invest_transactions', JSON.stringify(combined));
+          window.dispatchEvent(new Event('invest_transactions_updated'));
+        }
+
+        setMessage(`${newTxs.length} transações importadas com sucesso!`);
+        setTimeout(() => setMessage(''), 3000);
+      } catch (err) {
+        console.error('Import failed', err);
+        setMessage(`Erro na importação: ${err instanceof Error ? err.message : 'Arquivo inválido'}`);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   return (
     <div className="space-y-8">
       <PageHeader 
         title="Lançamentos"
         description={<>Registre suas operações e mantenha seu histórico atualizado no <span className="text-blue-500 font-bold">Invest Engine</span>.</>}
         icon={History}
+        actions={
+          <div className="flex items-center gap-2">
+            <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".xlsx,.xls,.csv" />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2.5 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+              title="Importar Excel B3"
+            >
+              <Upload size={16} />
+              <span className="hidden md:inline">Importar</span>
+            </button>
+            <button 
+              onClick={handleExport}
+              className="p-2.5 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+              title="Exportar Backup"
+            >
+              <Download size={16} />
+              <span className="hidden md:inline">Exportar</span>
+            </button>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

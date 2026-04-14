@@ -18,8 +18,12 @@ export default function Asset() {
   const [error, setError] = useState<string | null>(null);
   const [activePeriod, setActivePeriod] = useState('1y');
 
+  const [isFavorite, setIsFavorite] = useState(false);
+
   useEffect(() => {
     if (!ticker) return;
+    const favorites = JSON.parse(localStorage.getItem('nexus_favorites') || '[]');
+    setIsFavorite(favorites.includes(ticker));
 
     const fetchData = async () => {
       setLoading(true);
@@ -46,6 +50,19 @@ export default function Asset() {
     fetchData();
   }, [ticker, activePeriod]);
 
+  const toggleFavorite = () => {
+    if (!ticker) return;
+    const favorites = JSON.parse(localStorage.getItem('nexus_favorites') || '[]');
+    let newFavorites;
+    if (favorites.includes(ticker)) {
+      newFavorites = favorites.filter((f: string) => f !== ticker);
+    } else {
+      newFavorites = [...favorites, ticker];
+    }
+    localStorage.setItem('nexus_favorites', JSON.stringify(newFavorites));
+    setIsFavorite(!isFavorite);
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 max-w-5xl mx-auto">
@@ -57,7 +74,7 @@ export default function Asset() {
         </div>
         <div className="text-center space-y-3">
           <h2 className="text-2xl font-black text-white uppercase tracking-tighter animate-pulse">Analisando {ticker}</h2>
-          <p className="text-slate-400 font-medium max-w-xs mx-auto">Estamos processando indicadores fundamentalistas e dados históricos em tempo real.</p>
+          <p className="text-slate-400 font-medium max-w-xs mx-auto text-sm">Processando dados em tempo real...</p>
         </div>
         
         {/* Skeleton Preview */}
@@ -130,8 +147,11 @@ export default function Asset() {
               <p className="text-sm text-slate-400 font-medium">{results.name || 'Empresa'}</p>
             </div>
           </div>
-          <button className="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-all border border-slate-700 group">
-            <Star size={24} className="text-slate-500 group-hover:text-amber-400 transition-colors" />
+          <button 
+            onClick={toggleFavorite}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all border group ${isFavorite ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-800/50 border-slate-700'}`}
+          >
+            <Star size={24} className={isFavorite ? 'text-amber-400 fill-amber-400' : 'text-slate-500 group-hover:text-amber-400 transition-colors'} />
           </button>
         </div>
       </div>
@@ -346,7 +366,7 @@ export default function Asset() {
                   </div>
                 ))}
               </div>
-              <Link to="/dividends" className="mt-6 block text-center py-3 text-xs font-bold text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest">Ver Agenda Completa</Link>
+              <Link to="/portfolio/proventos" className="mt-6 block text-center py-3 text-xs font-bold text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest">Ver Agenda Completa</Link>
             </div>
           )}
 

@@ -33,6 +33,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ErrorBoundary } from './ErrorBoundary';
 
 import { Logo } from './ui/Logo';
+import { MarketMarquee } from './MarketMarquee';
 
 export default function Layout() {
   const location = useLocation();
@@ -40,6 +41,27 @@ export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    if (searchQuery.length > 1) {
+      const timer = setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/search-suggestions?q=${encodeURIComponent(searchQuery)}`);
+          const data = await response.json();
+          setSuggestions(data);
+          setShowSuggestions(true);
+        } catch (err) {
+          console.error('Error fetching suggestions:', err);
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [searchQuery]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -57,7 +79,7 @@ export default function Layout() {
       label: 'Ideias', 
       icon: Lightbulb,
       children: [
-        { label: 'Agenda de Dividendos', to: '/dividends', icon: Calendar },
+        { label: 'Agenda de Dividendos', to: '/portfolio/proventos', icon: Calendar },
         { label: 'Rankings', to: '/ranking', icon: Award },
         { label: 'Carteiras Recomendadas', to: '/recommended', icon: Star },
         { label: 'Comparador de Ativos', to: '/compare', icon: GitCompare },
@@ -136,69 +158,63 @@ export default function Layout() {
     <div className="min-h-screen bg-[#020617] text-slate-200 flex flex-col selection:bg-blue-500/30">
       {/* Header Estilo Nexus */}
       <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
-        scrolled ? 'bg-[#020617]/80 backdrop-blur-2xl border-b border-white/10 py-3 shadow-2xl' : 'bg-transparent py-6'
+        scrolled ? 'bg-[#020617] border-b border-white/10 shadow-2xl' : 'bg-[#020617]'
       }`}>
-        <div className="max-w-7xl mx-auto px-1 sm:px-2 md:px-3">
-          <div className="flex items-center justify-between">
-            {/* Logo Professional Style */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <Logo size={40} showText />
-            </Link>
+        <div className="py-3">
+          <div className="max-w-7xl mx-auto px-1 sm:px-2 md:px-3">
+            <div className="flex items-center justify-between">
+              {/* Logo Professional Style */}
+              <Link to="/" className="flex items-center gap-3 group">
+                <Logo size={40} showText />
+              </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {navItems.map((item) => (
-                <div key={item.label} className="relative group">
-                  {item.children ? (
-                    <button className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-white hover:bg-white/5 flex items-center gap-1.5">
-                      {item.label}
-                      <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" />
-                    </button>
-                  ) : (
-                    <Link 
-                      to={item.to!} 
-                      className="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-white hover:bg-white/5"
+            {/* Actions */}
+            <div className="flex items-center gap-2 md:gap-4 ml-auto">
+              {/* Search Bar (Desktop) */}
+              <div className="hidden lg:block relative">
+                <form onSubmit={handleSearch} className="flex items-center gap-2 px-4 py-2 bg-[#0f172a] border border-slate-800 rounded-xl focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all duration-300">
+                  <Search size={16} className="text-slate-500" />
+                  <input 
+                    type="text" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    placeholder="Buscar ativo..." 
+                    className="bg-transparent border-none outline-none text-sm font-medium text-white placeholder:text-slate-500 w-40 xl:w-56"
+                  />
+                </form>
+
+                <AnimatePresence>
+                  {showSuggestions && suggestions.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-[#0f172a] border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
                     >
-                      {item.label}
-                    </Link>
-                  )}
-
-                  {/* Dropdown Menu */}
-                  {item.children && (
-                    <div className="absolute top-full left-0 pt-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-50">
-                      <div className="bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl p-2 min-w-[240px] backdrop-blur-xl">
-                        {item.children.map((child) => (
-                          <Link
-                            key={child.label}
-                            to={child.to}
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all group/item"
+                      <div className="max-h-[240px] overflow-y-auto no-scrollbar">
+                        {suggestions.map((s) => (
+                          <Link 
+                            key={s.ticker} 
+                            to={`/asset/${s.ticker}`}
+                            onClick={() => {
+                              setSearchQuery('');
+                              setShowSuggestions(false);
+                            }}
+                            className="flex items-center justify-between px-4 py-3 hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 last:border-none"
                           >
-                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover/item:bg-blue-600/20 group-hover/item:text-blue-400 transition-all">
-                              <child.icon size={16} />
+                            <div>
+                              <div className="font-bold text-white text-xs">{s.ticker}</div>
+                              <div className="text-[10px] text-slate-500 truncate max-w-[120px]">{s.name}</div>
                             </div>
-                            {child.label}
+                            <div className="text-[9px] font-black text-slate-600 uppercase bg-slate-800 px-1 py-0.5 rounded">{s.type}</div>
                           </Link>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
-                </div>
-              ))}
-            </nav>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 md:gap-4">
-              {/* Search Bar (Desktop) */}
-              <form onSubmit={handleSearch} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-[#0f172a] border border-slate-800 rounded-xl focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all duration-300">
-                <Search size={16} className="text-slate-500" />
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar ativo..." 
-                  className="bg-transparent border-none outline-none text-sm font-medium text-white placeholder:text-slate-500 w-40 xl:w-56"
-                />
-              </form>
+                </AnimatePresence>
+              </div>
 
               {/* Search Button (Mobile) */}
               <button 
@@ -221,18 +237,11 @@ export default function Layout() {
                 <LogOut size={18} />
                 Sair
               </button>
-              
-              {/* Mobile Menu Toggle */}
-              <button 
-                className="md:hidden p-2.5 text-slate-200 hover:bg-white/10 rounded-xl border border-white/10 transition-all active:scale-90"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-              >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
             </div>
           </div>
         </div>
-
+        </div>
+        <MarketMarquee />
       </header>
 
       {/* Mobile Menu */}
@@ -318,37 +327,50 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 pt-20 md:pt-24 pb-24 md:pb-16">
+      <main className="flex-1 pt-28 md:pt-32 pb-24 md:pb-16">
         <div className="max-w-7xl mx-auto px-1 sm:px-2 md:px-3">
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname.startsWith('/portfolio') ? 'portfolio-section' : location.pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <ErrorBoundary>
+                <Outlet />
+              </ErrorBoundary>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
       {/* Bottom Navigation Bar (Mobile) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#020617]/80 backdrop-blur-2xl border-t border-white/5 z-50 md:hidden pb-safe">
-        <div className="flex items-center justify-around px-2 py-2">
-          <Link to="/" className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${location.pathname === '/' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <LayoutDashboard size={22} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
-            <span className="text-xxs font-semibold tracking-wide">Home</span>
+      <div className="fixed bottom-0 left-0 right-0 bg-[#020617]/90 backdrop-blur-2xl border-t border-white/5 z-[100] md:hidden h-[72px] pb-safe flex items-center">
+        <div className="flex items-center justify-around w-full px-2">
+          <Link to="/" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
+            <LayoutDashboard size={20} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Home</span>
           </Link>
-          <Link to="/portfolio" className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${location.pathname === '/portfolio' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <Briefcase size={22} strokeWidth={location.pathname === '/portfolio' ? 2.5 : 2} />
-            <span className="text-xxs font-semibold tracking-wide">Carteira</span>
+          <Link to="/portfolio" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/portfolio' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
+            <Briefcase size={20} strokeWidth={location.pathname === '/portfolio' ? 2.5 : 2} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Carteira</span>
           </Link>
-          <Link to="/search" className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${location.pathname === '/search' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <Search size={22} strokeWidth={location.pathname === '/search' ? 2.5 : 2} />
-            <span className="text-xxs font-semibold tracking-wide">Busca</span>
+          <Link to="/search" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/search' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
+            <Search size={20} strokeWidth={location.pathname === '/search' ? 2.5 : 2} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Busca</span>
           </Link>
-          <Link to="/ranking" className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${location.pathname === '/ranking' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <TrendingUp size={22} strokeWidth={location.pathname === '/ranking' ? 2.5 : 2} />
-            <span className="text-xxs font-semibold tracking-wide">Ranking</span>
+          <Link to="/ranking" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/ranking' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
+            <TrendingUp size={20} strokeWidth={location.pathname === '/ranking' ? 2.5 : 2} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Ranking</span>
           </Link>
-          <Link to="/menu" className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${location.pathname === '/menu' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <Menu size={22} strokeWidth={location.pathname === '/menu' ? 2.5 : 2} />
-            <span className="text-xxs font-semibold tracking-wide">Menu</span>
-          </Link>
+          <button 
+            onClick={() => setIsMenuOpen(true)}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${isMenuOpen ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            <Menu size={20} strokeWidth={isMenuOpen ? 2.5 : 2} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Menu</span>
+          </button>
         </div>
       </div>
 
@@ -369,7 +391,6 @@ export default function Layout() {
             <div className="flex flex-wrap justify-center gap-8">
               <div className="flex flex-col gap-4">
                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Plataforma</span>
-                <button onClick={() => scrollToSection('dashboard')} className="text-xs text-slate-500 hover:text-blue-400 transition-colors text-left">Dashboard</button>
                 <button onClick={() => scrollToSection('portfolio')} className="text-xs text-slate-500 hover:text-blue-400 transition-colors text-left">Carteira</button>
                 <button onClick={() => scrollToSection('news')} className="text-xs text-slate-500 hover:text-blue-400 transition-colors text-left">Market Intelligence</button>
               </div>
