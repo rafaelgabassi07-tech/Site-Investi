@@ -164,7 +164,7 @@ export async function createServer() {
           }
         }));
 
-        const stats = results.map((r: any, idx) => {
+        const stats = results.map((r: any, idx: number) => {
           const preco = r.results?.precoAtual;
           const variacao = r.results?.variacaoDay || '0.00%';
           
