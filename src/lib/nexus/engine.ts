@@ -318,7 +318,8 @@ class CircuitBreaker {
 
 const _hostnameCache = new Map<string, string>();
 
-function extractHostname(url: string): string {
+function extractHostname(url?: string | null): string {
+  if (!url) return '';
   const match = url.match(/^https?:\/\/[^\/]+/);
   const origin = match ? match[0] : url;
   let h = _hostnameCache.get(origin);
@@ -1467,7 +1468,7 @@ export class NexusEngine {
       const idx = i;
       const p   = tasks[idx]()
         .then(res  => { results[idx] = res; })
-        .catch(err => { results[idx] = err instanceof Error ? err : new Error(String(err)); })
+        .catch(err => { results[idx] = null; }) // Return null on error
         .finally(() => { executing.delete(p); });
 
       executing.add(p);

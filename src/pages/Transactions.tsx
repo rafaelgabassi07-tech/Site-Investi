@@ -107,34 +107,48 @@ export default function Transactions() {
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
+        if (!wb.SheetNames || wb.SheetNames.length === 0) throw new Error('Arquivo Excel sem planilhas.');
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
+        if (!ws) throw new Error('Não foi possível ler a planilha.');
         const data = XLSX.utils.sheet_to_json(ws) as any[];
 
         const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
         const newTxs: any[] = [];
 
         for (const row of data) {
-          // Mapeamento básico para compatibilidade B3/Nexus
-          const ticker = row.Ticker || row['Código de Negociação'] || row['Ativo'];
-          const type = (row.Tipo || row['Movimentação'] || '').toUpperCase().includes('VENDA') ? 'SELL' : 'BUY';
-          const quantity = parseFloat(row.Quantidade || row['Qtd.'] || 0);
-          const price = parseFloat(row.Preço || row['Preço Unitário'] || 0);
-          const dateStr = row.Data || row['Data do Pregão'];
+          // Mapeamento robusto para compatibilidade B3/Nexus
+          const ticker = row.Ticker || row['Código de Negociação'] || row['Ativo'] || row['Código'];
+          
+          const mov = (row.Tipo || row['Movimentação'] || row['Tipo de Movimentação'] || '').toUpperCase();
+          const type = mov.includes('VENDA') ? 'SELL' : 'BUY';
+          
+          const parseBRNumber = (val: any) => {
+            if (typeof val === 'number') return val;
+            if (typeof val !== 'string') return 0;
+            // Remove pontos de milhar, substitui vírgula por ponto
+            return parseFloat(val.replace(/\./g, '').replace(',', '.'));
+          };
+
+          const quantity = parseBRNumber(row.Quantidade || row['Qtd.'] || row['Quantidade']);
+          const price = parseBRNumber(row.Preço || row['Preço Unitário'] || row['Preço']);
+          const dateStr = row.Data || row['Data do Pregão'] || row['Data'];
           
           let date;
           if (typeof dateStr === 'number') {
             // Excel date format
             date = new Date((dateStr - 25569) * 86400 * 1000).toISOString();
-          } else {
+          } else if (typeof dateStr === 'string') {
             const parts = dateStr.split('/');
             date = parts.length === 3 ? new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).toISOString() : new Date().toISOString();
+          } else {
+            date = new Date().toISOString();
           }
 
           if (ticker && quantity > 0) {
             newTxs.push({
               id: crypto.randomUUID(),
-              ticker: ticker.toString().toUpperCase(),
+              ticker: ticker.toString().toUpperCase().trim(),
               type,
               assetType: row['Tipo de Ativo'] || 'ACAO',
               quantity,
@@ -173,7 +187,8 @@ export default function Transactions() {
         setTimeout(() => setMessage(''), 3000);
       } catch (err) {
         console.error('Import failed', err);
-        setMessage(`Erro na importação: ${err instanceof Error ? err.message : 'Arquivo inválido'}`);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        setMessage(`Erro na importação: ${errorMessage}`);
       }
     };
     reader.readAsBinaryString(file);

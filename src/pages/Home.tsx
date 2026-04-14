@@ -1,4 +1,4 @@
-import { TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, HelpCircle, Filter, Star, TrendingDown, Bitcoin, Building2, DollarSign, Globe } from 'lucide-react';
+import { TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, HelpCircle, Filter, Star, TrendingDown, Bitcoin, Building2, DollarSign, Globe, X } from 'lucide-react';
 import { NewsWidget } from '../components/NewsWidget';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
