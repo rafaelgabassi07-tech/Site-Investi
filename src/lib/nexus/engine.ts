@@ -595,6 +595,7 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
   for (const symbol of symbols) {
     try {
       const quote = await yahooFinance.quote(symbol);
+      console.log(`[YAHOO] Raw quote for ${symbol}:`, JSON.stringify(quote));
       if (!quote) {
         console.log(`[YAHOO] No quote found for ${symbol}`);
         continue;

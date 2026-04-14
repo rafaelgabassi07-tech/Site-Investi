@@ -157,6 +157,9 @@ export async function createServer() {
           try {
             const data = await NexusEngine.fetchAtivo(t, 'ACAO');
             console.log(`[API] Market stat for ${t}:`, JSON.stringify(data.results));
+            if (t === 'USDBRL=X' && (!data.results.precoAtual || data.results.precoAtual === 0)) {
+              console.warn(`[API] WARNING: USDBRL=X returned zero or empty:`, JSON.stringify(data));
+            }
             return data;
           } catch (e) {
             console.error(`[API] Error fetching market stat for ${t}:`, e);
