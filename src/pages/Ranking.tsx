@@ -111,9 +111,9 @@ export default function Ranking() {
               {filteredCategories.map((cat, idx) => (
                 <motion.div
                   key={idx}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.05 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: idx * 0.03 }}
                   onClick={() => handleCategoryClick(cat.title)}
                   className="group relative p-4 flex flex-col gap-4 transition-all cursor-pointer hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden"
                 >

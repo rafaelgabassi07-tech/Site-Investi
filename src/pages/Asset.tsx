@@ -241,9 +241,9 @@ export default function Asset() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {indicators.map((ind, idx) => (
               <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: idx * 0.03 }}
                 key={idx} 
                 className="bg-[#0f172a] border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all group shadow-sm relative overflow-hidden"
               >

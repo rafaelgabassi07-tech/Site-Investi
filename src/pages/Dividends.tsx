@@ -199,9 +199,9 @@ export default function Dividends() {
         ].map((stat, idx) => (
           <motion.div
             key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: idx * 0.05 }}
             className="bg-[#0f172a] border border-slate-800 p-6 rounded-3xl relative overflow-hidden shadow-lg"
           >
             <div className="flex items-center gap-3 mb-3">
@@ -219,8 +219,8 @@ export default function Dividends() {
         <div className="lg:col-span-2 space-y-6">
           {/* Chart Section */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             className="bg-[#0f172a] border border-slate-800 p-6 md:p-8 rounded-[2.5rem] shadow-xl"
           >
             <h3 className="text-xl font-bold text-white uppercase tracking-tight mb-8 flex items-center gap-3">

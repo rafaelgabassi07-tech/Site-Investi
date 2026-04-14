@@ -129,9 +129,9 @@ export default function Profitability() {
         {stats.map((stat, idx) => (
           <motion.div
             key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: idx * 0.05 }}
             className="bg-[#0f172a] border border-slate-800 p-6 rounded-3xl relative overflow-hidden shadow-lg"
           >
             <div className="flex items-center gap-3 mb-3">

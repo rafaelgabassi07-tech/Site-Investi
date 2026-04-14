@@ -80,10 +80,10 @@ export default function Portfolio() {
                     
                     return (
                       <motion.tr 
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
-                        transition={{ delay: idx * 0.05 }}
+                        transition={{ delay: idx * 0.03 }}
                         key={item.ticker} 
                         className={`hover:bg-slate-800/30 transition-all group cursor-pointer ${selectedTicker === item.ticker ? 'bg-blue-500/10' : ''}`}
                         onClick={() => handleFetchDetails(item.ticker, item.assetType)}
