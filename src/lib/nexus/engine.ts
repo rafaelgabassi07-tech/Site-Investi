@@ -630,14 +630,10 @@ interface YahooFundamentalsData {
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
   console.log(`[YAHOO] Fetching quote for ${ticker}, trying symbols: ${symbols.join(', ')}`);
-  
-  const fetchOptions = {
-    headers: getStealthHeaders('https://query1.finance.yahoo.com')
-  };
 
   for (const symbol of symbols) {
     try {
-      const quote = await yahooFinance.quote(symbol, { fetchOptions });
+      const quote = await yahooFinance.quote(symbol);
       console.log(`[YAHOO] Raw quote for ${symbol}:`, JSON.stringify(quote));
       
       if (!quote) {
@@ -680,15 +676,10 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
 async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<YahooFundamentalsData> {
   const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
   
-  const fetchOptions = {
-    headers: getStealthHeaders('https://query1.finance.yahoo.com')
-  };
-
   for (const symbol of symbols) {
     try {
       const result = await yahooFinance.quoteSummary(symbol, {
-        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile'],
-        fetchOptions
+        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
       });
       
       if (!result) continue;
@@ -1273,10 +1264,7 @@ export class NexusEngine {
   static async searchSuggestions(query: string) {
     try {
       const q = query.toUpperCase();
-      const fetchOptions = {
-        headers: getStealthHeaders('https://query1.finance.yahoo.com')
-      };
-      const result = await yahooFinance.search(q, { fetchOptions });
+      const result = await yahooFinance.search(q);
       
       if (result && (result as any).errors) {
         console.warn(`[YAHOO] searchSuggestions for ${q} returned errors:`, formatYahooError((result as any).errors));
@@ -1423,17 +1411,12 @@ export class NexusEngine {
   static async fetchHistoricoGrafico(ticker: string, range: string = '1y', interval: string = '1d'): Promise<any[]> {
     const cleanTicker = canonicalizeTicker(ticker);
     const symbols = [`${cleanTicker}.SA`, cleanTicker];
-    
-    const fetchOptions = {
-      headers: getStealthHeaders('https://query1.finance.yahoo.com')
-    };
       
     for (const symbol of symbols) {
       try {
         const result = await yahooFinance.chart(symbol, {
           period1: range, // yahoo-finance2 handles '1y', '1mo', etc.
-          interval: interval as any,
-          fetchOptions
+          interval: interval as any
         });
         
         if (!result) continue;
@@ -1465,17 +1448,12 @@ export class NexusEngine {
     const cleanTicker = canonicalizeTicker(ticker);
     const symbols = [`${cleanTicker}.SA`, cleanTicker];
     
-    const fetchOptions = {
-      headers: getStealthHeaders('https://query1.finance.yahoo.com')
-    };
-      
     for (const symbol of symbols) {
       try {
         const result = await yahooFinance.chart(symbol, {
           period1: '5y',
           interval: '1mo',
-          events: 'div',
-          fetchOptions
+          events: 'div'
         });
         
         if (!result) continue;
@@ -1505,14 +1483,9 @@ export class NexusEngine {
       const isBrazilian = query.length >= 4 && query.length <= 6 && !query.includes('.');
       const searchQuery = isBrazilian ? `${query}.SA` : query;
       
-      const fetchOptions = {
-        headers: getStealthHeaders('https://query1.finance.yahoo.com')
-      };
-      
       const result = await yahooFinance.search(searchQuery, {
         quotesCount: 6,
-        newsCount: 0,
-        fetchOptions
+        newsCount: 0
       });
       
       if (result && (result as any).errors) {
@@ -1525,8 +1498,7 @@ export class NexusEngine {
       if (quotes.length === 0 && isBrazilian) {
         const fallbackResult = await yahooFinance.search(query, {
           quotesCount: 6,
-          newsCount: 0,
-          fetchOptions
+          newsCount: 0
         });
         
         if (fallbackResult && (fallbackResult as any).errors) {

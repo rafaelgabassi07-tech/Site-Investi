@@ -106,9 +106,10 @@ export default function Transactions() {
       setPrice('');
       setMessage('Lançamento realizado com sucesso!');
       setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro detalhado ao salvar transação:', error);
-      setMessage(`Erro ao realizar lançamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      const errorMessage = error?.message || (error instanceof Error ? error.message : 'Erro desconhecido');
+      setMessage(`Erro ao realizar lançamento: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -233,9 +234,9 @@ export default function Transactions() {
 
         setMessage(`${newTxs.length} transações importadas com sucesso!`);
         setTimeout(() => setMessage(''), 3000);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Import failed', err);
-        const errorMessage = err instanceof Error ? err.message : String(err);
+        const errorMessage = err?.message || (err instanceof Error ? err.message : String(err));
         setMessage(`Erro na importação: ${errorMessage}`);
       }
     };
