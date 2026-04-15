@@ -96,6 +96,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    console.log('Fetched transactions from Supabase:', data);
+
     const mappedTxs: Transaction[] = data.map(tx => ({
       id: tx.id,
       ticker: tx.ticker,
@@ -115,12 +117,17 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
 
     const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
     
-    if (!isConfigured) {
-      const handleStorageChange = () => {
+    const handleStorageChange = () => {
+      if (!isConfigured) {
         const updatedTxs = JSON.parse(localStorage.getItem('invest_transactions') || '[]');
         processTransactions(updatedTxs);
-      };
-      window.addEventListener('invest_transactions_updated', handleStorageChange);
+      } else {
+        fetchTransactions();
+      }
+    };
+    window.addEventListener('invest_transactions_updated', handleStorageChange);
+
+    if (!isConfigured) {
       return () => window.removeEventListener('invest_transactions_updated', handleStorageChange);
     }
 
@@ -137,6 +144,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       .subscribe();
 
     return () => {
+      window.removeEventListener('invest_transactions_updated', handleStorageChange);
       supabase.removeChannel(channel);
     };
   }, [fetchTransactions, processTransactions]);

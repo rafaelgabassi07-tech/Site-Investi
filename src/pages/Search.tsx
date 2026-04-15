@@ -113,7 +113,7 @@ export default function Search() {
           <button 
             key={type} 
             onClick={() => setQuery(type)}
-            className="px-6 py-2 rounded-2xl bg-slate-800/20 border border-slate-800/50 text-slate-400 text-xxs font-black uppercase tracking-widest hover:bg-slate-800/40 hover:text-white transition-all whitespace-nowrap"
+            className="px-6 py-2 rounded-2xl bg-slate-800/20 border border-slate-800/50 text-slate-400 text-xs font-bold uppercase tracking-widest hover:bg-slate-800/40 hover:text-white transition-all whitespace-nowrap"
           >
             {type}
           </button>
@@ -122,11 +122,11 @@ export default function Search() {
 
       <div className="space-y-4 pt-4">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             {hasSearched ? `Resultados para "${debouncedQuery}"` : 'Ativos em Destaque'}
           </h3>
           {hasSearched && results.length > 0 && (
-            <span className="text-[9px] font-black text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 uppercase tracking-widest">
+            <span className="text-xs font-bold text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10 uppercase tracking-widest">
               {results.length} ENCONTRADOS
             </span>
           )}
@@ -156,14 +156,14 @@ export default function Search() {
                         />
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-black text-white text-base tracking-tight group-hover:text-blue-400 transition-colors">
+                            <span className="font-bold text-white text-base tracking-tight group-hover:text-blue-400 transition-colors">
                               {ticker.replace('.SA', '')}
                             </span>
-                            <span className="px-1.5 py-0.5 bg-slate-800/50 text-slate-500 text-[8px] font-black uppercase tracking-tighter rounded border border-slate-800">
+                            <span className="px-1.5 py-0.5 bg-slate-800/50 text-slate-500 text-xs font-bold uppercase tracking-tighter rounded border border-slate-800">
                               {asset.exchange || 'B3'}
                             </span>
                           </div>
-                          <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider line-clamp-1">
+                          <div className="text-xs font-medium text-slate-500 mt-0.5 uppercase tracking-wider line-clamp-1">
                             {asset.shortname || asset.name || ticker}
                           </div>
                         </div>
@@ -171,17 +171,17 @@ export default function Search() {
 
                       <div className="text-right">
                         <div className="flex items-center gap-3 justify-end">
-                          <span className="font-black text-white text-base tracking-tighter">
+                          <span className="font-bold text-white text-base tracking-tighter">
                             {asset.currency || 'R$'} {asset.price || '---'}
                           </span>
                           {asset.change && (
-                            <span className={`flex items-center text-[9px] font-black px-1.5 py-0.5 rounded ${asset.positive !== false ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                            <span className={`flex items-center text-xs font-bold px-1.5 py-0.5 rounded ${asset.positive !== false ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
                               {asset.change}
-                              {asset.positive !== false ? <ArrowUpRight size={10} className="ml-0.5" /> : <ArrowDownRight size={10} className="ml-0.5" />}
+                              {asset.positive !== false ? <ArrowUpRight size={14} className="ml-0.5" /> : <ArrowDownRight size={14} className="ml-0.5" />}
                             </span>
                           )}
                         </div>
-                        <div className="text-[9px] font-black text-slate-600 mt-1 uppercase tracking-[0.15em]">
+                        <div className="text-xs font-medium text-slate-600 mt-1 uppercase tracking-wider">
                           {asset.type || asset.quoteType || 'EQUITY'}
                         </div>
                       </div>

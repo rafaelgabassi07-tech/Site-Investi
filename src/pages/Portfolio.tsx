@@ -1,5 +1,5 @@
 import { usePortfolio } from '../hooks/usePortfolio';
-import { Search, Loader2, Briefcase, ChevronRight, Globe, BarChart2, Plus } from 'lucide-react';
+import { Search, Loader2, Briefcase, ChevronRight, Globe, BarChart2, Plus, Info } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -14,6 +14,16 @@ export default function Portfolio() {
   const [assetDetails, setAssetDetails] = useState<AssetDetails | null>(null);
   const [fetchingDetails, setFetchingDetails] = useState(false);
   const navigate = useNavigate();
+
+  // Grouping logic
+  const groupedPortfolio = portfolio.reduce((acc, item) => {
+    const type = item.assetType || 'OUTROS';
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(item);
+    return acc;
+  }, {} as Record<string, typeof portfolio>);
+
+  const assetTypes = Object.keys(groupedPortfolio).sort();
 
   const handleFetchDetails = async (ticker: string, assetType: string) => {
     setSelectedTicker(ticker);
@@ -57,114 +67,150 @@ export default function Portfolio() {
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="lg:col-span-2 space-y-4"
+          className="lg:col-span-2 space-y-8"
         >
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-full">
-                <thead>
-                  <tr className="border-b border-slate-800">
-                    <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ativo</th>
-                    <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Qtd.</th>
-                    <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Preço Médio</th>
-                    <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Valor Atual</th>
-                    <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Resultado</th>
-                    <th className="px-8 py-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50">
-                  {portfolio.map((item, idx) => {
-                    const profit = item.profit || 0;
-                    const isPositive = profit >= 0;
-                    
-                    return (
-                      <motion.tr 
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: idx * 0.03 }}
-                        key={item.ticker} 
-                        className={`hover:bg-slate-800/30 transition-all group cursor-pointer ${selectedTicker === item.ticker ? 'bg-blue-500/10' : ''}`}
-                        onClick={() => handleFetchDetails(item.ticker, item.assetType)}
-                      >
-                        <td className="px-8 py-6">
-                          <div className="flex items-center gap-4">
-                            <AssetIcon assetType={item.assetType} ticker={item.ticker} />
-                            <div>
-                              <div className="font-bold text-white text-base group-hover:text-blue-400 transition-colors">{item.ticker}</div>
-                              <div className="text-xs font-medium text-slate-500 mt-0.5">{item.assetType}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6 text-right font-medium text-sm text-slate-300">{item.totalQuantity}</td>
-                        <td className="px-8 py-6 text-right font-medium text-sm text-slate-300">
-                          R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-8 py-6 text-right font-semibold text-base text-white">
-                          R$ {(item.currentValue || item.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className={`px-8 py-6 text-right font-semibold text-sm ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                          <div className="flex flex-col items-end">
-                            <span>R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                            <span className="text-xs mt-0.5">{isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%</span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6 text-right">
-                          <div className="flex justify-end">
-                            <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                              <ChevronRight size={16} />
-                            </div>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {assetTypes.length === 0 ? (
+            <div className="py-20 text-center border border-dashed border-slate-800 rounded-3xl">
+              <p className="text-slate-500 font-medium">Nenhum ativo em carteira.</p>
             </div>
+          ) : (
+            assetTypes.map((type) => {
+              const items = groupedPortfolio[type];
+              const totalTypeInvested = items.reduce((sum, item) => sum + item.totalInvested, 0);
+              const totalTypeCurrent = items.reduce((sum, item) => sum + (item.currentValue || item.totalInvested), 0);
+              const totalTypeProfit = totalTypeCurrent - totalTypeInvested;
+              const typeProfitPerc = (totalTypeProfit / totalTypeInvested) * 100;
 
-            {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-slate-800/50">
-              {portfolio.map((item, idx) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.05 }}
-                  key={item.ticker}
-                  onClick={() => handleFetchDetails(item.ticker, item.assetType)}
-                  className={`p-5 space-y-4 active:bg-slate-800/50 transition-all ${selectedTicker === item.ticker ? 'bg-blue-500/10' : ''}`}
-                >
-                  <div className="flex items-center justify-between">
+              return (
+                <div key={type} className="space-y-2">
+                  <div className="flex items-center justify-between px-2 pt-4">
                     <div className="flex items-center gap-3">
-                      <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-10 h-10" />
-                      <div>
-                        <div className="font-bold text-white text-base">{item.ticker}</div>
-                        <div className="text-xs font-medium text-slate-500 mt-0.5">{item.assetType}</div>
-                      </div>
+                      <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                      <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">{type}</h3>
+                      <span className="text-[10px] font-bold text-slate-600">
+                        {items.length} {items.length === 1 ? 'ATIVO' : 'ATIVOS'}
+                      </span>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-medium text-slate-500 mb-1">Total</div>
-                      <div className="font-bold text-white text-lg">
-                        R$ {item.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-white">R$ {totalTypeCurrent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${totalTypeProfit >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-400'}`}>
+                          {totalTypeProfit >= 0 ? '+' : ''}{typeProfitPerc.toFixed(2)}%
+                        </span>
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <div className="text-xs font-medium text-slate-500 mb-1">Qtd.</div>
-                      <div className="font-medium text-sm text-slate-300">{item.totalQuantity}</div>
+
+                  <div className="pb-6">
+                    {/* Desktop Table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-left border-collapse min-w-full">
+                        <thead>
+                          <tr className="border-b border-slate-800/30">
+                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ativo</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Qtd.</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">P. Médio</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Valor Atual</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Resultado</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/20">
+                          {items.map((item, idx) => {
+                            const profit = item.profit || 0;
+                            const isPositive = profit >= 0;
+                            
+                            return (
+                              <motion.tr 
+                                initial={{ opacity: 0 }}
+                                whileInView={{ opacity: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.01 }}
+                                key={item.ticker} 
+                                className={`hover:bg-slate-800/10 transition-all group cursor-pointer ${selectedTicker === item.ticker ? 'bg-blue-500/5' : ''}`}
+                                onClick={() => handleFetchDetails(item.ticker, item.assetType)}
+                              >
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-8 h-8" />
+                                    <div>
+                                      <div className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{item.ticker}</div>
+                                      <div className="text-[10px] font-medium text-slate-600 uppercase tracking-tighter">{item.assetType}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 text-right font-medium text-xs text-slate-400">{item.totalQuantity}</td>
+                                <td className="px-4 py-4 text-right font-medium text-xs text-slate-400">
+                                  R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-4 py-4 text-right font-bold text-sm text-white">
+                                  R$ {(item.currentValue || item.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className={`px-4 py-4 text-right font-bold text-xs ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  <div className="flex flex-col items-end">
+                                    <span>R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-[10px] opacity-70 font-medium">{isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <div className="flex justify-end">
+                                    <div className="w-6 h-6 bg-slate-800/30 rounded flex items-center justify-center text-slate-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                      <ChevronRight size={12} />
+                                    </div>
+                                  </div>
+                                </td>
+                              </motion.tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
-                    <div>
-                      <div className="text-xs font-medium text-slate-500 mb-1">Preço Médio</div>
-                      <div className="font-medium text-sm text-slate-300">R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+
+                    {/* Mobile List (No Containers) */}
+                    <div className="md:hidden divide-y divide-slate-800/30">
+                      {items.map((item, idx) => {
+                        const profit = item.profit || 0;
+                        const isPositive = profit >= 0;
+                        return (
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: idx * 0.02 }}
+                            key={item.ticker}
+                            onClick={() => handleFetchDetails(item.ticker, item.assetType)}
+                            className={`py-4 active:bg-slate-800/20 transition-all ${selectedTicker === item.ticker ? 'bg-blue-500/5' : ''}`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-3">
+                                <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-9 h-9" />
+                                <div>
+                                  <div className="font-bold text-white text-sm">{item.ticker}</div>
+                                  <div className="text-[10px] font-medium text-slate-600 uppercase">{item.assetType}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-white">
+                                  R$ {(item.currentValue || item.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </div>
+                                <div className={`text-[10px] font-black ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
+                                  {isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">Qtd: <span className="text-slate-400">{item.totalQuantity}</span></div>
+                              <div className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">P. Médio: <span className="text-slate-400">R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+                </div>
+              );
+            })
+          )}
         </motion.div>
 
         <motion.div 
@@ -173,7 +219,7 @@ export default function Portfolio() {
           viewport={{ once: true }}
           className="space-y-4"
         >
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 min-h-[500px] md:min-h-[600px] relative overflow-hidden flex flex-col shadow-lg">
+          <div className="border-l border-slate-800/50 pl-6 min-h-[500px] md:min-h-[600px] relative flex flex-col">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
             <div className="flex items-center justify-between mb-8">
@@ -264,7 +310,7 @@ export default function Portfolio() {
                         key={key} 
                         className="p-3 bg-slate-800/30 border border-slate-800 rounded-xl hover:border-slate-700 transition-all duration-300 group"
                       >
-                        <p className="text-[11px] uppercase tracking-wider font-medium text-slate-500 mb-1 group-hover:text-blue-400 transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
+                        <p className="text-xs uppercase tracking-wider font-medium text-slate-500 mb-1 group-hover:text-blue-400 transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
                         <p className="text-sm font-semibold text-white truncate" title={String(value)}>{value as string}</p>
                       </motion.div>
                     ))}
@@ -306,7 +352,7 @@ export default function Portfolio() {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="flex items-center gap-3 p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-slate-400 text-sm font-medium shadow-sm"
+        className="flex items-center gap-3 py-6 border-t border-slate-800/50 text-slate-400 text-sm font-medium"
       >
         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
         <span>Invest Engine: Sincronização em Tempo Real Ativa</span>

@@ -140,7 +140,7 @@ export default function Asset() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-white tracking-tight">{assetData.ticker}</h1>
-                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xxs font-black uppercase tracking-widest rounded border border-blue-500/20">
+                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-widest rounded border border-blue-500/20">
                   {(assetData as any).type || "Ativo"}
                 </span>
               </div>
@@ -158,13 +158,13 @@ export default function Asset() {
 
       <div className="px-1 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Left Column: Price & Chart */}
-        <div className="lg:col-span-2 space-y-3">
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+        <div className="lg:col-span-2 space-y-8">
+          <div className="relative border-b border-slate-800/50 pb-8">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
               <div>
-                <div className="text-xxs font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Cotação Atual</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cotação Atual</div>
                 <div className="flex items-baseline gap-3">
                   <span className="text-5xl font-bold text-white tracking-tighter">
                     R$ {typeof results.precoAtual === 'number' ? results.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : results.precoAtual || '0,00'}
@@ -238,21 +238,21 @@ export default function Asset() {
           </div>
 
           {/* Indicators Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-slate-800/50 pb-8">
             {indicators.map((ind, idx) => (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: idx * 0.03 }}
                 key={idx} 
-                className="bg-[#0f172a] border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all group shadow-sm relative overflow-hidden"
+                className="p-4 hover:bg-slate-800/20 rounded-xl transition-all group relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-16 h-16 bg-blue-600/5 blur-2xl -z-10 group-hover:bg-blue-600/10 transition-all" />
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors`}>
                     <ind.icon size={16} />
                   </div>
-                  <span className="text-xxs font-black text-slate-500 uppercase tracking-widest">{ind.label}</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{ind.label}</span>
                 </div>
                 <div className="text-xl font-bold text-white tracking-tight mb-1">{ind.value}</div>
                 <div className="text-tiny font-medium text-slate-600 group-hover:text-slate-400 transition-colors">{ind.desc}</div>
@@ -261,7 +261,7 @@ export default function Asset() {
           </div>
 
           {/* About Section */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-sm">
+          <div className="border-b border-slate-800/50 pb-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                 <Info size={20} />
@@ -274,11 +274,11 @@ export default function Asset() {
             
             <div className="grid grid-cols-2 gap-8 mt-8 pt-8 border-t border-slate-800">
               <div>
-                <div className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-1">Setor</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Setor</div>
                 <div className="text-sm font-bold text-white">{results.sector || 'N/A'}</div>
               </div>
               <div>
-                <div className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-1">Subsetor</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Subsetor</div>
                 <div className="text-sm font-bold text-white">{results.subSector || 'N/A'}</div>
               </div>
             </div>
@@ -286,9 +286,9 @@ export default function Asset() {
         </div>
 
         {/* Right Column: Checklist & News */}
-        <div className="space-y-3">
+        <div className="space-y-8">
           {/* Checklist Card */}
-          <div className="bg-gradient-to-br from-slate-900 to-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
+          <div className="border-b border-slate-800/50 pb-8">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
                 <ShieldCheck size={20} />
@@ -338,7 +338,7 @@ export default function Asset() {
             </div>
             
             <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
-              <p className="text-xxs text-slate-500 font-bold leading-relaxed text-center uppercase tracking-wider">
+              <p className="text-xs text-slate-500 font-bold leading-relaxed text-center uppercase tracking-wider">
                 Análise baseada em fundamentos clássicos de Buy & Hold.
               </p>
             </div>
@@ -346,7 +346,7 @@ export default function Asset() {
 
           {/* Dividends Summary */}
           {dividends.length > 0 && (
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-sm">
+            <div className="border-b border-slate-800/50 pb-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
@@ -360,9 +360,9 @@ export default function Asset() {
                   <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/20 border border-slate-800/50">
                     <div>
                       <div className="text-sm font-bold text-white">R$ {div.amount.toFixed(3)}</div>
-                      <div className="text-xxs text-slate-500 font-black uppercase mt-0.5">{new Date(div.date).toLocaleDateString('pt-BR')}</div>
+                      <div className="text-xs text-slate-500 font-bold uppercase mt-0.5">{new Date(div.date).toLocaleDateString('pt-BR')}</div>
                     </div>
-                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-tiny font-black uppercase rounded">Pago</span>
+                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase rounded">Pago</span>
                   </div>
                 ))}
               </div>
@@ -372,7 +372,7 @@ export default function Asset() {
 
           {/* News Feed */}
           {assetData.news && assetData.news.length > 0 && (
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-sm">
+            <div className="border-b border-slate-800/50 pb-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                   <Newspaper size={20} />
@@ -403,7 +403,7 @@ export default function Asset() {
 
       {/* Comparison Section */}
       <div className="px-1 md:px-0">
-        <section className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
+        <section className="border-b border-slate-800/50 pb-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
             <div className="flex items-center gap-4">
@@ -426,7 +426,7 @@ export default function Asset() {
           <div className="overflow-x-auto no-scrollbar -mx-8 px-8">
             <table className="w-full text-left border-separate border-spacing-y-2">
               <thead>
-                <tr className="text-xxs font-black text-slate-500 uppercase tracking-[0.2em]">
+                <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   <th className="pb-4 pl-4">Ativo</th>
                   <th className="pb-4 text-right">P/L</th>
                   <th className="pb-4 text-right">P/VP</th>
@@ -466,11 +466,11 @@ export default function Asset() {
       </div>
 
       <div className="px-1 md:px-0">
-        <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-3xl flex items-start gap-4">
+        <div className="py-8 flex items-start gap-4">
           <AlertCircle size={20} className="text-slate-600 shrink-0 mt-1" />
           <div>
-            <h4 className="text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Aviso Legal</h4>
-            <p className="text-tiny text-slate-500 leading-relaxed font-medium">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Aviso Legal</h4>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">
               As informações apresentadas são obtidas de fontes públicas e podem conter atrasos ou imprecisões. Este conteúdo tem caráter meramente informativo e não constitui recomendação de compra, venda ou manutenção de ativos. O investimento em renda variável envolve riscos e rentabilidade passada não é garantia de rentabilidade futura.
             </p>
           </div>

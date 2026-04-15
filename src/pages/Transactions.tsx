@@ -103,8 +103,9 @@ export default function Transactions() {
         }
         existingTxs.push(newTransaction);
         localStorage.setItem('invest_transactions', JSON.stringify(existingTxs));
-        window.dispatchEvent(new Event('invest_transactions_updated'));
       }
+      
+      window.dispatchEvent(new Event('invest_transactions_updated'));
       
       setTicker('');
       setQuantity('');
@@ -238,8 +239,9 @@ export default function Transactions() {
           const existingTxs = JSON.parse(localStorage.getItem('invest_transactions') || '[]');
           const combined = [...existingTxs, ...newTxs];
           localStorage.setItem('invest_transactions', JSON.stringify(combined));
-          window.dispatchEvent(new Event('invest_transactions_updated'));
         }
+
+        window.dispatchEvent(new Event('invest_transactions_updated'));
 
         setMessage(`${newTxs.length} transações importadas com sucesso!`);
         setTimeout(() => setMessage(''), 3000);
@@ -286,7 +288,7 @@ export default function Transactions() {
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-lg"
+          className="border-b border-slate-800/50 pb-8 relative"
         >
           <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/5 blur-[100px] -z-10" />
           
@@ -446,9 +448,9 @@ export default function Transactions() {
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="space-y-8"
+          className="space-y-8 border-l border-slate-800/50 pl-6"
         >
-          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col min-h-[600px] shadow-lg">
+          <div className="relative flex flex-col min-h-[600px]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
             <div className="flex items-center justify-between mb-6">

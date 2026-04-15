@@ -16,14 +16,6 @@
 }
 
 @layer base {
-  html {
-    font-size: 14px; /* Base for mobile */
-  }
-  @media (min-width: 768px) {
-    html {
-      font-size: 15px; /* Base for desktop */
-    }
-  }
   :root {
     --background: #020617;
     --foreground: #f8fafc;
@@ -103,16 +95,25 @@
   letter-spacing: 0.05em;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+  }
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    display: none;
+    width: 0;
+  }
 }
 
 @layer utilities {
