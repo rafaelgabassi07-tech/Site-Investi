@@ -46,15 +46,32 @@ export default function App() {
       return;
     }
 
+    const syncUser = async (user: any) => {
+      if (!user) return;
+      try {
+        await supabase.from('users').upsert({
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      } catch (err) {
+        console.error('Failed to sync user to public.users:', err);
+      }
+    };
+
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) syncUser(currentUser);
       setLoading(false);
     });
 
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) syncUser(currentUser);
       setLoading(false);
     });
 

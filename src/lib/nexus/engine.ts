@@ -133,7 +133,17 @@ function formatYahooError(error: any): string {
   }
 
   // If it has a message property
-  if (error.message) return error.message;
+  if (error.message) {
+    if (typeof error.message === 'string' && (error.message.startsWith('{') || error.message.startsWith('['))) {
+      try {
+        const parsed = JSON.parse(error.message);
+        return formatYahooError(parsed);
+      } catch {
+        return error.message;
+      }
+    }
+    return error.message;
+  }
 
   // Fallback
   return JSON.stringify(error);

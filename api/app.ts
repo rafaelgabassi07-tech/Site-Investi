@@ -283,7 +283,9 @@ export async function createServer() {
           errorMessage = err.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
         } else if (typeof errorMessage === 'string' && (errorMessage.startsWith('{') || errorMessage.startsWith('['))) {
           const parsed = JSON.parse(errorMessage);
-          if (parsed.errors && Array.isArray(parsed.errors)) {
+          if (Array.isArray(parsed)) {
+            errorMessage = parsed.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
+          } else if (parsed.errors && Array.isArray(parsed.errors)) {
             errorMessage = parsed.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
           } else if (parsed.message) {
             errorMessage = parsed.message;
