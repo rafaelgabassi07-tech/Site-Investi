@@ -66,11 +66,16 @@ export default function Transactions() {
         if (!user) throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
 
         // Ensure user exists in public.users
-        await supabase.from('users').upsert({
+        const { error: userError } = await supabase.from('users').upsert({
           id: user.id,
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
+        
+        if (userError) {
+          console.error('Failed to upsert user:', userError);
+          // Continue anyway, as the trigger might have created the user
+        }
 
         const { error } = await supabase
           .from('transactions')
@@ -207,11 +212,15 @@ export default function Transactions() {
           if (!user) throw new Error('Usuário não autenticado');
 
           // Ensure user exists in public.users
-          await supabase.from('users').upsert({
+          const { error: userError } = await supabase.from('users').upsert({
             id: user.id,
             full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
             updated_at: new Date().toISOString()
           }, { onConflict: 'id' });
+          
+          if (userError) {
+            console.error('Failed to upsert user during import:', userError);
+          }
 
           const { error } = await supabase.from('transactions').insert(
             newTxs.map(tx => ({

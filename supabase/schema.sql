@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS public.user_tax_credits (
 -- ====================================================================================
 -- RLS (Row Level Security) Policies
 -- ====================================================================================
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_positions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tax_ledger ENABLE ROW LEVEL SECURITY;
@@ -96,6 +97,18 @@ ALTER TABLE public.user_tax_credits ENABLE ROW LEVEL SECURITY;
 
 DO $$ 
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view their own profile') THEN
+        CREATE POLICY "Users can view their own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can insert their own profile') THEN
+        CREATE POLICY "Users can insert their own profile" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update their own profile') THEN
+        CREATE POLICY "Users can update their own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
+    END IF;
+
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view their own transactions') THEN
         CREATE POLICY "Users can view their own transactions" ON public.transactions FOR SELECT USING (auth.uid() = user_id);
     END IF;
