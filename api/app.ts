@@ -273,10 +273,31 @@ export async function createServer() {
     // Global Error Handler
     app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
       console.error(`[SERVER ERROR] [${new Date().toISOString()}]`, err);
+      
+      let errorMessage = err.message;
+      let errorDetails = err;
+
+      // Try to parse JSON error messages or handle objects with 'errors' property
+      try {
+        if (err.errors && Array.isArray(err.errors)) {
+          errorMessage = err.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
+        } else if (typeof errorMessage === 'string' && (errorMessage.startsWith('{') || errorMessage.startsWith('['))) {
+          const parsed = JSON.parse(errorMessage);
+          if (parsed.errors && Array.isArray(parsed.errors)) {
+            errorMessage = parsed.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
+          } else if (parsed.message) {
+            errorMessage = parsed.message;
+          }
+        }
+      } catch (e) {
+        // Fallback to original message
+      }
+
       res.status(500).json({ 
         error: 'Internal Server Error', 
-        message: err.message,
-        path: req.path
+        message: errorMessage,
+        path: req.path,
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
       });
     });
 

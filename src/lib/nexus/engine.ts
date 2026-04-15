@@ -112,6 +112,33 @@ function safeCpuDeltaMs(start: any | null): number {
   return (d.user + d.system) / 1000;
 }
 
+function formatYahooError(error: any): string {
+  if (!error) return 'Erro desconhecido';
+  
+  // If it's a string, try to parse it as JSON
+  if (typeof error === 'string') {
+    try {
+      if (error.startsWith('{') || error.startsWith('[')) {
+        const parsed = JSON.parse(error);
+        return formatYahooError(parsed);
+      }
+    } catch {
+      return error;
+    }
+  }
+
+  // If it has an errors array (common in yahoo-finance2)
+  if (error.errors && Array.isArray(error.errors)) {
+    return error.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
+  }
+
+  // If it has a message property
+  if (error.message) return error.message;
+
+  // Fallback
+  return JSON.stringify(error);
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // 4. UTILITÁRIOS
 // ════════════════════════════════════════════════════════════════════════════
@@ -593,14 +620,27 @@ interface YahooFundamentalsData {
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
   console.log(`[YAHOO] Fetching quote for ${ticker}, trying symbols: ${symbols.join(', ')}`);
+  
+  const fetchOptions = {
+    headers: getStealthHeaders('https://query1.finance.yahoo.com')
+  };
+
   for (const symbol of symbols) {
     try {
-      const quote = await yahooFinance.quote(symbol);
+      const quote = await yahooFinance.quote(symbol, { fetchOptions });
       console.log(`[YAHOO] Raw quote for ${symbol}:`, JSON.stringify(quote));
+      
       if (!quote) {
         console.log(`[YAHOO] No quote found for ${symbol}`);
         continue;
       }
+
+      // Check for errors in the response object (some versions/cases return errors instead of throwing)
+      if ((quote as any).errors || (quote as any).error) {
+        console.warn(`[YAHOO] Quote for ${symbol} returned errors:`, formatYahooError((quote as any).errors || (quote as any).error));
+        continue;
+      }
+      
       if (!quote.regularMarketPrice) {
         console.log(`[YAHOO] Quote found for ${symbol} but no regularMarketPrice`);
         continue;
@@ -620,7 +660,7 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
         shortName:                   quote.shortName,
       };
     } catch (e) { 
-      console.warn(`[YAHOO] Erro ao buscar quote para ${symbol}:`, (e as Error).message);
+      console.warn(`[YAHOO] Erro ao buscar quote para ${symbol}:`, formatYahooError(e));
       continue; 
     }
   }
@@ -629,11 +669,25 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
 
 async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<YahooFundamentalsData> {
   const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
+  
+  const fetchOptions = {
+    headers: getStealthHeaders('https://query1.finance.yahoo.com')
+  };
+
   for (const symbol of symbols) {
     try {
       const result = await yahooFinance.quoteSummary(symbol, {
-        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
+        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile'],
+        fetchOptions
       });
+      
+      if (!result) continue;
+
+      // Check for errors in the response object
+      if ((result as any).errors || (result as any).error) {
+        console.warn(`[YAHOO] Fundamentals for ${symbol} returned errors:`, formatYahooError((result as any).errors || (result as any).error));
+        continue;
+      }
       
       const fd = result?.financialData;
       const ks = result?.defaultKeyStatistics;
@@ -658,7 +712,7 @@ async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<Ya
         pegRatio:         ks?.pegRatio,
       };
     } catch (e) { 
-      console.warn(`[YAHOO] Erro ao buscar fundamentos para ${symbol}:`, (e as Error).message);
+      console.warn(`[YAHOO] Erro ao buscar fundamentos para ${symbol}:`, formatYahooError(e));
       continue; 
     }
   }
@@ -1209,10 +1263,17 @@ export class NexusEngine {
   static async searchSuggestions(query: string) {
     try {
       const q = query.toUpperCase();
-      const result = await yahooFinance.search(q);
+      const fetchOptions = {
+        headers: getStealthHeaders('https://query1.finance.yahoo.com')
+      };
+      const result = await yahooFinance.search(q, { fetchOptions });
+      
+      if (result && (result as any).errors) {
+        console.warn(`[YAHOO] searchSuggestions for ${q} returned errors:`, formatYahooError((result as any).errors));
+      }
       
       // Prioritize Brazilian assets if query looks like a ticker
-      let quotes = result.quotes;
+      let quotes = result.quotes || [];
       if (/^[A-Z]{4}[0-9]{1,2}$/.test(q)) {
         quotes = quotes.sort((a, b) => {
           const aIsBr = a.symbol.endsWith('.SA');
@@ -1352,15 +1413,27 @@ export class NexusEngine {
   static async fetchHistoricoGrafico(ticker: string, range: string = '1y', interval: string = '1d'): Promise<any[]> {
     const cleanTicker = canonicalizeTicker(ticker);
     const symbols = [`${cleanTicker}.SA`, cleanTicker];
+    
+    const fetchOptions = {
+      headers: getStealthHeaders('https://query1.finance.yahoo.com')
+    };
       
     for (const symbol of symbols) {
       try {
         const result = await yahooFinance.chart(symbol, {
           period1: range, // yahoo-finance2 handles '1y', '1mo', etc.
           interval: interval as any,
+          fetchOptions
         });
         
-        if (!result || !result.quotes || result.quotes.length === 0) continue;
+        if (!result) continue;
+
+        if ((result as any).errors || (result as any).error) {
+          console.warn(`[YAHOO] Chart for ${symbol} returned errors:`, formatYahooError((result as any).errors || (result as any).error));
+          continue;
+        }
+
+        if (!result.quotes || result.quotes.length === 0) continue;
         
         return result.quotes.map((q: any) => ({
           date: q.date.toISOString(),
@@ -1371,7 +1444,7 @@ export class NexusEngine {
           volume: q.volume,
         })).filter((d: any) => d.close !== null && d.close !== undefined);
       } catch (e) {
-        console.warn(`[YAHOO] Erro ao buscar histórico para ${symbol}:`, (e as Error).message);
+        console.warn(`[YAHOO] Erro ao buscar histórico para ${symbol}:`, formatYahooError(e));
         continue;
       }
     }
@@ -1381,6 +1454,10 @@ export class NexusEngine {
   static async fetchDividends(ticker: string): Promise<any[]> {
     const cleanTicker = canonicalizeTicker(ticker);
     const symbols = [`${cleanTicker}.SA`, cleanTicker];
+    
+    const fetchOptions = {
+      headers: getStealthHeaders('https://query1.finance.yahoo.com')
+    };
       
     for (const symbol of symbols) {
       try {
@@ -1388,8 +1465,16 @@ export class NexusEngine {
           period1: '5y',
           interval: '1mo',
           events: 'div',
+          fetchOptions
         });
         
+        if (!result) continue;
+
+        if ((result as any).errors || (result as any).error) {
+          console.warn(`[YAHOO] Dividends for ${symbol} returned errors:`, formatYahooError((result as any).errors || (result as any).error));
+          continue;
+        }
+
         const events = result?.events?.dividends;
         if (!events || events.length === 0) continue;
         
@@ -1398,7 +1483,7 @@ export class NexusEngine {
           amount: d.amount,
         })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       } catch (e) {
-        console.warn(`[YAHOO] Erro ao buscar dividendos para ${symbol}:`, (e as Error).message);
+        console.warn(`[YAHOO] Erro ao buscar dividendos para ${symbol}:`, formatYahooError(e));
         continue;
       }
     }
@@ -1410,19 +1495,34 @@ export class NexusEngine {
       const isBrazilian = query.length >= 4 && query.length <= 6 && !query.includes('.');
       const searchQuery = isBrazilian ? `${query}.SA` : query;
       
+      const fetchOptions = {
+        headers: getStealthHeaders('https://query1.finance.yahoo.com')
+      };
+      
       const result = await yahooFinance.search(searchQuery, {
         quotesCount: 6,
-        newsCount: 0
+        newsCount: 0,
+        fetchOptions
       });
       
+      if (result && (result as any).errors) {
+        console.warn(`[YAHOO] Search for ${searchQuery} returned errors:`, formatYahooError((result as any).errors));
+      }
+
       let quotes = result?.quotes ?? [];
       
       // If no results and we tried with .SA, try without .SA
       if (quotes.length === 0 && isBrazilian) {
         const fallbackResult = await yahooFinance.search(query, {
           quotesCount: 6,
-          newsCount: 0
+          newsCount: 0,
+          fetchOptions
         });
+        
+        if (fallbackResult && (fallbackResult as any).errors) {
+          console.warn(`[YAHOO] Fallback search for ${query} returned errors:`, formatYahooError((fallbackResult as any).errors));
+        }
+        
         quotes = fallbackResult?.quotes ?? [];
       }
 
@@ -1452,7 +1552,7 @@ export class NexusEngine {
       
       return enrichedQuotes;
     } catch (e) {
-      console.warn(`[YAHOO] Erro ao buscar ticker para ${query}:`, (e as Error).message);
+      console.warn(`[YAHOO] Erro ao buscar ticker para ${query}:`, formatYahooError(e));
       return [];
     }
   }

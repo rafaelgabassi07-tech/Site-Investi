@@ -41,7 +41,8 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
         return fetchWithRetry(url, options, retries - 1);
       }
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const message = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+      throw new Error(message);
     }
     return response;
   } catch (error) {

@@ -64,7 +64,16 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
     
     if (!isConfigured) {
-      const localTxs = JSON.parse(localStorage.getItem('invest_transactions') || '[]');
+      let localTxs = [];
+      try {
+        const stored = localStorage.getItem('invest_transactions');
+        localTxs = stored ? JSON.parse(stored) : [];
+        if (!Array.isArray(localTxs)) localTxs = [];
+      } catch (e) {
+        console.error('Failed to parse localStorage in PortfolioProvider, resetting:', e);
+        localTxs = [];
+        localStorage.setItem('invest_transactions', '[]');
+      }
       processTransactions(localTxs);
       return;
     }

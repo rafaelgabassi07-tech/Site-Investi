@@ -20,22 +20,46 @@ export default function Transactions() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return Date.now().toString() + Math.random().toString(36).substring(2);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('handleSubmit called');
     e.preventDefault();
     
     setLoading(true);
     try {
       const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+      console.log('Supabase configured:', isConfigured);
       
+      const parseBRNumber = (val: string | number | undefined) => {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        // Remove pontos de milhar, substitui vírgula por ponto
+        return parseFloat(val.toString().replace(/\./g, '').replace(',', '.'));
+      };
+
+      const qty = parseBRNumber(quantity);
+      const prc = parseBRNumber(price);
+
+      if (isNaN(qty) || isNaN(prc) || qty <= 0 || prc <= 0) {
+        throw new Error('Quantidade ou preço inválidos. Verifique os valores.');
+      }
+
       const newTransaction = {
-        id: crypto.randomUUID(),
-        ticker: ticker.toUpperCase(),
+        id: generateId(),
+        ticker: (ticker || '').toUpperCase().trim(),
         type,
         assetType,
-        quantity: parseFloat(quantity),
-        price: parseFloat(price),
+        quantity: qty,
+        price: prc,
         date: new Date(date).toISOString(),
       };
+      console.log('New transaction:', newTransaction);
 
       if (isConfigured) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -53,16 +77,18 @@ export default function Transactions() {
             user_id: user.id
           });
         
-        if (error) {
-          console.error('Erro Supabase:', error);
-          if (error.code === '42P01') {
-            throw new Error('A tabela "transactions" não foi encontrada no Supabase. Consulte o arquivo DATABASE.md para instruções de configuração.');
-          }
-          throw error;
-        }
+        if (error) throw error;
       } else {
-        // Fallback to localStorage
-        const existingTxs = JSON.parse(localStorage.getItem('invest_transactions') || '[]');
+        // Fallback to localStorage with error handling
+        let existingTxs = [];
+        try {
+          const stored = localStorage.getItem('invest_transactions');
+          existingTxs = stored ? JSON.parse(stored) : [];
+          if (!Array.isArray(existingTxs)) existingTxs = [];
+        } catch (e) {
+          console.error('Failed to parse localStorage, resetting:', e);
+          existingTxs = [];
+        }
         existingTxs.push(newTransaction);
         localStorage.setItem('invest_transactions', JSON.stringify(existingTxs));
         window.dispatchEvent(new Event('invest_transactions_updated'));
@@ -99,12 +125,15 @@ export default function Transactions() {
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleImport called');
     const file = e.target.files?.[0];
     if (!file) return;
+    console.log('File selected:', file.name);
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
+        console.log('FileReader loaded');
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
         if (!wb.SheetNames || wb.SheetNames.length === 0) throw new Error('Arquivo Excel sem planilhas.');
@@ -112,11 +141,14 @@ export default function Transactions() {
         const ws = wb.Sheets[wsname];
         if (!ws) throw new Error('Não foi possível ler a planilha.');
         const data = XLSX.utils.sheet_to_json(ws) as any[];
+        console.log('Data parsed:', data);
 
         const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+        console.log('Supabase configured:', isConfigured);
         const newTxs: any[] = [];
 
         for (const row of data) {
+          console.log('Processing row:', row);
           // Mapeamento robusto para compatibilidade B3/Nexus
           const ticker = row.Ticker || row['Código de Negociação'] || row['Ativo'] || row['Código'];
           
@@ -134,6 +166,8 @@ export default function Transactions() {
           const price = parseBRNumber(row.Preço || row['Preço Unitário'] || row['Preço']);
           const dateStr = row.Data || row['Data do Pregão'] || row['Data'];
           
+          console.log('Parsed row:', { ticker, quantity, price, dateStr });
+          
           let date;
           if (typeof dateStr === 'number') {
             // Excel date format
@@ -148,7 +182,7 @@ export default function Transactions() {
           if (ticker && quantity > 0) {
             newTxs.push({
               id: crypto.randomUUID(),
-              ticker: ticker.toString().toUpperCase().trim(),
+              ticker: (ticker || '').toString().toUpperCase().trim(),
               type,
               assetType: row['Tipo de Ativo'] || 'ACAO',
               quantity,
