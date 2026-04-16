@@ -1591,11 +1591,12 @@ export class NexusEngine {
   }
 
   static async fetchDividends(ticker: string): Promise<any[]> {
-    const cleanTicker = canonicalizeTicker(ticker);
+    const cleanTicker = ticker.split('.')[0].toUpperCase();
     const symbols = [`${cleanTicker}.SA`, cleanTicker];
     
     for (const symbol of symbols) {
       try {
+        console.log(`[YAHOO] Requisitando dividendos para ${symbol}...`);
         const result = await yahooFinance.chart(symbol, {
           period1: '5y',
           interval: '1mo',
@@ -1610,8 +1611,12 @@ export class NexusEngine {
         }
 
         const events = result?.events?.dividends;
-        if (!events || events.length === 0) continue;
+        if (!events || events.length === 0) {
+          console.log(`[YAHOO] No dividends found for ${symbol}`);
+          continue;
+        }
         
+        console.log(`[YAHOO] Found ${events.length} dividends for ${symbol}`);
         return events.map((d: any) => ({
           date: d.date.toISOString(),
           amount: d.amount,

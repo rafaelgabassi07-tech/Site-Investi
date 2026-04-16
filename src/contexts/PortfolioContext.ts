@@ -8,6 +8,7 @@ export interface PortfolioContextType {
   taxLedger: Record<string, TaxMonth>;
   quotaHistory: any[];
   loading: boolean;
+  syncingDividends: boolean;
   refresh: () => Promise<void>;
   fetchDividends: () => Promise<void>;
   syncAllDividends: () => Promise<void>;

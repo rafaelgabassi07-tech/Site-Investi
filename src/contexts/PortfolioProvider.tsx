@@ -45,10 +45,10 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const syncAllDividends = useCallback(async () => {
     if (portfolio.length === 0 || syncingDividends) return;
     
-    // Prevent syncing too often (e.g., once every 30 minutes unless forced)
+    // Prevent syncing too often (once every 15 mins)
     const now = Date.now();
-    if (now - lastSyncRef.current < 30 * 60 * 1000) {
-      console.log('[SYNC] Skipped sync - last one was very recent.');
+    if (now - lastSyncRef.current < 15 * 60 * 1000) {
+      console.log('[SYNC] Skipped - last sync was recent.');
       return;
     }
 
@@ -56,57 +56,96 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     lastSyncRef.current = now;
 
     try {
-      console.log('[SYNC] Auto-syncing dividends for tickers:', portfolio.map(p => p.ticker));
+      console.log(`[SYNC] Iniciando varredura para ${portfolio.length} ativos...`);
       
       const results = await Promise.all(
-        portfolio.slice(0, 20).map(async (item) => {
+        portfolio.slice(0, 30).map(async (item) => {
           try {
+            console.log(`[SYNC] Buscando dividendos para: ${item.ticker}...`);
             const divs = await financeService.getAssetDividends(item.ticker);
-            if (!divs || !Array.isArray(divs)) return [];
+            if (!divs || !Array.isArray(divs)) {
+              console.log(`[SYNC] Nenhum dado retornado para ${item.ticker}`);
+              return [];
+            }
+            
+            console.log(`[SYNC] ${divs.length} dividendos encontrados para ${item.ticker}`);
             return divs.map(d => ({
-              ticker: item.ticker,
-              type: item.assetType === 'FII' ? 'FII' : 'ACAO',
+              ticker: item.ticker.toUpperCase(),
+              type: item.assetType || (item.ticker.toUpperCase().endsWith('11') ? 'FII' : 'ACAO'),
               date: d.date,
-              amount: d.amount,
+              amount: typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount,
               is_future: new Date(d.date) > new Date()
             }));
           } catch (err) {
-            console.warn(`[SYNC] Failed for ${item.ticker}`, err);
+            console.warn(`[SYNC] Falha ao processar ${item.ticker}:`, err);
             return [];
           }
         })
       );
 
-      const flatDividends = results.flat()
-        .filter(d => d && d.date && d.amount > 0);
+      const flatDividends = results.flat().filter(d => d && d.date && d.amount > 0);
+      console.log(`[SYNC] Total de ${flatDividends.length} registros brutos encontrados.`);
 
-      if (flatDividends.length === 0) {
+      // Predição Automática (1 mês para FII, 3 meses para Ações)
+      const futurePredictions: any[] = [];
+      const currTime = new Date();
+      const byTicker = flatDividends.reduce((acc, curr) => {
+        if (!acc[curr.ticker]) acc[curr.ticker] = [];
+        acc[curr.ticker].push(curr);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      for (const ticker in byTicker) {
+        const history = byTicker[ticker].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (history.length > 0) {
+          const lastDiv = history[0];
+          const nextDate = new Date(lastDiv.date);
+          const isFII = ticker.endsWith('11') || lastDiv.type === 'FII';
+          
+          nextDate.setMonth(nextDate.getMonth() + (isFII ? 1 : 3));
+          
+          if (nextDate > currTime) {
+            futurePredictions.push({
+              ticker,
+              type: lastDiv.type,
+              date: nextDate.toISOString(),
+              amount: lastDiv.amount,
+              is_future: true
+            });
+          }
+        }
+      }
+
+      const allToSync = [...flatDividends, ...futurePredictions];
+      if (allToSync.length === 0) {
         setSyncingDividends(false);
         return;
       }
 
       const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
       if (isConfigured) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          for (const div of flatDividends) {
+          console.log(`[SYNC] Salvando ${allToSync.length} registros no Supabase...`);
+          // Batch check exists would be better but let's do sequential for safety with RLS
+          let added = 0;
+          for (const div of allToSync) {
             const { data: existing } = await supabase.from('dividends')
               .select('id')
-              .eq('user_id', user.id)
-              .eq('ticker', div.ticker)
-              .eq('date', div.date)
+              .match({ user_id: user.id, ticker: div.ticker, date: div.date })
               .limit(1);
-              
+            
             if (!existing || existing.length === 0) {
-              await supabase.from('dividends').insert({ ...div, user_id: user.id });
+              const { error } = await supabase.from('dividends').insert({ ...div, user_id: user.id });
+              if (!error) added++;
             }
           }
+          console.log(`[SYNC] Sucesso! ${added} novos proventos salvos na nuvem.`);
         }
       } else {
         const local = JSON.parse(localStorage.getItem('invest_dividends') || '[]');
         let changed = false;
-        for (const div of flatDividends) {
+        for (const div of allToSync) {
           if (!local.find((l: any) => l.ticker === div.ticker && l.date === div.date)) {
             local.push({ ...div, id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString() });
             changed = true;
@@ -115,13 +154,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         if (changed) {
           localStorage.setItem('invest_dividends', JSON.stringify(local));
           window.dispatchEvent(new Event('invest_dividends_updated'));
+          console.log('[SYNC] Sucesso! Novos proventos salvos localmente.');
         }
       }
       
       await loadDividendsFromCloud();
-      console.log('[SYNC] Auto-sync completed successfully');
     } catch (e) {
-      console.error('[SYNC] Sync failed:', e);
+      console.error('[SYNC] Falha crítica na sincronização:', e);
     } finally {
       setSyncingDividends(false);
     }
@@ -176,6 +215,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     const { currentPositions, taxLedger, quotaHistory } = calculateAdvancedPortfolio(txs, []);
     setTaxLedger(taxLedger);
     setQuotaHistory(quotaHistory);
+    setPortfolio(currentPositions);
     setLoading(false);
     fetchCurrentPrices(currentPositions);
   }, [fetchCurrentPrices]);
@@ -293,6 +333,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       taxLedger, 
       quotaHistory, 
       loading,
+      syncingDividends,
       refresh: fetchTransactions,
       fetchDividends: loadDividendsFromCloud,
       syncAllDividends
