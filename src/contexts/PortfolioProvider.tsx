@@ -14,6 +14,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [taxLedger, setTaxLedger] = useState<Record<string, TaxMonth>>({});
   const [quotaHistory, setQuotaHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncingDividends, setSyncingDividends] = useState(false);
+  const lastSyncRef = React.useRef<number>(0);
 
   const loadDividendsFromCloud = useCallback(async () => {
     try {
@@ -39,6 +41,98 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching dividends from cloud:', e);
     }
   }, []);
+
+  const syncAllDividends = useCallback(async () => {
+    if (portfolio.length === 0 || syncingDividends) return;
+    
+    // Prevent syncing too often (e.g., once every 30 minutes unless forced)
+    const now = Date.now();
+    if (now - lastSyncRef.current < 30 * 60 * 1000) {
+      console.log('[SYNC] Skipped sync - last one was very recent.');
+      return;
+    }
+
+    setSyncingDividends(true);
+    lastSyncRef.current = now;
+
+    try {
+      console.log('[SYNC] Auto-syncing dividends for tickers:', portfolio.map(p => p.ticker));
+      
+      const results = await Promise.all(
+        portfolio.slice(0, 20).map(async (item) => {
+          try {
+            const divs = await financeService.getAssetDividends(item.ticker);
+            if (!divs || !Array.isArray(divs)) return [];
+            return divs.map(d => ({
+              ticker: item.ticker,
+              type: item.assetType === 'FII' ? 'FII' : 'ACAO',
+              date: d.date,
+              amount: d.amount,
+              is_future: new Date(d.date) > new Date()
+            }));
+          } catch (err) {
+            console.warn(`[SYNC] Failed for ${item.ticker}`, err);
+            return [];
+          }
+        })
+      );
+
+      const flatDividends = results.flat()
+        .filter(d => d && d.date && d.amount > 0);
+
+      if (flatDividends.length === 0) {
+        setSyncingDividends(false);
+        return;
+      }
+
+      const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (isConfigured) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          for (const div of flatDividends) {
+            const { data: existing } = await supabase.from('dividends')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('ticker', div.ticker)
+              .eq('date', div.date)
+              .limit(1);
+              
+            if (!existing || existing.length === 0) {
+              await supabase.from('dividends').insert({ ...div, user_id: user.id });
+            }
+          }
+        }
+      } else {
+        const local = JSON.parse(localStorage.getItem('invest_dividends') || '[]');
+        let changed = false;
+        for (const div of flatDividends) {
+          if (!local.find((l: any) => l.ticker === div.ticker && l.date === div.date)) {
+            local.push({ ...div, id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString() });
+            changed = true;
+          }
+        }
+        if (changed) {
+          localStorage.setItem('invest_dividends', JSON.stringify(local));
+          window.dispatchEvent(new Event('invest_dividends_updated'));
+        }
+      }
+      
+      await loadDividendsFromCloud();
+      console.log('[SYNC] Auto-sync completed successfully');
+    } catch (e) {
+      console.error('[SYNC] Sync failed:', e);
+    } finally {
+      setSyncingDividends(false);
+    }
+  }, [portfolio, syncingDividends, loadDividendsFromCloud]);
+
+  // Automatic Trigger when portfolio loads or changes
+  useEffect(() => {
+    if (!loading && portfolio.length > 0) {
+      syncAllDividends();
+    }
+  }, [loading, portfolio.length, syncAllDividends]);
 
   const fetchCurrentPrices = useCallback(async (items: PortfolioItem[]) => {
     try {
@@ -200,7 +294,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       quotaHistory, 
       loading,
       refresh: fetchTransactions,
-      fetchDividends: loadDividendsFromCloud
+      fetchDividends: loadDividendsFromCloud,
+      syncAllDividends
     }}>
       {children}
     </PortfolioContext.Provider>

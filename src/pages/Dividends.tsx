@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { PortfolioNav } from '../components/PortfolioNav';
 
 export default function Dividends() {
-  const { portfolio, loading: contextLoading, dividends, fetchDividends } = usePortfolio();
+  const { portfolio, loading: contextLoading, dividends, fetchDividends, syncAllDividends } = usePortfolio();
   const [syncing, setSyncing] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [filter, setFilter] = useState('Todos');
@@ -56,6 +56,12 @@ export default function Dividends() {
     }
   };
 
+  const handleManualSync = async () => {
+    setSyncing(true);
+    await syncAllDividends();
+    setSyncing(false);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja remover este provento?')) return;
     try {
@@ -72,115 +78,6 @@ export default function Dividends() {
     }
   };
 
-  const handleSyncDividends = async () => {
-    if (portfolio.length === 0) {
-      alert('Sua carteira está vazia. Adicione ativos na aba de Carteira para poder sincronizar os proventos automaticamente.');
-      return;
-    }
-    setSyncing(true);
-    try {
-      console.log('[DIVIDENDS] Iniciando sincronização para:', portfolio.map(p => p.ticker));
-      const tickers = portfolio.map(p => p.ticker);
-      const results = await Promise.all(
-        tickers.slice(0, 20).map(async (ticker) => {
-          try {
-            const divs = await financeService.getAssetDividends(ticker);
-            if (!divs || !Array.isArray(divs)) return [];
-            return divs.map(d => ({
-              ticker,
-              type: ticker.endsWith('11') ? 'FII' : 'ACAO',
-              date: d.date,
-              amount: d.amount,
-              is_future: new Date(d.date) > new Date()
-            }));
-          } catch (err) {
-            return [];
-          }
-        })
-      );
-
-      const flatDividends = results.flat()
-        .filter(d => d && d.date && d.amount)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-      // Future extrapolations
-      const futureDividends: any[] = [];
-      const now = new Date();
-      const byTicker = flatDividends.reduce((acc, curr) => {
-        if (!acc[curr.ticker]) acc[curr.ticker] = [];
-        acc[curr.ticker].push(curr);
-        return acc;
-      }, {} as Record<string, any[]>);
-
-      for (const ticker in byTicker) {
-        const history = byTicker[ticker];
-        if (history.length > 0) {
-          const lastDiv = history[0];
-          let nextDate = new Date(lastDiv.date);
-          if (ticker.endsWith('11')) {
-            nextDate.setMonth(nextDate.getMonth() + 1);
-          } else {
-            nextDate.setMonth(nextDate.getMonth() + 3);
-          }
-          if (nextDate > now) {
-            futureDividends.push({ ...lastDiv, date: nextDate.toISOString(), is_future: true });
-          }
-        }
-      }
-
-      const allDividends = [...futureDividends, ...flatDividends].filter(d => d.amount > 0);
-      
-      const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (isConfigured) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          console.log(`[DIVIDENDS] Salvando ${allDividends.length} proventos no Supabase...`);
-          let addedCount = 0;
-          for (const div of allDividends) {
-            // Check if exists using a list approach to be safer than .single()
-            const { data: existing } = await supabase.from('dividends')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('ticker', div.ticker)
-              .eq('date', div.date)
-              .limit(1);
-              
-            if (!existing || existing.length === 0) {
-              const { error } = await supabase.from('dividends').insert({ 
-                ticker: div.ticker,
-                type: div.type,
-                date: div.date,
-                amount: div.amount,
-                is_future: div.is_future,
-                user_id: user.id 
-              });
-              if (!error) addedCount++;
-            }
-          }
-          console.log(`[DIVIDENDS] Sincronização concluída. ${addedCount} novos registros adicionados.`);
-        }
-      } else {
-        const local = JSON.parse(localStorage.getItem('invest_dividends') || '[]');
-        let addedCount = 0;
-        for (const div of allDividends) {
-          if (!local.find((l: any) => l.ticker === div.ticker && l.date === div.date)) {
-            local.push({ ...div, id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString() });
-            addedCount++;
-          }
-        }
-        localStorage.setItem('invest_dividends', JSON.stringify(local));
-        console.log(`[DIVIDENDS] Sincronização local concluída. ${addedCount} novos registros.`);
-      }
-      
-      await fetchDividends();
-      alert('Sincronização concluída com sucesso!');
-    } catch (e) {
-      console.error('[DIVIDENDS] Falha na sincronização:', e);
-      alert('Erro durante a sincronização. Verifique o console para mais detalhes.');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const monthlyHistory = useMemo(() => {
     const history: Record<string, number> = {};
@@ -259,7 +156,7 @@ export default function Dividends() {
         actions={
           <div className="flex gap-2">
             <button 
-              onClick={handleSyncDividends} 
+              onClick={handleManualSync} 
               disabled={syncing}
               className="px-4 py-2 bg-blue-600/10 text-blue-500 rounded-xl hover:bg-blue-600/20 transition-all font-bold text-sm flex items-center gap-2 border border-blue-500/20"
             >

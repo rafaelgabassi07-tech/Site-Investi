@@ -10,6 +10,7 @@ export interface PortfolioContextType {
   loading: boolean;
   refresh: () => Promise<void>;
   fetchDividends: () => Promise<void>;
+  syncAllDividends: () => Promise<void>;
 }
 
 export const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
