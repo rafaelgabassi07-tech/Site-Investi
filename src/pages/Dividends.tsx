@@ -9,15 +9,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { PortfolioNav } from '../components/PortfolioNav';
 
 export default function Dividends() {
-  const { portfolio, loading: loadingPortfolio, dividends, fetchDividends } = usePortfolio();
-  const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('Todos');
-
+  const { portfolio, loading: contextLoading, dividends, fetchDividends } = usePortfolio();
   const [syncing, setSyncing] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [filter, setFilter] = useState('Todos');
   const [ticker, setTicker] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const loading = contextLoading && dividends.length === 0;
 
   const handleAddDividend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +57,7 @@ export default function Dividends() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja remover este provento?')) return;
     try {
       const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (isConfigured) {
@@ -72,9 +73,13 @@ export default function Dividends() {
   };
 
   const handleSyncDividends = async () => {
-    if (portfolio.length === 0) return;
+    if (portfolio.length === 0) {
+      alert('Sua carteira está vazia. Adicione ativos na aba de Carteira para poder sincronizar os proventos automaticamente.');
+      return;
+    }
     setSyncing(true);
     try {
+      console.log('[DIVIDENDS] Iniciando sincronização para:', portfolio.map(p => p.ticker));
       const tickers = portfolio.map(p => p.ticker);
       const results = await Promise.all(
         tickers.slice(0, 20).map(async (ticker) => {
@@ -123,41 +128,55 @@ export default function Dividends() {
         }
       }
 
-      const allDividends = [...futureDividends, ...flatDividends];
+      const allDividends = [...futureDividends, ...flatDividends].filter(d => d.amount > 0);
       
       const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (isConfigured) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Delete old syncs (optional) or just upsert. We'll simply insert and rely on manual cleanup for now to avoid losing history.
+          console.log(`[DIVIDENDS] Salvando ${allDividends.length} proventos no Supabase...`);
+          let addedCount = 0;
           for (const div of allDividends) {
-            // Check if exists
+            // Check if exists using a list approach to be safer than .single()
             const { data: existing } = await supabase.from('dividends')
               .select('id')
               .eq('user_id', user.id)
               .eq('ticker', div.ticker)
               .eq('date', div.date)
-              .single();
+              .limit(1);
               
-            if (!existing) {
-              await supabase.from('dividends').insert({ ...div, user_id: user.id });
+            if (!existing || existing.length === 0) {
+              const { error } = await supabase.from('dividends').insert({ 
+                ticker: div.ticker,
+                type: div.type,
+                date: div.date,
+                amount: div.amount,
+                is_future: div.is_future,
+                user_id: user.id 
+              });
+              if (!error) addedCount++;
             }
           }
+          console.log(`[DIVIDENDS] Sincronização concluída. ${addedCount} novos registros adicionados.`);
         }
       } else {
         const local = JSON.parse(localStorage.getItem('invest_dividends') || '[]');
-        // Add only non-existing
+        let addedCount = 0;
         for (const div of allDividends) {
           if (!local.find((l: any) => l.ticker === div.ticker && l.date === div.date)) {
             local.push({ ...div, id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString() });
+            addedCount++;
           }
         }
         localStorage.setItem('invest_dividends', JSON.stringify(local));
+        console.log(`[DIVIDENDS] Sincronização local concluída. ${addedCount} novos registros.`);
       }
       
-      fetchDividends();
+      await fetchDividends();
+      alert('Sincronização concluída com sucesso!');
     } catch (e) {
-      console.error(e);
+      console.error('[DIVIDENDS] Falha na sincronização:', e);
+      alert('Erro durante a sincronização. Verifique o console para mais detalhes.');
     } finally {
       setSyncing(false);
     }
