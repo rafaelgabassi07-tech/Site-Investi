@@ -20,7 +20,7 @@ export function PortfolioSummary() {
       const date = new Date(d.date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const asset = portfolio.find(p => p.ticker === d.ticker);
-      const qty = asset ? asset.quantity : 100;
+      const qty = asset ? asset.totalQuantity : 0;
       months[key] = (months[key] || 0) + ((d.amount || 0) * qty);
     });
     return Object.entries(months)
@@ -31,7 +31,7 @@ export function PortfolioSummary() {
 
   const totalDividends = (dividends || []).reduce((acc, curr) => {
     const asset = portfolio.find(p => p.ticker === curr.ticker);
-    const qty = asset ? asset.quantity : 100;
+    const qty = asset ? asset.totalQuantity : 0;
     return acc + ((curr.amount || 0) * qty);
   }, 0);
   const dividendYield = currentTotalValue > 0 ? (totalDividends / currentTotalValue) * 100 : 0;

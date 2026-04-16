@@ -445,11 +445,13 @@ export function universalLexer<T = any>(
   const htmlLower = html.toLowerCase();
 
   // Extração especial para dividendos (tabelas)
-  if (html.includes('table-dividends') || html.includes('dividendos')) {
-    const divRegex = /<tr>\s*<td>([\d/]+)<\/td>\s*<td>([\d/]+)<\/td>\s*<td>([R$\s\d,.]+)<\/td>\s*<td>([^<]+)<\/td>\s*<\/tr>/gi;
+  if (html.includes('table-dividends') || html.includes('dividendos') || html.includes('rendimentos')) {
+    // Regex mais flexível para capturar tabelas de dividendos do Investidor10 e StatusInvest
+    // Formato comum: Data Com | Data Pagto | Valor | Tipo
+    const divRegex = /<tr>\s*<td>([\d/]+)<\/td>\s*<td>([\d/.-]+)<\/td>\s*(?:<td>.*?<\/td>\s*)?<td>([R$\s\d,.]+)<\/td>\s*<td>([^<]+)<\/td>\s*<\/tr>/gi;
     const matches = [...html.matchAll(divRegex)];
     if (matches.length > 0) {
-      results.dividendos = matches.slice(0, 10).map(m => ({
+      results.dividendos = matches.slice(0, 50).map(m => ({
         dataCom: m[1].trim(),
         pagamento: m[2].trim(),
         valor: m[3].trim(),
@@ -1591,9 +1593,44 @@ export class NexusEngine {
   }
 
   static async fetchDividends(ticker: string): Promise<any[]> {
-    const cleanTicker = ticker.split('.')[0].toUpperCase();
-    const symbols = [`${cleanTicker}.SA`, cleanTicker];
-    
+    const cleanTicker = canonicalizeTicker(ticker);
+    const assetType = inferAssetType(cleanTicker);
+    const isBrazilian = /^[A-Z]{4}[3-6]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
+
+    // Para ativos brasileiros, tentamos primeiro o Scraper (Investidor10/StatusInvest)
+    // pois o Yahoo Finance é instável com dividendos brasileiros (especialmente FIIs)
+    if (isBrazilian) {
+      try {
+        console.log(`[SCRAPER] Buscando dividendos via Nexus Scraper para ${cleanTicker}...`);
+        const scrapeResult = await this.fetchAtivo(cleanTicker, assetType);
+        
+        if (scrapeResult.results && scrapeResult.results.dividendos && scrapeResult.results.dividendos.length > 0) {
+          console.log(`[SCRAPER] Encontrados ${scrapeResult.results.dividendos.length} dividendos via Scraper para ${cleanTicker}`);
+          
+          return scrapeResult.results.dividendos.map((d: any) => {
+            // Converter data brasileira DD/MM/YYYY para ISO
+            const [day, month, year] = d.dataCom.split('/');
+            const date = new Date(`${year}-${month}-${day}T12:00:00Z`);
+            
+            // Limpar valor (R$ 0,50 -> 0.50)
+            const amount = typeof d.valor === 'string' 
+              ? parseFloat(d.valor.replace('R$', '').replace(/\./g, '').replace(',', '.').trim())
+              : d.valor;
+
+            return {
+              date: date.toISOString(),
+              amount: isNaN(amount) ? 0 : amount,
+              type: d.tipo || 'ACAO'
+            };
+          }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        }
+      } catch (err) {
+        console.warn(`[SCRAPER] Falha ao raspar dividendos para ${cleanTicker}:`, err);
+      }
+    }
+
+    // Fallback ou padrão para ativos internacionais: Yahoo Finance
+    const symbols = [isBrazilian ? `${cleanTicker}.SA` : cleanTicker, cleanTicker];
     for (const symbol of symbols) {
       try {
         console.log(`[YAHOO] Requisitando dividendos para ${symbol}...`);
@@ -1606,23 +1643,17 @@ export class NexusEngine {
         if (!result) continue;
 
         if ((result as any).errors || (result as any).error) {
-          console.warn(`[YAHOO] Dividends for ${symbol} returned errors:`, formatYahooError((result as any).errors || (result as any).error));
           continue;
         }
 
         const events = result?.events?.dividends;
-        if (!events || events.length === 0) {
-          console.log(`[YAHOO] No dividends found for ${symbol}`);
-          continue;
-        }
+        if (!events || events.length === 0) continue;
         
-        console.log(`[YAHOO] Found ${events.length} dividends for ${symbol}`);
         return events.map((d: any) => ({
           date: d.date.toISOString(),
           amount: d.amount,
         })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       } catch (e) {
-        console.warn(`[YAHOO] Erro ao buscar dividendos para ${symbol}:`, formatYahooError(e));
         continue;
       }
     }

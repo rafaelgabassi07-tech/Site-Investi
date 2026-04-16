@@ -91,7 +91,7 @@ export default function Dividends() {
       if (history[key] !== undefined) {
         // Find quantity in portfolio
         const asset = portfolio.find(p => p.ticker === div.ticker);
-        const qty = asset ? asset.quantity : 100; // Default 100 for demo if portfolio empty
+        const qty = asset ? asset.totalQuantity : 0; 
         history[key] += div.amount * qty;
       }
     });
@@ -119,7 +119,7 @@ export default function Dividends() {
       if (d >= oneYearAgo) {
         const asset = portfolio.find(p => p.ticker === div.ticker);
         if (asset) {
-          acc += div.amount * asset.quantity;
+          acc += div.amount * asset.totalQuantity;
         }
       }
       return acc;

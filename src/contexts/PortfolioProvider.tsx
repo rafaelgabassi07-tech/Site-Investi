@@ -210,9 +210,9 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const processTransactions = useCallback((txs: Transaction[]) => {
+  const processTransactions = useCallback((txs: Transaction[], events: any[] = []) => {
     setTransactions(txs);
-    const { currentPositions, taxLedger, quotaHistory } = calculateAdvancedPortfolio(txs, []);
+    const { currentPositions, taxLedger, quotaHistory } = calculateAdvancedPortfolio(txs, events);
     setTaxLedger(taxLedger);
     setQuotaHistory(quotaHistory);
     setPortfolio(currentPositions);
@@ -234,7 +234,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         localTxs = [];
         localStorage.setItem('invest_transactions', '[]');
       }
-      processTransactions(localTxs);
+      processTransactions(localTxs, []);
       return;
     }
 
@@ -244,21 +244,25 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const { data, error } = await supabase
+    // Fetch transactions
+    const { data: txData, error: txError } = await supabase
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
       .order('date', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching transactions:', error);
+    // Fetch corporate events (Splits/Inplits)
+    const { data: eventData } = await supabase
+      .from('corporate_events')
+      .select('*');
+
+    if (txError) {
+      console.error('Error fetching transactions:', txError);
       setLoading(false);
       return;
     }
 
-    console.log('Fetched transactions from Supabase:', data);
-
-    const mappedTxs: Transaction[] = data.map(tx => ({
+    const mappedTxs: Transaction[] = (txData || []).map(tx => ({
       id: tx.id,
       ticker: tx.ticker,
       type: tx.type as 'BUY' | 'SELL',
@@ -269,7 +273,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       broker: tx.broker,
       user_id: tx.user_id
     }));
-    processTransactions(mappedTxs);
+
+    processTransactions(mappedTxs, eventData || []);
     loadDividendsFromCloud();
   }, [processTransactions, loadDividendsFromCloud]);
 

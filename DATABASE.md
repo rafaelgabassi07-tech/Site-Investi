@@ -7,7 +7,21 @@ Para que o aplicativo Nexus Invest Engine funcione corretamente na nuvem, você 
 Execute o seguinte SQL no Editor SQL do seu painel Supabase:
 
 ```sql
--- Criar tabela de transações
+-- 1. Criar Tabela `users` (Perfil Público)
+CREATE TABLE users (
+  id UUID REFERENCES auth.users(id) PRIMARY KEY,
+  full_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Habilitar RLS para users
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own profile" ON users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON users FOR UPDATE USING (auth.uid() = id);
+
+-- 2. Criar Tabela `transactions`
 CREATE TABLE transactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
@@ -23,30 +37,27 @@ CREATE TABLE transactions (
 
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own transactions" ON transactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own transactions" ON transactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own transactions" ON transactions FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own transactions" ON transactions FOR DELETE USING (auth.uid() = user_id);
 
--- Criar política para que usuários vejam apenas suas próprias transações
-CREATE POLICY "Users can view their own transactions" 
-ON transactions FOR SELECT 
-USING (auth.uid() = user_id);
-
--- Criar política para que usuários insiram suas próprias transações
-CREATE POLICY "Users can insert their own transactions" 
-ON transactions FOR INSERT 
-WITH CHECK (auth.uid() = user_id);
-
--- Criar política para que usuários atualizem suas próprias transações
-CREATE POLICY "Users can update their own transactions" 
-ON transactions FOR UPDATE 
-USING (auth.uid() = user_id);
-
--- Criar política para que usuários deletem suas próprias transações
-CREATE POLICY "Users can delete their own transactions" 
-ON transactions FOR DELETE 
-USING (auth.uid() = user_id);
-
--- Criar índices para performance
 CREATE INDEX idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX idx_transactions_ticker ON transactions(ticker);
+
+-- 3. Tabela de eventos corporativos (Desdobramentos/Grupamentos)
+CREATE TABLE corporate_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticker TEXT NOT NULL,
+  type TEXT CHECK (type IN ('SPLIT', 'INPLIT', 'DIVIDEND')) NOT NULL,
+  factor DECIMAL,
+  value DECIMAL,
+  date TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+ALTER TABLE corporate_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read corporate events" ON corporate_events FOR SELECT USING (true);
 ```
 
 ## 2. Configurar Variáveis de Ambiente
