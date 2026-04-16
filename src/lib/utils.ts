@@ -43,3 +43,22 @@ export function formatPercentage(v: number): string {
     maximumFractionDigits: 2,
   });
 }
+
+export function formatCompactNumber(v: number | string): string {
+  const num = typeof v === 'string' ? parseFinanceValue(v) : v;
+  if (!num || isNaN(num)) return 'N/A';
+  
+  if (num >= 1_000_000_000_000) {
+    return (num / 1_000_000_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' T';
+  }
+  if (num >= 1_000_000_000) {
+    return (num / 1_000_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' Bi';
+  }
+  if (num >= 1_000_000) {
+    return (num / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' Mi';
+  }
+  if (num >= 1_000) {
+    return (num / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' K';
+  }
+  return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}

@@ -5,7 +5,7 @@ import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
-import { parseFinanceValue } from '../lib/utils';
+import { formatCompactNumber, parseFinanceValue } from '../lib/utils';
 
 export default function Asset() {
   const { ticker } = useParams();
@@ -19,6 +19,14 @@ export default function Asset() {
   const [activePeriod, setActivePeriod] = useState('1y');
 
   const [isFavorite, setIsFavorite] = useState(false);
+
+  const handleGoBack = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     if (!ticker) return;
@@ -69,12 +77,12 @@ export default function Asset() {
         <div className="relative">
           <div className="w-24 h-24 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Zap className="w-8 h-8 text-blue-500 animate-pulse" />
+            <Zap className="icon-lg text-blue-500 animate-pulse" />
           </div>
         </div>
         <div className="text-center space-y-3">
-          <h2 className="text-2xl font-black text-white uppercase tracking-tighter animate-pulse">Analisando {ticker}</h2>
-          <p className="text-slate-400 font-medium max-w-xs mx-auto text-sm">Processando dados em tempo real...</p>
+          <h2 className="text-display-md text-white animate-pulse">Analisando {ticker}</h2>
+          <p className="text-label text-slate-500 uppercase tracking-widest animate-pulse">Processando dados em tempo real...</p>
         </div>
       </div>
     );
@@ -84,11 +92,11 @@ export default function Asset() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
-          <Info className="text-red-500" size={32} />
+          <Info className="text-red-500 icon-lg" />
         </div>
-        <h2 className="text-xl font-bold text-white">Ops! Algo deu errado</h2>
-        <p className="text-slate-400 max-w-xs">{error || 'Não foi possível encontrar este ativo.'}</p>
-        <button onClick={() => navigate(-1)} className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-full transition-colors">Voltar</button>
+        <h2 className="text-display-sm text-white uppercase">Ops! Algo deu errado</h2>
+        <p className="text-label text-slate-400 max-w-xs">{error || 'Não foi possível encontrar este ativo.'}</p>
+        <button onClick={handleGoBack} className="btn-secondary">Voltar</button>
       </div>
     );
   }
@@ -102,6 +110,8 @@ export default function Asset() {
     { label: 'Dividend Yield', value: results.dividendYield || results.dy || 'N/A', icon: Wallet, color: 'emerald', desc: 'Rendimento de Dividendos' },
     { label: 'P/L', value: results.pl || results.p_l || 'N/A', icon: BarChart3, color: 'blue', desc: 'Preço sobre Lucro' },
     { label: 'P/VP', value: results.pvp || results.p_vp || 'N/A', icon: TrendingUp, color: 'indigo', desc: 'Preço sobre Valor Patr.' },
+    { label: 'Valor de Merc.', value: formatCompactNumber(results.marketCap || results.valorMercado), icon: DollarSign, color: 'emerald', desc: 'Market Capitalization' },
+    { label: 'Patr. Líquido', value: formatCompactNumber(results.equity || results.patrimonioLiquido), icon: Building2, color: 'blue', desc: 'Patrimônio da Empresa' },
     { label: 'ROE', value: results.roe || 'N/A', icon: Activity, color: 'purple', desc: 'Retorno sobre Patrimônio' },
     { label: 'ROA', value: results.roa || 'N/A', icon: Activity, color: 'cyan', desc: 'Retorno sobre Ativos' },
     { label: 'VPA', value: results.vpa || results.vpa_val || 'N/A', icon: Building2, color: 'cyan', desc: 'Valor Patr. por Ação' },
@@ -109,12 +119,10 @@ export default function Asset() {
     { label: 'Margem Líq.', value: results.margemLiquida || results.margem_liquida || 'N/A', icon: ShieldCheck, color: 'blue', desc: 'Eficiência de Lucro' },
     { label: 'Margem EBIT', value: results.margemEbit || results.margem_ebit || 'N/A', icon: ShieldCheck, color: 'indigo', desc: 'Eficiência Operacional' },
     { label: 'Dívida/EBITDA', value: results.dividaLiquidaEbitda || results.divida_liquida_ebitda || 'N/A', icon: Zap, color: 'red', desc: 'Alavancagem' },
-    { label: 'CAGR Receita', value: results.cagrReceita5Anos || 'N/A', icon: TrendingUp, color: 'purple', desc: 'Crescimento Receita (5a)' },
-    { label: 'CAGR Lucro', value: results.cagrLucro5Anos || 'N/A', icon: TrendingUp, color: 'blue', desc: 'Crescimento Lucro (5a)' },
   ];
 
   if (results.liquidezMediaDiaria || results.liquidezDiaria) {
-    indicators.push({ label: 'Liq. Diária', value: results.liquidezMediaDiaria || results.liquidezDiaria, icon: Activity, color: 'cyan', desc: 'Liquidez Média Diária' });
+    indicators.push({ label: 'Liq. Diária', value: formatCompactNumber(results.liquidezMediaDiaria || results.liquidezDiaria), icon: Activity, color: 'cyan', desc: 'Liquidez Média Diária' });
   }
   if (results.tagAlong) {
     indicators.push({ label: 'Tag Along', value: results.tagAlong, icon: ShieldCheck, color: 'emerald', desc: 'Proteção ao Minoritário' });
@@ -187,157 +195,208 @@ export default function Asset() {
   ].filter(item => item.check() !== null);
 
   return (
-    <div className="space-y-3 pb-12 max-w-5xl mx-auto">
+    <div className="space-y-3 pb-12 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 pt-4 px-1 md:px-0">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-colors border border-slate-700/50">
-          <ArrowLeft size={20} className="text-slate-300" />
+        <button onClick={handleGoBack} className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-colors border border-slate-700/50">
+          <ArrowLeft className="text-slate-300 icon-sm" />
         </button>
         <div className="flex-1 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center p-2 shadow-xl border border-slate-800">
+              <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center p-2 shadow-xl border border-white/10 shrink-0">
               <AssetIcon assetType={(assetData as any).type || "ACAO"} ticker={assetData.ticker} className="w-full h-full" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-3xl font-bold text-white tracking-tight">{assetData.ticker}</h1>
-                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-widest rounded border border-blue-500/20">
+                <h1 className="text-display-md text-white">{assetData.ticker}</h1>
+                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-tiny font-black uppercase tracking-widest rounded border border-blue-500/20">
                   {(assetData as any).type || "Ativo"}
                 </span>
               </div>
-              <p className="text-sm text-slate-400 font-medium">{results.name || 'Empresa'}</p>
+              <p className="text-label text-slate-400 uppercase">{results.name || 'Empresa'}</p>
             </div>
           </div>
           <button 
             onClick={toggleFavorite}
             className={`w-12 h-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all border group ${isFavorite ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-800/50 border-slate-700'}`}
           >
-            <Star size={24} className={isFavorite ? 'text-amber-400 fill-amber-400' : 'text-slate-500 group-hover:text-amber-400 transition-colors'} />
+            <Star className={`icon-md ${isFavorite ? 'text-amber-400 fill-amber-400' : 'text-slate-500 group-hover:text-amber-400 transition-colors'}`} />
           </button>
         </div>
       </div>
 
       <div className="px-1 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Left Column: Price & Chart */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="relative border-b border-slate-800/50 pb-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="relative border-b border-slate-800/50 pb-6">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
               <div>
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cotação Atual</div>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-5xl font-bold text-white tracking-tighter">
+                <div className="text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest italic">Cotação Atual</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-display-lg text-white tracking-tighter italic">
                     R$ {typeof results.precoAtual === 'number' ? results.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : results.precoAtual || '0,00'}
                   </span>
-                  <div className={`flex items-center gap-1 text-lg font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                  <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest italic ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                     {results.variacaoDay || '0.00%'}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl">
+              <div className="flex items-center p-1 bg-white/5 border border-white/5 rounded-xl">
                 {['1mo', '3mo', '6mo', '1y', '5y'].map((p) => (
                   <button
                     key={p}
                     onClick={() => setActivePeriod(p)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                       activePeriod === p 
-                        ? 'bg-blue-600 text-white shadow-lg' 
+                        ? 'bg-blue-600 text-white shadow-md' 
                         : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    {p.toUpperCase()}
+                    {p}
                   </button>
                 ))}
               </div>
             </div>
             
             {/* Chart */}
-            <div className="h-72 w-full">
+            <div className="h-[250px] md:h-[300px] w-full -mx-4 md:mx-0">
               {history.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={history}>
+                  <AreaChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                       </linearGradient>
+                      <filter id="shadow" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur" />
+                        <feOffset in="blur" dx="0" dy="5" result="offsetBlur" />
+                        <feFlood floodColor="#3b82f6" floodOpacity="0.3" result="offsetColor" />
+                        <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetBlur" />
+                        <feMerge>
+                          <feMergeNode />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
-                    <XAxis dataKey="date" hide />
-                    <YAxis hide domain={['auto', 'auto']} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', color: '#fff' }}
-                      itemStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
-                      labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#ffffff03" />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#475569', fontSize: 9, fontWeight: 900 }} 
+                      tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { month: 'short' })}
+                      minTickGap={30}
                     />
-                    <Area type="monotone" dataKey="close" stroke="#3b82f6" fillOpacity={1} fill="url(#colorPrice)" strokeWidth={3} animationDuration={1500} />
+                    <YAxis 
+                      hide 
+                      domain={['auto', 'auto']} 
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                        border: '1px solid rgba(255, 255, 255, 0.05)', 
+                        borderRadius: '16px', 
+                        backdropFilter: 'blur(12px)',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                        padding: '12px'
+                      }}
+                      itemStyle={{ color: '#fff', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}
+                      labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700' }}
+                      labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      formatter={(val: number) => [`R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'FECHAMENTO']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="close" 
+                      stroke="#3b82f6" 
+                      fillOpacity={1} 
+                      fill="url(#colorPrice)" 
+                      strokeWidth={3} 
+                      filter="url(#shadow)"
+                      animationDuration={1500} 
+                      activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 3, fill: '#fff' }}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
-                  <p className="text-slate-600 text-sm font-bold uppercase tracking-widest">Dados históricos indisponíveis</p>
+                <div className="h-full flex items-center justify-center bg-slate-900/20 rounded-3xl border border-dashed border-white/5 group">
+                  <p className="text-slate-700 text-xs font-black uppercase tracking-[0.2em] group-hover:text-slate-500 transition-colors">Dados históricos indisponíveis</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Indicators Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-slate-800/50 pb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-white/5 pb-8">
             {validIndicators.map((ind, idx) => (
               <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
                 transition={{ delay: idx * 0.03 }}
                 key={idx} 
-                className="p-4 hover:bg-slate-800/20 rounded-xl transition-all group relative overflow-hidden"
+                className="p-4 bg-slate-900/10 border border-white/5 rounded-2xl transition-all duration-500 hover:bg-slate-900/40 group relative overflow-hidden hover:border-blue-500/20"
               >
-                <div className="absolute top-0 right-0 w-16 h-16 bg-blue-600/5 blur-2xl -z-10 group-hover:bg-blue-600/10 transition-all" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/5 blur-[40px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors`}>
-                    <ind.icon size={16} />
+                  <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-slate-600 group-hover:text-blue-500 transition-colors border border-white/5 group-hover:border-blue-500/30">
+                    <ind.icon className="w-4 h-4" />
                   </div>
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{ind.label}</span>
+                  <span className="text-[10px] font-black text-slate-500 group-hover:text-blue-400 transition-colors uppercase italic tracking-widest">{ind.label}</span>
                 </div>
-                <div className="text-xl font-bold text-white tracking-tight mb-1">{ind.value}</div>
-                <div className="text-tiny font-medium text-slate-600 group-hover:text-slate-400 transition-colors">{ind.desc}</div>
+                <div className="text-sm md:text-base font-display font-bold text-white mb-1 group-hover:text-white transition-colors italic tracking-tighter leading-none">{ind.value}</div>
+                <div className="text-[8px] font-black text-slate-600 group-hover:text-slate-400 transition-colors uppercase tracking-[0.2em] italic opacity-60 line-clamp-1">{ind.desc}</div>
               </motion.div>
             ))}
           </div>
 
           {/* About Section */}
-          <div className="border-b border-slate-800/50 pb-8">
+          <div className="border-b border-white/5 pb-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
-                <Info size={20} />
+              <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-md shadow-blue-500/5">
+                <Info className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-white">Sobre a {results.name || ticker}</h2>
+              <h2 className="text-xs font-black text-white uppercase italic tracking-widest">Sobre a {results.name || ticker}</h2>
             </div>
-            <p className="text-slate-400 leading-relaxed font-medium">
+            <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-medium">
               {results.about || `A ${results.name || ticker} é uma das principais empresas do seu setor, com forte presença no mercado brasileiro.`}
             </p>
           </div>
         </div>
 
         {/* Right Column: Checklist & News */}
-        <div className="space-y-8">
-          <div className="border-b border-slate-800/50 pb-8">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
-                <ShieldCheck size={20} />
+        <div className="space-y-6">
+          <div className="border-b border-white/5 pb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-md shadow-emerald-500/5">
+                <ShieldCheck className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Checklist Nexus</h2>
+              <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">Checklist Nexus</h2>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {checklistItems.map((item, idx) => {
                 const passed = item.check();
                 return (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-800/50">
-                    <span className="text-xs text-slate-300 font-bold uppercase tracking-wide">{item.label}</span>
-                    {passed ? <CheckCircle2 size={18} className="text-emerald-500" /> : <XCircle size={18} className="text-slate-600" />}
-                  </div>
+                  <motion.div 
+                    initial={{ opacity: 0, x: 5 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.05 }}
+                    key={idx} 
+                    className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group"
+                  >
+                    <span className="text-[9px] font-black text-slate-400 group-hover:text-slate-200 uppercase tracking-[0.1em] transition-colors">{item.label}</span>
+                    {passed ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500 bg-emerald-500/10 rounded-full" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3 text-slate-700 bg-white/5 rounded-full" />
+                    )}
+                  </motion.div>
                 );
               })}
             </div>
@@ -345,24 +404,31 @@ export default function Asset() {
 
           {/* Dividends Summary */}
           {dividends.length > 0 && (
-            <div className="border-b border-slate-800/50 pb-8">
+            <div className="pb-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
-                    <Calendar size={20} />
+                  <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-md shadow-blue-500/5">
+                    <Calendar className="w-5 h-5" />
                   </div>
-                  <h2 className="text-lg font-bold text-white">Proventos</h2>
+                  <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">Proventos</h2>
                 </div>
               </div>
-              <div className="space-y-3">
-                {dividends.slice(0, 4).map((div, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/20 border border-slate-800/50">
+              <div className="space-y-2">
+                {dividends.slice(0, 5).map((div, idx) => (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.05 }}
+                    key={idx} 
+                    className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-blue-500/20 transition-all hover:bg-slate-900/60 shadow-md group"
+                  >
                     <div>
-                      <div className="text-sm font-bold text-white">R$ {div.amount.toFixed(3)}</div>
-                      <div className="text-xs text-slate-500 font-bold uppercase mt-0.5">{new Date(div.date).toLocaleDateString('pt-BR')}</div>
+                      <div className="text-sm font-display font-bold text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-widest leading-none mb-1">R$ {div.amount.toFixed(3)}</div>
+                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-60 italic">{new Date(div.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                     </div>
-                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase rounded">Pago</span>
-                  </div>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase rounded-md border border-emerald-500/20 shadow-sm shadow-emerald-500/5 italic">EFETIVADO</span>
+                  </motion.div>
                 ))}
               </div>
             </div>

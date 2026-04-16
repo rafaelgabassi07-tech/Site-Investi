@@ -10,9 +10,35 @@ import { parseFinanceValue } from '../lib/utils';
 export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [dividends, setDividends] = useState<any[]>([]);
   const [taxLedger, setTaxLedger] = useState<Record<string, TaxMonth>>({});
   const [quotaHistory, setQuotaHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const loadDividendsFromCloud = useCallback(async () => {
+    try {
+      const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (isConfigured) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data, error } = await supabase
+            .from('dividends')
+            .select('*')
+            .eq('user_id', user.id);
+            
+          if (error) throw error;
+          if (data) {
+            setDividends(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          }
+        }
+      } else {
+        const local = JSON.parse(localStorage.getItem('invest_dividends') || '[]');
+        setDividends(local.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      }
+    } catch (e) {
+      console.error('Error fetching dividends from cloud:', e);
+    }
+  }, []);
 
   const fetchCurrentPrices = useCallback(async (items: PortfolioItem[]) => {
     try {
@@ -110,10 +136,12 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       user_id: tx.user_id
     }));
     processTransactions(mappedTxs);
-  }, [processTransactions]);
+    loadDividendsFromCloud();
+  }, [processTransactions, loadDividendsFromCloud]);
 
   useEffect(() => {
     fetchTransactions();
+    loadDividendsFromCloud();
 
     const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
     
@@ -121,14 +149,20 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       if (!isConfigured) {
         const updatedTxs = JSON.parse(localStorage.getItem('invest_transactions') || '[]');
         processTransactions(updatedTxs);
+        loadDividendsFromCloud();
       } else {
         fetchTransactions();
+        loadDividendsFromCloud();
       }
     };
     window.addEventListener('invest_transactions_updated', handleStorageChange);
+    window.addEventListener('invest_dividends_updated', handleStorageChange);
 
     if (!isConfigured) {
-      return () => window.removeEventListener('invest_transactions_updated', handleStorageChange);
+      return () => {
+        window.removeEventListener('invest_transactions_updated', handleStorageChange);
+        window.removeEventListener('invest_dividends_updated', handleStorageChange);
+      }
     }
 
     // Real-time subscription with unique channel name to avoid conflicts
@@ -141,22 +175,32 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       }, () => {
         fetchTransactions();
       })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'dividends' 
+      }, () => {
+        loadDividendsFromCloud();
+      })
       .subscribe();
 
     return () => {
       window.removeEventListener('invest_transactions_updated', handleStorageChange);
+      window.removeEventListener('invest_dividends_updated', handleStorageChange);
       supabase.removeChannel(channel);
     };
-  }, [fetchTransactions, processTransactions]);
+  }, [fetchTransactions, processTransactions, loadDividendsFromCloud]);
 
   return (
     <PortfolioContext.Provider value={{ 
       transactions, 
       portfolio, 
+      dividends,
       taxLedger, 
       quotaHistory, 
       loading,
-      refresh: fetchTransactions
+      refresh: fetchTransactions,
+      fetchDividends: loadDividendsFromCloud
     }}>
       {children}
     </PortfolioContext.Provider>

@@ -48,7 +48,7 @@ export default function About() {
             transition={{ delay: 0.2 }}
             className="max-w-3xl space-y-6"
           >
-            <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white uppercase leading-none">
+            <h1 className="text-display-lg text-white">
               A Nova Era da <span className="text-blue-500">Inteligência Financeira</span>
             </h1>
             <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed">
@@ -75,8 +75,8 @@ export default function About() {
             transition={{ delay: idx * 0.1 }}
             className="p-6 bg-[#0f172a] border border-slate-800 rounded-2xl text-center"
           >
-            <div className="text-2xl font-black text-white mb-1">{stat.value}</div>
-            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</div>
+            <div className="text-display-md text-white mb-1">{stat.value}</div>
+            <div className="text-label">{stat.label}</div>
           </motion.div>
         ))}
       </section>
@@ -84,7 +84,7 @@ export default function About() {
       {/* Features Grid */}
       <section className="space-y-12">
         <div className="text-center space-y-4">
-          <h2 className="text-3xl font-black text-white uppercase tracking-tight">Por que escolher o Nexus?</h2>
+          <h2 className="text-display-md text-white">Por que escolher o Nexus?</h2>
           <div className="w-20 h-1 bg-blue-600 mx-auto rounded-full" />
         </div>
 
@@ -98,9 +98,9 @@ export default function About() {
               className="p-8 bg-[#0f172a] border border-slate-800 rounded-3xl group hover:border-blue-500/30 transition-all duration-500"
             >
               <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
-                <feature.icon size={24} />
+                <feature.icon className="icon-lg" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
+              <h3 className="text-xl font-bold text-white mb-3 tracking-tight">{feature.title}</h3>
               <p className="text-slate-400 leading-relaxed text-sm font-medium">
                 {feature.description}
               </p>
@@ -113,7 +113,7 @@ export default function About() {
       <section className="bg-blue-600 rounded-[2rem] p-8 md:p-16 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-[100px] -mr-48 -mt-48 rounded-full" />
         <div className="relative z-10 max-w-2xl space-y-8">
-          <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">
+          <h2 className="text-display-lg text-white">
             Nossa Visão de Futuro
           </h2>
           <p className="text-blue-100 text-lg md:text-xl font-medium leading-relaxed">
@@ -134,7 +134,7 @@ export default function About() {
       </section>
 
       <footer className="text-center pt-12">
-        <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.4em]">
+        <p className="text-label">
           Nexus Invest • Powered by Nexus Engine v2.5
         </p>
       </footer>

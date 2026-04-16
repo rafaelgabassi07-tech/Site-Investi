@@ -55,10 +55,10 @@ export function Logo({ className = "", size = 40, showText = false, variant = 'd
 
       {showText && (
         <div className="flex flex-col">
-          <span className="text-2xl font-black tracking-tighter text-white leading-none uppercase italic">
+          <span className="text-xl sm:text-2xl font-black tracking-tighter text-white leading-none uppercase italic">
             Nexus
           </span>
-          <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mt-0.5 ml-0.5">
+          <span className="text-[8px] sm:text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mt-0.5 ml-0.5">
             Invest
           </span>
         </div>

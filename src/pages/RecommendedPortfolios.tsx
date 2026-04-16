@@ -57,48 +57,49 @@ export default function RecommendedPortfolios() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 hover:border-slate-700 transition-all group cursor-pointer relative overflow-hidden shadow-lg"
+            className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 hover:border-white/20 transition-all group cursor-pointer relative overflow-hidden shadow-xl"
+            onClick={() => window.location.href = `/search?q=${portfolio.assets.join(',')}`}
           >
             <div className={`absolute top-0 right-0 w-48 h-48 bg-${portfolio.color}-500/5 blur-[80px] -z-10`} />
             
-            <div className="flex items-start justify-between mb-6">
-              <div className={`w-14 h-14 rounded-2xl bg-${portfolio.color}-500/10 flex items-center justify-center border border-${portfolio.color}-500/20`}>
-                <portfolio.icon size={28} className={`text-${portfolio.color}-500`} />
+            <div className="flex items-start justify-between mb-8">
+              <div className={`w-14 h-14 rounded-2xl bg-${portfolio.color}-500/10 flex items-center justify-center border border-${portfolio.color}-500/20 group-hover:scale-110 transition-transform duration-500`}>
+                <portfolio.icon className={`icon-md text-${portfolio.color}-500`} />
               </div>
               <div className="flex gap-2">
-                <span className="px-3 py-1 bg-slate-800 rounded-lg text-xxs font-bold text-slate-400 uppercase tracking-widest border border-slate-700">
+                <span className="px-3 py-1 bg-white/5 rounded-lg text-tiny font-black text-slate-500 uppercase tracking-widest border border-white/5">
                   Risco: {portfolio.risk}
                 </span>
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold text-white mb-3 tracking-tight group-hover:text-blue-400 transition-colors">{portfolio.title}</h3>
-            <p className="text-sm text-slate-400 mb-6 leading-relaxed font-medium">{portfolio.description}</p>
+            <h3 className="text-display-tiny text-white mb-3 uppercase italic group-hover:text-blue-400 transition-colors">{portfolio.title}</h3>
+            <p className="text-tiny font-bold text-slate-500 mb-8 leading-relaxed uppercase tracking-widest leading-relaxed">{portfolio.description}</p>
 
-            <div className="space-y-3 mb-6">
-              <p className="text-xxs font-bold text-slate-500 uppercase tracking-[0.2em]">Principais Ativos</p>
+            <div className="space-y-4 mb-8">
+              <p className="text-tiny font-black text-slate-600 uppercase tracking-[0.2em] italic">Principais Ativos</p>
               <div className="flex flex-wrap gap-2">
                 {portfolio.assets.map(asset => (
-                  <span key={asset} className="px-2.5 py-1 bg-slate-800/50 border border-slate-800 rounded text-xxs font-bold text-slate-300">
+                  <span key={asset} className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl text-tiny font-black text-slate-300 uppercase tracking-widest hover:border-blue-500/30 transition-colors">
                     {asset}
                   </span>
                 ))}
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-6 border-t border-slate-800/50">
+            <div className="flex items-center justify-between pt-6 border-t border-white/5">
               <div>
-                <div className="text-xxs font-bold text-slate-500 uppercase tracking-widest mb-1">Dividend Yield Esperado</div>
-                <div className={`text-2xl font-black text-${portfolio.color}-400`}>{portfolio.yield}</div>
+                <div className="text-tiny font-black text-slate-600 uppercase tracking-[0.25em] mb-1 italic">Expected Yield</div>
+                <div className={`text-display-tiny text-${portfolio.color}-400 uppercase italic`}>{portfolio.yield}</div>
               </div>
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   window.location.href = `/search?q=${portfolio.assets.join(',')}`;
                 }}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-blue-600/20"
+                className="btn-primary"
               >
-                Ver Ativos
+                Ver Detalhes
               </button>
             </div>
           </motion.div>

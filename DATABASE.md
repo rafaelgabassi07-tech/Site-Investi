@@ -59,3 +59,33 @@ No AI Studio, vá em **Settings** e adicione as seguintes variáveis:
 ## 3. Autenticação
 
 O aplicativo utiliza o Google Login por padrão. Certifique-se de que o provedor Google está habilitado no seu painel Supabase em **Authentication > Providers**.
+
+## 4. Criar Tabela `dividends` (Proventos)
+
+Execute o seguinte SQL no Editor SQL do seu painel Supabase para criar a nova tabela de Proventos:
+
+```sql
+-- Criar tabela de proventos (dividendos)
+CREATE TABLE dividends (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  ticker TEXT NOT NULL,
+  type TEXT DEFAULT 'ACAO' NOT NULL,
+  date TIMESTAMP WITH TIME ZONE NOT NULL,
+  amount DECIMAL NOT NULL,
+  is_future BOOLEAN DEFAULT false
+);
+
+-- Habilitar Row Level Security (RLS)
+ALTER TABLE dividends ENABLE ROW LEVEL SECURITY;
+
+-- Políticas
+CREATE POLICY "Users can view their own dividends" ON dividends FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own dividends" ON dividends FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own dividends" ON dividends FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own dividends" ON dividends FOR DELETE USING (auth.uid() = user_id);
+
+-- Índices
+CREATE INDEX idx_dividends_user_id ON dividends(user_id);
+```

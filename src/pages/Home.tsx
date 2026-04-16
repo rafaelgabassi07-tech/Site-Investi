@@ -179,10 +179,10 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-3"
           >
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-tighter leading-none uppercase italic">
-              Ajudamos você a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400 drop-shadow-[0_0_15px_rgba(37,99,235,0.3)]">investir melhor</span>
+            <h1 className="text-display-md text-white md:text-display-lg lg:text-display-xl leading-[0.9]">
+              Ajudamos você a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-blue-400 to-indigo-500 drop-shadow-[0_0_30px_rgba(37,99,235,0.4)] italic">investir melhor</span>
             </h1>
-            <p className="text-slate-400 text-base md:text-lg max-w-xl mx-auto font-bold tracking-tight opacity-80">
+            <p className="text-xs md:text-tiny font-black text-slate-500 uppercase tracking-[0.3em] max-w-xl mx-auto opacity-80 italic">
               Pesquise pelo ativo desejado para ter acesso a cotação, fundamentos e gráficos em tempo real.
             </p>
           </motion.div>
@@ -195,9 +195,9 @@ export default function Home() {
             className="relative max-w-2xl mx-auto px-4 md:px-0"
           >
             <div className="absolute inset-0 bg-blue-500/20 blur-[100px] -z-10" />
-            <div className="relative flex items-center w-full bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl focus-within:border-blue-500/50 transition-all p-1 overflow-hidden">
-              <div className="pl-3 text-slate-500">
-                <Search size={18} />
+            <div className="relative flex items-center w-full bg-[#0f172a]/60 backdrop-blur-2xl border border-white/5 rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] focus-within:border-blue-500/30 transition-all p-1.5 overflow-hidden group">
+              <div className="pl-4 text-slate-600 transition-colors group-focus-within:text-blue-500">
+                <Search className="icon-md md:icon-lg" />
               </div>
               <input 
                 type="text" 
@@ -205,15 +205,15 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 min-w-0 bg-transparent border-none outline-none py-3 px-3 text-sm md:text-lg text-white placeholder:text-slate-600"
+                className="flex-1 min-w-0 bg-transparent border-none outline-none py-3 md:py-4 px-3 md:px-4 text-sm md:text-lg text-white placeholder:text-slate-700 font-bold tracking-tight"
               />
               <button 
                 onClick={() => {
                   if (searchQuery) navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
                 }}
-                className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 text-xs md:text-sm"
+                className="btn-primary"
               >
-                Pesquisar
+                Analisar
               </button>
             </div>
             
@@ -226,9 +226,9 @@ export default function Home() {
                   exit={{ opacity: 0, y: 10 }}
                   className="absolute w-full mt-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
                 >
-                  <div className="p-2 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Sugestões Inteligentes</span>
-                    <span className="text-[10px] text-slate-600 px-2">↑↓ para navegar</span>
+                  <div className="p-2 border-b border-white/5 flex items-center justify-between bg-white/5">
+                    <span className="text-label px-2">Sugestões Inteligentes</span>
+                    <span className="text-tiny text-slate-600 px-2 font-bold italic">↑↓ para navegar</span>
                   </div>
                   <div className="max-h-[300px] overflow-y-auto no-scrollbar">
                     {suggestions.map((s, idx) => (
@@ -250,15 +250,15 @@ export default function Home() {
                           <div>
                             <div className="font-bold text-white text-sm flex items-center gap-2">
                               {s.ticker}
-                              {s.price && <span className="text-[10px] font-mono text-slate-400">R$ {s.price}</span>}
+                              {s.price && <span className="text-tiny font-mono text-slate-400">R$ {s.price}</span>}
                             </div>
-                            <div className="text-xs text-slate-500 truncate max-w-[200px]">{s.name}</div>
+                            <div className="text-tiny text-slate-500 truncate max-w-[200px] font-bold uppercase tracking-widest">{s.name}</div>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <div className="text-[10px] font-black text-slate-600 uppercase tracking-tighter bg-slate-800 px-1.5 py-0.5 rounded">{s.type}</div>
+                          <div className="text-tiny font-black text-slate-600 uppercase tracking-tighter bg-white/5 px-1.5 py-0.5 rounded italic">{s.type}</div>
                           {s.change && (
-                            <span className={`text-[10px] font-bold ${s.positive ? 'text-emerald-500' : 'text-red-500'}`}>
+                            <span className={`text-tiny font-black ${s.positive ? 'text-emerald-500' : 'text-red-500'} uppercase tracking-widest`}>
                               {s.change}
                             </span>
                           )}
@@ -269,7 +269,7 @@ export default function Home() {
                   {searchQuery && (
                     <Link 
                       to={`/search?q=${encodeURIComponent(searchQuery)}`}
-                      className="block p-3 text-center text-xs font-bold text-blue-500 hover:bg-blue-500/10 transition-colors border-t border-slate-800"
+                      className="block p-3 text-center text-label text-blue-500 hover:bg-blue-500/10 transition-colors border-t border-white/5 italic"
                     >
                       Ver todos os resultados para "{searchQuery}"
                     </Link>
@@ -303,24 +303,24 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + idx * 0.1 }}
-                  className="p-5 bg-[#0f172a]/80 backdrop-blur-xl border border-slate-800 rounded-2xl hover:bg-slate-800/50 transition-all duration-300 group relative overflow-hidden shadow-2xl"
+                  className="p-5 bg-slate-900/30 backdrop-blur-3xl border border-white/5 rounded-3xl hover:bg-slate-900/50 transition-all duration-500 group relative overflow-hidden shadow-2xl hover:border-blue-500/20 active:scale-[0.98]"
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-blue-600/5 blur-2xl -z-10 group-hover:bg-blue-600/10 transition-all" />
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[50px] -z-10 group-hover:bg-blue-600/10 transition-all" />
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-500 group-hover:text-blue-500 transition-colors border border-white/5">
                       <stat.icon className="icon-sm" />
                     </div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
+                    <span className="text-display-tiny text-slate-500 uppercase italic tracking-widest">{stat.label}</span>
                   </div>
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-baseline gap-3">
                     {loadingStats ? (
-                      <div className="h-6 w-20 bg-slate-800 animate-pulse rounded" />
+                      <div className="h-8 w-24 bg-white/5 animate-pulse rounded-lg" />
                     ) : (
                       <>
-                        <span className="text-xl font-black text-white tracking-tighter">
+                        <span className="text-display-sm text-white md:text-display-md tracking-tighter italic">
                           {data?.price || '---'}
                         </span>
-                        <span className={`text-xxs font-black ${data?.change?.includes('+') ? 'text-emerald-400' : 'text-red-400'} bg-white/5 px-2 py-0.5 rounded-md`}>
+                        <span className={`text-[10px] font-black ${data?.change?.includes('+') ? 'text-emerald-400' : 'text-red-400'} bg-white/5 px-3 py-1 rounded-full border border-white/5 uppercase tracking-[0.2em] italic`}>
                           {data?.change || '0.00%'}
                         </span>
                       </>
@@ -344,7 +344,7 @@ export default function Home() {
                 <Gauge className="icon-lg text-blue-500" />
               </div>
               <div>
-                <h2 className="text-xl font-display font-bold text-white tracking-tighter uppercase">Nexus Sentiment</h2>
+                <h2 className="text-display-sm text-white">Nexus Sentiment</h2>
                 <p className="text-label">Análise de Medo & Ganância</p>
               </div>
             </div>
@@ -352,7 +352,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atualizado agora</span>
+                <span className="text-tiny text-slate-400 font-bold uppercase tracking-widest">Atualizado agora</span>
               </div>
               <button 
                 onClick={() => setShowSentimentInfo(true)}
@@ -363,15 +363,15 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto">
             <div className="relative flex flex-col items-center">
-              <div className="relative w-full max-w-[280px] aspect-[2/1]">
+              <div className="relative w-full max-w-[200px] aspect-[2/1]">
                 <svg className="w-full h-full" viewBox="0 0 100 50">
                   <path 
-                    d="M 10 50 A 40 40 0 0 1 90 50" 
+                    d="M 10 40 A 30 30 0 0 1 90 40" 
                     fill="none" 
                     stroke="rgba(255,255,255,0.05)" 
-                    strokeWidth="10" 
+                    strokeWidth="8" 
                     strokeLinecap="round"
                   />
                   
@@ -385,13 +385,13 @@ export default function Home() {
                   </defs>
                   
                   <path 
-                    d="M 10 50 A 40 40 0 0 1 90 50" 
+                    d="M 10 40 A 30 30 0 0 1 90 40" 
                     fill="none" 
                     stroke="url(#nexusSentimentGradient)" 
-                    strokeWidth="10" 
+                    strokeWidth="8" 
                     strokeLinecap="round"
-                    strokeDasharray="125.6"
-                    strokeDashoffset={125.6 - (sentiment.score / 100) * 125.6}
+                    strokeDasharray="94.2"
+                    strokeDashoffset={94.2 - (sentiment.score / 100) * 94.2}
                     className="transition-all duration-[2000ms] ease-out"
                   />
                 </svg>
@@ -400,23 +400,23 @@ export default function Home() {
                   initial={{ rotate: -90 }}
                   animate={{ rotate: (sentiment.score / 100) * 180 - 90 }}
                   transition={{ duration: 2, ease: "easeOut" }}
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-32 origin-bottom z-10"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1.5 h-20 origin-bottom z-10"
                 >
-                  <div className="w-full h-full bg-gradient-to-t from-white to-transparent rounded-full shadow-[0_0_20px_rgba(255,255,255,0.5)]" />
+                  <div className="w-full h-full bg-gradient-to-t from-white to-transparent rounded-full shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
                 </motion.div>
                 
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-slate-900 border-4 border-white/20 rounded-full z-20 shadow-2xl" />
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-900 border-4 border-white/20 rounded-full z-20 shadow-2xl translate-y-1/2" />
               </div>
               
-              <div className="mt-6 flex justify-between w-full max-w-[280px] px-2">
-                <span className="text-[9px] font-black text-red-500/60 uppercase tracking-widest">Medo</span>
-                <span className="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest">Ganância</span>
+              <div className="mt-2 flex justify-between w-full max-w-[200px] px-2">
+                <span className="text-tiny text-red-500/60 font-black uppercase tracking-widest">Medo</span>
+                <span className="text-tiny text-emerald-500/60 font-black uppercase tracking-widest">Ganância</span>
               </div>
             </div>
             
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+            <div className="space-y-4 text-center md:text-left">
+              <div className="space-y-1">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-tiny font-black uppercase tracking-widest ${
                   sentiment.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' : sentiment.color === 'red' ? 'bg-red-500/10 text-red-400' : 'bg-slate-500/10 text-slate-400'
                 }`}>
                   <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
@@ -424,7 +424,7 @@ export default function Home() {
                   }`} />
                   {sentiment.label}
                 </div>
-                <h3 className="text-6xl font-display font-bold text-white tracking-tighter leading-none">
+                <h3 className="text-display-md text-white">
                   {sentiment.score}
                 </h3>
               </div>
@@ -433,14 +433,14 @@ export default function Home() {
                 "{sentiment.desc}"
               </p>
               
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Ontem</p>
-                  <p className="text-sm font-bold text-slate-300">42 <span className="text-[10px] font-medium opacity-60">Medo</span></p>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-tiny text-slate-500 font-black uppercase tracking-widest mb-1">Ontem</p>
+                  <p className="text-sm font-bold text-slate-300">42 <span className="text-tiny font-bold opacity-60 uppercase">Medo</span></p>
                 </div>
-                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Semana Passada</p>
-                  <p className="text-sm font-bold text-slate-300">58 <span className="text-[10px] font-medium opacity-60">Neutro</span></p>
+                <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-tiny text-slate-500 font-black uppercase tracking-widest mb-1">Semana Passada</p>
+                  <p className="text-sm font-bold text-slate-300">58 <span className="text-tiny font-bold opacity-60 uppercase">Neutro</span></p>
                 </div>
               </div>
             </div>
@@ -449,10 +449,10 @@ export default function Home() {
 
         <div className="lg:col-span-4 flex flex-col gap-6">
           <div className="flex-1 bg-blue-600/10 border border-blue-500/20 rounded-[2.5rem] p-8 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
-              <Zap className="icon-3xl text-blue-500" />
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500 text-blue-500">
+              <Zap className="icon-3xl" />
             </div>
-            <h4 className="text-xs font-black text-blue-400 uppercase tracking-[0.2em] mb-4">Nexus Insight</h4>
+            <h4 className="text-label mb-4 text-blue-400">Nexus Insight</h4>
             <p className="text-slate-200 text-base font-bold leading-tight tracking-tight mb-4">
               "A diversificação inteligente é a única ferramenta gratuita no mercado financeiro."
             </p>
@@ -545,13 +545,13 @@ export default function Home() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-white group-hover:text-blue-400 transition-colors truncate">{asset.ticker}</div>
-                    <div className="text-xs text-slate-500 truncate">{asset.name}</div>
+                    <div className="text-label line-clamp-1">{asset.name}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-mono text-sm text-white font-bold">{asset.subValue}</div>
-                    <div className="text-[10px] text-slate-500 uppercase font-black tracking-tighter">Yield 12M</div>
+                    <div className="text-display-tiny text-white">{asset.subValue}</div>
+                    <div className="text-tiny font-black text-slate-500 uppercase tracking-widest">Yield 12M</div>
                   </div>
-                  <ChevronRight size={16} className="text-slate-700 group-hover:text-blue-500 transition-all group-hover:translate-x-1" />
+                  <ChevronRight className="icon-xs text-slate-700 group-hover:text-blue-500 transition-all group-hover:translate-x-1" />
                 </Link>
               ))}
             </div>
@@ -698,7 +698,7 @@ export default function Home() {
 
       {/* Meus Recursos Section */}
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-white tracking-tight mb-6">Ferramentas e Recursos</h2>
+        <h2 className="text-display-sm text-white mb-6">Ferramentas e Recursos</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { icon: Search, label: 'Busca de Ativos', to: '/search', color: 'blue' },
@@ -712,13 +712,13 @@ export default function Home() {
             { icon: BarChart3, label: 'Calculadoras', to: '/calculators', color: 'cyan' },
             { icon: Shield, label: 'Renda Fixa', to: '/renda-fixa', color: 'orange' },
           ].map((item, idx) => (
-            <Link key={idx} to={item.to} className="flex flex-col p-5 rounded-2xl bg-[#0f172a] hover:bg-slate-800/50 transition-all group border border-slate-800 hover:border-slate-700 gap-3 shadow-sm">
-              <div className={`w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                <item.icon size={20} className="text-slate-400 group-hover:text-white transition-colors" />
+            <Link key={idx} to={item.to} className="flex flex-col p-5 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:bg-slate-800/50 transition-all group gap-3 shadow-sm hover:border-white/10">
+              <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                <item.icon className="icon-md text-slate-400 group-hover:text-white transition-colors" />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-300 font-medium text-sm">{item.label}</span>
-                <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
+                <span className="text-sm font-bold text-slate-300">{item.label}</span>
+                <ChevronRight className="icon-sm text-slate-600 group-hover:text-slate-400 transition-colors" />
               </div>
             </Link>
           ))}

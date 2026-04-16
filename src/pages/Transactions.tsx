@@ -226,53 +226,91 @@ export default function Transactions() {
         for (const row of data) {
           console.log('Processing row:', row);
           
-          // Mapeamento robusto para B3 e outros formatos
-          const tickerRaw = String(row.Ticker || row['Código de Negociação'] || row['Ativo'] || row['Código'] || row['Produto'] || '');
-          if (!tickerRaw) continue;
+          // Mapeamento robusto para B3 e outros formatos (Normalização de chaves para facilitar busca)
+          const normalizedRow: Record<string, string | number> = {};
+          for (const key in row) {
+            if (Object.prototype.hasOwnProperty.call(row, key)) {
+              normalizedRow[key.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "")] = row[key];
+            }
+          }
+
+          const tickerRaw = String(
+            normalizedRow['ticker'] || 
+            normalizedRow['codigo de negociacao'] || 
+            normalizedRow['ativo'] || 
+            normalizedRow['codigo'] || 
+            normalizedRow['produto'] || 
+            row.Ticker || row['Código de Negociação'] || row['Ativo'] || row['Código'] || row['Produto'] || ''
+          );
+          if (!tickerRaw || tickerRaw.trim() === '' || tickerRaw.toUpperCase().includes('RENDIMENTO') || tickerRaw.toUpperCase().includes('JUROS')) continue;
 
           // Limpa ticker (ex: "PETR4 - PETROLEO BRASILEIRO" -> "PETR4")
-          // Tenta encontrar um padrão de ticker (4 letras + 1 ou 2 dígitos)
           const tickerMatch = tickerRaw.match(/[A-Z]{4}[0-9]{1,2}/i);
-          const ticker = tickerMatch ? tickerMatch[0].toUpperCase() : tickerRaw.split(' ')[0].split('-')[0].toUpperCase().trim();
+          const ticker = tickerMatch ? tickerMatch[0].toUpperCase() : tickerRaw.split('-')[0].split(' ')[0].toUpperCase().trim();
           
-          const mov = String(row.Tipo || row['Movimentação'] || row['Tipo de Movimentação'] || row['Entrada/Saída'] || row['Operação'] || '').toUpperCase();
-          const type = (mov.includes('VENDA') || mov.includes('SAÍDA') || mov.includes('SAIDA') || mov.includes('V')) ? 'SELL' : 'BUY';
+          const mov = String(
+            normalizedRow['tipo'] || 
+            normalizedRow['movimentacao'] || 
+            normalizedRow['tipo de movimentacao'] || 
+            normalizedRow['entrada/saida'] || 
+            normalizedRow['operacao'] || 
+            row.Tipo || row['Movimentação'] || row['Tipo de Movimentação'] || row['Entrada/Saída'] || row['Operação'] || ''
+          ).toUpperCase();
+          
+          // Se for uma movimentação de dividendos ou taxas, pula
+          if (mov.includes('DESDOBRAMENTO') || mov.includes('AGRUPAMENTO') || mov.includes('RENDIMENTO') || mov.includes('AMORTIZACAO') || mov.includes('LEILAO')) continue;
+          
+          const type = (mov.includes('VENDA') || mov.includes('SAIDA') || mov === 'V' || mov.includes('DEBITO')) ? 'SELL' : 'BUY';
           
           const parseBRNumber = (val: any) => {
-            if (typeof val === 'number') return val;
+            if (val === undefined || val === null || val === '') return 0;
+            if (typeof val === 'number') return Math.abs(val);
             if (typeof val !== 'string') return 0;
-            // Remove R$ and spaces, then handle thousands separator
-            const clean = val.replace(/R\$/g, '').replace(/\s/g, '');
+            const clean = String(val).replace(/R\$/g, '').replace(/\s/g, '');
             if (clean.includes(',') && clean.includes('.')) {
-              return parseFloat(clean.replace(/\./g, '').replace(',', '.'));
+              return Math.abs(parseFloat(clean.replace(/\./g, '').replace(',', '.')));
             }
-            return parseFloat(clean.replace(',', '.'));
+            return Math.abs(parseFloat(clean.replace(',', '.')));
           };
 
-          const quantity = Math.abs(parseBRNumber(row.Quantidade || row['Qtd.'] || row['Quantidade'] || row['Qtd']));
-          const price = parseBRNumber(row.Preço || row['Preço Unitário'] || row['Preço'] || row['Preço Médio']);
-          const dateStr = row.Data || row['Data do Pregão'] || row['Data'] || row['Data da Operação'];
+          const rawQuantity = normalizedRow['quantidade'] || normalizedRow['qtde'] || normalizedRow['qtd'] || normalizedRow['qnt'] || row.Quantidade || row.Qty || row.Qtde || row['Qtde.'];
+          let quantity = parseBRNumber(rawQuantity);
           
+          const rawPrice = normalizedRow['preco'] || normalizedRow['valor'] || normalizedRow['preco unitario'] || normalizedRow['preco medio'] || normalizedRow['preco de execucao'] || normalizedRow['valor unitario'] || row.Preço || row.Price || row.Valor || row['Preço Médio'] || row['Preço/Cota'] || row['Valor Operação'];
+          let price = parseBRNumber(rawPrice);
+
+          // Se a planilha não tem preço, mas tem Quantidade e Total
+          if (price === 0 && (normalizedRow['total'] || normalizedRow['valor total'] || row['Valor Total'] || row.Total)) {
+            const total = parseBRNumber(normalizedRow['total'] || normalizedRow['valor total'] || row['Valor Total'] || row.Total);
+            if (quantity > 0) price = total / quantity;
+          }
+
+          if (price === 0 || quantity === 0) {
+              console.warn("Ignorando linha por falta de quantia/preço válidos", row);
+              continue;
+          }
+
+          const rawDate = normalizedRow['data'] || normalizedRow['data do pregao'] || normalizedRow['data do negocio'] || normalizedRow['data da operacao'] || normalizedRow['data liquidacao'] || row.Data || row['Data do Pregão'] || row.Date || row['Data do Negócio'];
           let date;
-          if (typeof dateStr === 'number') {
-            // Excel date format (days since 1900-01-01)
-            // XLSX handles this usually, but just in case:
+          if (typeof rawDate === 'number') {
             const excelEpoch = new Date(1899, 11, 30);
-            date = new Date(excelEpoch.getTime() + dateStr * 86400 * 1000).toISOString();
-          } else if (typeof dateStr === 'string') {
-            const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
+            date = new Date(excelEpoch.getTime() + rawDate * 86400 * 1000).toISOString();
+          } else if (typeof rawDate === 'string') {
+            const parts = rawDate.includes('/') ? rawDate.split('/') : rawDate.split('-');
             if (parts.length === 3) {
               if (parts[0].length === 4) { // YYYY-MM-DD
                 date = new Date(`${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}T12:00:00Z`).toISOString();
               } else { // DD/MM/YYYY
                 const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                date = new Date(`${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T12:00:00Z`).toISOString();
+                // sometimes time is included DD/MM/YYYY hh:mm -> safe split
+                const cleanYear = year.split(' ')[0];
+                date = new Date(`${cleanYear}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T12:00:00Z`).toISOString();
               }
             } else {
               date = new Date().toISOString();
             }
-          } else if (dateStr instanceof Date) {
-            date = dateStr.toISOString();
+          } else if (rawDate instanceof Date) {
+            date = rawDate.toISOString();
           } else {
             date = new Date().toISOString();
           }
@@ -336,18 +374,18 @@ export default function Transactions() {
             <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".xlsx,.xls,.csv" />
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+              className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl border border-white/10 transition-all flex items-center gap-2 text-label"
               title="Importar Excel B3"
             >
-              <Upload size={16} />
+              <Upload className="icon-sm" />
               <span className="hidden md:inline">Importar</span>
             </button>
             <button 
               onClick={handleExport}
-              className="p-2.5 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+              className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl border border-white/10 transition-all flex items-center gap-2 text-label"
               title="Exportar Backup"
             >
-              <Download size={16} />
+              <Download className="icon-sm" />
               <span className="hidden md:inline">Exportar</span>
             </button>
           </div>
@@ -363,23 +401,23 @@ export default function Transactions() {
         >
           <button 
             onClick={() => setIsFormOpen(!isFormOpen)}
-            className="w-full p-6 flex items-center justify-between hover:bg-slate-800/30 transition-all"
+            className="w-full p-6 flex items-center justify-between hover:bg-white/5 transition-all"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
-                {editingId ? <Edit2 size={24} /> : <Plus size={24} />}
+                {editingId ? <Edit2 className="icon-lg" /> : <Plus className="icon-lg" />}
               </div>
               <div className="text-left">
-                <h3 className="text-xl font-bold text-white tracking-tight">
+                <h3 className="text-display-sm text-white">
                   {editingId ? 'Editar Operação' : 'Nova Operação'}
                 </h3>
-                <p className="text-slate-400 text-xs font-medium mt-0.5">
+                <p className="text-label mt-0.5">
                   {isFormOpen ? 'Preencha os dados abaixo' : 'Clique para expandir o formulário'}
                 </p>
               </div>
             </div>
-            <div className={`p-2 rounded-lg bg-slate-800 text-slate-400 transition-transform duration-300 ${isFormOpen ? 'rotate-180' : ''}`}>
-              <ChevronRight size={20} className="rotate-90" />
+            <div className={`p-2 rounded-lg bg-white/5 text-slate-400 transition-transform duration-300 ${isFormOpen ? 'rotate-180' : ''}`}>
+              <ChevronRight className="icon-md rotate-90" />
             </div>
           </button>
 
@@ -395,34 +433,34 @@ export default function Transactions() {
                   <form onSubmit={handleSubmit} className="space-y-6 mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-400 mb-3">Tipo de Operação</label>
-                <div className="flex p-1.5 bg-slate-800/50 rounded-xl border border-slate-800">
+                <label className="block text-label mb-3">Tipo de Operação</label>
+                <div className="flex p-1.5 bg-white/5 rounded-xl border border-white/10">
                   <button
                     type="button"
                     onClick={() => setType('BUY')}
-                    className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
-                      type === 'BUY' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'
+                    className={`flex-1 py-3 text-label rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+                      type === 'BUY' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-200'
                     }`}
                   >
-                    <ArrowUpRight size={16} />
+                    <ArrowUpRight className="icon-xs" />
                     Compra
                   </button>
                   <button
                     type="button"
                     onClick={() => setType('SELL')}
-                    className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
-                      type === 'SELL' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'
+                    className={`flex-1 py-3 text-label rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+                      type === 'SELL' ? 'bg-red-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-200'
                     }`}
                   >
-                    <ArrowDownRight size={16} />
+                    <ArrowDownRight className="icon-xs" />
                     Venda
                   </button>
                 </div>
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-400 group-focus-within:text-blue-400 transition-colors">
-                  <Tag size={14} />
+                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                  <Tag className="icon-xs" />
                   Ativo (Ticker)
                 </label>
                 <input
@@ -431,20 +469,20 @@ export default function Transactions() {
                   onChange={(e) => setTicker(e.target.value)}
                   placeholder="EX: PETR4"
                   required
-                  className="w-full px-4 py-3 bg-slate-800/30 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-semibold uppercase placeholder:text-slate-600 transition-all duration-300 hover:border-slate-700"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold uppercase placeholder:text-slate-600 transition-all duration-300 hover:border-white/20 text-sm"
                 />
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-400 group-focus-within:text-blue-400 transition-colors">
-                  <Layers size={14} />
+                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                  <Layers className="icon-xs" />
                   Tipo de Ativo
                 </label>
                 <div className="relative">
                   <select
                     value={assetType}
                     onChange={(e) => setAssetType(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800/30 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-semibold appearance-none transition-all duration-300 hover:border-slate-700"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold appearance-none transition-all duration-300 hover:border-white/20 text-sm"
                   >
                     <option value="ACAO" className="bg-slate-900">Ação</option>
                     <option value="FII" className="bg-slate-900">FII</option>
@@ -454,14 +492,14 @@ export default function Transactions() {
                     <option value="RF" className="bg-slate-900">Renda Fixa</option>
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                    <Plus size={16} className="rotate-45" />
+                    <Plus className="icon-sm rotate-45" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-400 group-focus-within:text-blue-400 transition-colors">
-                  <Plus size={14} />
+                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                  <Plus className="icon-xs" />
                   Quantidade
                 </label>
                 <input
@@ -471,13 +509,13 @@ export default function Transactions() {
                   onChange={(e) => setQuantity(e.target.value)}
                   placeholder="0.00"
                   required
-                  className="w-full px-4 py-3 bg-slate-800/30 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-medium placeholder:text-slate-600 transition-all duration-300 hover:border-slate-700"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold placeholder:text-slate-600 transition-all duration-300 hover:border-white/20 text-sm"
                 />
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-400 group-focus-within:text-blue-400 transition-colors">
-                  <DollarSign size={14} />
+                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                  <DollarSign className="icon-xs" />
                   Preço Unitário
                 </label>
                 <input
@@ -487,13 +525,13 @@ export default function Transactions() {
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="R$ 0,00"
                   required
-                  className="w-full px-4 py-3 bg-slate-800/30 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-medium placeholder:text-slate-600 transition-all duration-300 hover:border-slate-700"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold placeholder:text-slate-600 transition-all duration-300 hover:border-white/20 text-sm"
                 />
               </div>
 
               <div className="md:col-span-2 space-y-2 group">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-400 group-focus-within:text-blue-400 transition-colors">
-                  <Calendar size={14} />
+                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                  <Calendar className="icon-xs" />
                   Data da Operação
                 </label>
                 <input
@@ -501,7 +539,7 @@ export default function Transactions() {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="w-full px-4 py-3 bg-slate-800/30 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-medium transition-all duration-300 hover:border-slate-700 [color-scheme:dark]"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold transition-all duration-300 hover:border-white/20 [color-scheme:dark] text-sm"
                 />
               </div>
             </div>
@@ -510,9 +548,9 @@ export default function Transactions() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                className="btn-primary flex-1"
               >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : (editingId ? <Edit2 size={20} /> : <Plus size={20} />)}
+                {loading ? <Loader2 className="animate-spin icon-sm" /> : (editingId ? <Edit2 className="icon-sm" /> : <Plus className="icon-sm" />)}
                 {editingId ? 'Salvar Alterações' : 'Confirmar Lançamento'}
               </button>
               
@@ -520,9 +558,9 @@ export default function Transactions() {
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-6 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="btn-secondary px-6"
                 >
-                  <X size={20} />
+                  <X className="icon-sm" />
                   Cancelar
                 </button>
               )}
@@ -561,44 +599,44 @@ export default function Transactions() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-3">
+              <h3 className="text-display-sm text-white flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
-                  <History size={20} />
+                  <History className="icon-md" />
                 </div>
                 Histórico de Operações
               </h3>
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <div className="text-label text-slate-500">
                 {transactions.length} Lançamentos
               </div>
             </div>
 
-            <div className="overflow-hidden bg-[#0f172a] border border-slate-800 rounded-2xl">
+            <div className="overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl">
               {/* Desktop Table */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-900/50 border-b border-slate-800">
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Data</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Ativo</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Tipo</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Qtd.</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Preço</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Total</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Ações</th>
+                    <tr className="bg-white/5 border-b border-white/5">
+                      <th className="px-6 py-4 text-label">Data</th>
+                      <th className="px-6 py-4 text-label">Ativo</th>
+                      <th className="px-6 py-4 text-label text-center">Tipo</th>
+                      <th className="px-6 py-4 text-label text-right">Qtd.</th>
+                      <th className="px-6 py-4 text-label text-right">Preço</th>
+                      <th className="px-6 py-4 text-label text-right">Total</th>
+                      <th className="px-6 py-4 text-label text-right">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/50">
+                  <tbody className="divide-y divide-white/5">
                     {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
                       <motion.tr 
                         key={tx.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: idx * 0.02 }}
-                        className="hover:bg-slate-800/20 transition-all group"
+                        className="hover:bg-white/5 transition-all group"
                       >
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                            <Calendar size={12} className="text-slate-600" />
+                          <div className="flex items-center gap-2 text-slate-500 text-tiny font-bold uppercase tracking-widest">
+                            <Calendar className="icon-xs text-slate-600" />
                             {new Date(tx.date).toLocaleDateString('pt-BR')}
                           </div>
                         </td>
@@ -606,43 +644,43 @@ export default function Transactions() {
                           <div className="flex items-center gap-3">
                             <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-8 h-8" />
                             <div>
-                              <div className="font-bold text-white text-sm">{tx.ticker}</div>
-                              <div className="text-[10px] font-medium text-slate-600 uppercase">{tx.assetType || tx.asset_type}</div>
+                              <div className="text-sm font-bold text-white uppercase tracking-tight">{tx.ticker}</div>
+                              <div className="text-tiny font-black text-slate-600 uppercase tracking-widest">{tx.assetType || tx.asset_type}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter border ${
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-tiny font-black uppercase tracking-widest border ${
                             tx.type === 'BUY' 
                               ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
                               : 'bg-red-500/10 text-red-400 border-red-500/20'
                           }`}>
-                            {tx.type === 'BUY' ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                            {tx.type === 'BUY' ? <ArrowUpRight className="icon-xs" /> : <ArrowDownRight className="icon-xs" />}
                             {tx.type === 'BUY' ? 'Compra' : 'Venda'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-300">{tx.quantity}</td>
-                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-300">
+                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-300 tracking-tight">{tx.quantity}</td>
+                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-300 tracking-tight">
                           R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="px-6 py-4 text-right text-xs font-black text-white">
+                        <td className="px-6 py-4 text-right text-display-tiny text-white">
                           R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                             <button 
                               onClick={() => startEdit(tx)}
-                              className="p-1.5 bg-slate-800 hover:bg-blue-600 text-slate-400 hover:text-white rounded-md transition-all"
+                              className="p-1.5 bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white rounded-md transition-all border border-white/10"
                               title="Editar"
                             >
-                              <Edit2 size={14} />
+                              <Edit2 className="icon-xs" />
                             </button>
                             <button 
                               onClick={() => setShowDeleteConfirm(tx.id)}
-                              className="p-1.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-md transition-all"
+                              className="p-1.5 bg-white/5 hover:bg-red-600 text-slate-400 hover:text-white rounded-md transition-all border border-white/10"
                               title="Excluir"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 className="icon-xs" />
                             </button>
                           </div>
                         </td>
@@ -666,11 +704,11 @@ export default function Transactions() {
                       <div className="flex items-center gap-3">
                         <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10" />
                         <div>
-                          <div className="font-bold text-white text-sm">{tx.ticker}</div>
-                          <div className="text-[10px] font-medium text-slate-600 uppercase">{tx.assetType || tx.asset_type}</div>
+                          <div className="text-sm font-bold text-white uppercase tracking-tight">{tx.ticker}</div>
+                          <div className="text-tiny font-black text-slate-600 uppercase tracking-widest">{tx.assetType || tx.asset_type}</div>
                         </div>
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter border ${
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-tiny font-black uppercase tracking-widest border ${
                         tx.type === 'BUY' 
                           ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
                           : 'bg-red-500/10 text-red-400 border-red-500/20'
@@ -681,31 +719,31 @@ export default function Transactions() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-[10px] font-bold text-slate-600 uppercase mb-0.5">Qtd / Preço</p>
-                        <p className="text-xs font-bold text-slate-300">{tx.quantity} x R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-tiny font-black text-slate-600 uppercase tracking-widest mb-0.5">Qtd / Preço</p>
+                        <p className="text-xs font-bold text-slate-300 tracking-tight">{tx.quantity} x R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-bold text-slate-600 uppercase mb-0.5">Total</p>
-                        <p className="text-sm font-black text-white">R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-tiny font-black text-slate-600 uppercase tracking-widest mb-0.5">Total</p>
+                        <p className="text-display-tiny text-white">R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/30">
-                      <div className="text-[10px] text-slate-500 font-medium">
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <div className="text-tiny text-slate-500 font-bold uppercase tracking-widest italic">
                         {new Date(tx.date).toLocaleDateString('pt-BR')}
                       </div>
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={() => startEdit(tx)}
-                          className="p-2 bg-slate-800 text-slate-400 rounded-lg"
+                          className="p-2 bg-white/5 text-slate-400 rounded-lg border border-white/10"
                         >
-                          <Edit2 size={14} />
+                          <Edit2 className="icon-xs" />
                         </button>
                         <button 
                           onClick={() => setShowDeleteConfirm(tx.id)}
-                          className="p-2 bg-slate-800 text-slate-400 rounded-lg"
+                          className="p-2 bg-white/5 text-slate-400 rounded-lg border border-white/10"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 className="icon-xs" />
                         </button>
                       </div>
                     </div>
@@ -715,11 +753,11 @@ export default function Transactions() {
 
               {transactions.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-center">
-                  <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mb-4 border border-slate-800">
-                    <History size={24} className="opacity-40" />
+                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
+                    <History className="icon-lg opacity-40" />
                   </div>
-                  <p className="text-sm font-semibold text-slate-300">Nenhum lançamento</p>
-                  <p className="text-xs font-medium text-slate-500 mt-1">Suas operações aparecerão aqui.</p>
+                  <p className="text-label text-slate-300">Nenhum lançamento</p>
+                  <p className="text-tiny font-bold text-slate-600 uppercase tracking-widest mt-1 italic">Suas operações aparecerão aqui.</p>
                 </div>
               )}
             </div>
@@ -737,20 +775,20 @@ export default function Transactions() {
                 className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl max-w-sm w-full shadow-2xl"
               >
                 <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
-                  <AlertCircle size={24} />
+                  <AlertCircle className="icon-lg" />
                 </div>
-                <h3 className="text-lg font-bold text-white text-center mb-2">Excluir Lançamento?</h3>
-                <p className="text-slate-400 text-sm text-center mb-6">Esta ação não pode ser desfeita. O lançamento será removido permanentemente da sua carteira.</p>
+                <h3 className="text-display-sm text-center mb-2">Excluir Lançamento?</h3>
+                <p className="text-label text-slate-400 text-center mb-6 normal-case">Esta ação não pode ser desfeita. O lançamento será removido permanentemente da sua carteira.</p>
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setShowDeleteConfirm(null)}
-                    className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-sm transition-all"
+                    className="flex-1 py-2.5 btn-secondary"
                   >
                     Cancelar
                   </button>
                   <button 
                     onClick={() => handleDelete(showDeleteConfirm)}
-                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-600/20"
+                    className="flex-1 py-2.5 btn-primary bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20"
                   >
                     Excluir
                   </button>

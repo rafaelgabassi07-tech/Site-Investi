@@ -58,6 +58,7 @@ export interface NexusEngineOptions {
 const RE_MOEDA   = /[R$\s]/g;
 const RE_MILHAR  = /\./g;
 const RE_DECIMAL = /,/;
+const RE_HTML    = /<[^>]*>/g;
 const RE_SA      = /\.SA$/i;
 const RE_BDR     = /3[2-5]$/;
 const RE_TICKER  = /^[A-Z0-9\.\-=^]{2,20}$/;
@@ -155,15 +156,44 @@ function formatYahooError(error: any): string {
 
 export function normalizeBRNumber(raw: string): number | string {
   if (!raw) return '';
-  let limpo = raw.replace(RE_MOEDA, '').toUpperCase().trim();
+  
+  // Limpeza inicial: remove HTML tags, R$, espaços e converte para maiúsculo
+  let limpo = raw.replace(RE_HTML, '').replace(RE_MOEDA, '').toUpperCase().trim();
+  
   if (limpo.includes('%')) return limpo;
 
   let mult = 1;
-  if (limpo.endsWith('K')) { mult = 1_000; limpo = limpo.slice(0, -1); }
-  else if (limpo.endsWith('M') || limpo.endsWith('MILHÕES') || limpo.endsWith('MILHOES')) { mult = 1_000_000; limpo = limpo.replace(/M(ILHÕES|ILHOES)?$/, ''); }
-  else if (limpo.endsWith('B') || limpo.endsWith('BILHÕES') || limpo.endsWith('BILHOES')) { mult = 1_000_000_000; limpo = limpo.replace(/B(ILHÕES|ILHOES)?$/, ''); }
+  // Detecção de sufixos de magnitude mais flexível (não precisa estar no final exato se houver sujeira)
+  if (limpo.includes('TRILHÃO') || limpo.includes('TRILHÕES') || limpo.includes('TRILHAO') || limpo.includes('TRILHOES')) {
+    mult = 1_000_000_000_000;
+    limpo = limpo.replace(/TRILH(Ã|A)O|TRILH(Õ|O)ES/g, '');
+  } else if (limpo.includes('BILHÃO') || limpo.includes('BILHÕES') || limpo.includes('BILHAO') || limpo.includes('BILHOES') || limpo.includes('BI') || (limpo.endsWith('B') && !limpo.endsWith('EB'))) {
+    mult = 1_000_000_000;
+    limpo = limpo.replace(/BILH(Ã|A)O|BILH(Õ|O)ES|BI|B/g, '');
+  } else if (limpo.includes('MILHÃO') || limpo.includes('MILHÕES') || limpo.includes('MILHAO') || limpo.includes('MILHOES') || limpo.includes('MI') || (limpo.endsWith('M') && !limpo.match(/[A-Z]M$/))) {
+    mult = 1_000_000;
+    limpo = limpo.replace(/MILH(Ã|A)O|MILH(Õ|O)ES|MI|M/g, '');
+  } else if (limpo.endsWith('K')) {
+    mult = 1_000;
+    limpo = limpo.slice(0, -1);
+  }
 
-  limpo = limpo.replace(RE_MILHAR, '').replace(RE_DECIMAL, '.').trim();
+  // Se houver múltiplos pontos e uma vírgula, o ponto é milhar e vírgula é decimal (Padrão BR)
+  // Se houver apenas um separador e ele for ponto, pode ser decimal (Padrão US/Global)
+  const dots = (limpo.match(/\./g) || []).length;
+  const commas = (limpo.match(/,/g) || []).length;
+
+  if (commas === 1) {
+    // Padrão Brasileiro: 1.234,56
+    limpo = limpo.replace(RE_MILHAR, '').replace(RE_DECIMAL, '.');
+  } else if (commas === 0 && dots === 1) {
+    // Padrão Americano ou Simples: 1234.56
+    // Não mexer, parseFloat resolve
+  } else if (commas === 0 && dots > 1) {
+    // Padrão Brasileiro sem centavos: 1.234.567
+    limpo = limpo.replace(RE_MILHAR, '');
+  }
+
   const num = parseFloat(limpo);
   return isNaN(num) ? raw.trim() : num * mult;
 }
@@ -490,6 +520,8 @@ export const B3Schema = z.object({
   pCapGiro:      z.union([z.number(), z.string()]).optional(),
   dividaLiquidaEbitda: z.union([z.number(), z.string()]).optional(),
   variacaoDay:   z.string().optional(),
+  valorMercado:  z.union([z.number(), z.string()]).optional(),
+  marketCap:     z.union([z.number(), z.string()]).optional(),
   about:         z.string().optional(),
   sector:        z.string().optional(),
   subSector:     z.string().optional(),
@@ -522,6 +554,8 @@ export const FIISchema = z.object({
   numeroCotistas:    z.union([z.number(), z.string()]).optional(),
   patrimonioLiquido: z.union([z.number(), z.string()]).optional(),
   variacaoDay:       z.string().optional(),
+  valorMercado:      z.union([z.number(), z.string()]).optional(),
+  marketCap:         z.union([z.number(), z.string()]).optional(),
   about:             z.string().optional(),
   sector:            z.string().optional(),
   subSector:         z.string().optional(),
@@ -564,7 +598,7 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
   name: 'B3_ACAO',
   schema: B3Schema,
   rules: [
-    { name: 'precoAtual',    anchors: ['Preço Atual', 'Cotação', 'cotacao'],            extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
+    { name: 'precoAtual',    anchors: ['Preço Atual', 'Cotação', 'cotacao'],            extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+)\s*(?:<[^>]*>)*\s*</i,  formatter: COMMON_FORMATTERS.num },
     { name: 'dividendYield', anchors: ['Dividend Yield', 'DY', 'Yield'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</,      formatter: COMMON_FORMATTERS.pct },
     { name: 'pl',            anchors: ['P/L', 'P/Lucro', 'Preço/Lucro'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
     { name: 'pvp',           anchors: ['P/VP', 'P/Valor Patrimonial'],                  extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
@@ -586,8 +620,10 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
     { name: 'liquidezCorrente', anchors: ['Liquidez Corrente'],                        extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
     { name: 'cagrReceita5Anos', anchors: ['CAGR Receita 5 Anos', 'CAGR Receita (5a)'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'cagrLucro5Anos', anchors: ['CAGR Lucro 5 Anos', 'CAGR Lucro (5a)'],     extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day', 'Variação (12M)'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'liquidezMediaDiaria', anchors: ['Liquidez Média Diária', 'Liquidez Diária'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'variacaoDay',   anchors: ['Var. Dia', 'var-day'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'liquidezMediaDiaria', anchors: ['Liquidez Média Diária', 'Liquidez Diária'], extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'valorMercado', anchors: ['Valor de Mercado', 'VALOR DE MERCADO'], extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
+
     { name: 'segmentoListagem', anchors: ['Segmento de Listagem'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'tagAlong', anchors: ['Tag Along'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'freeFloat', anchors: ['Free Float'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
@@ -605,18 +641,20 @@ export const fiiTemplate: ExtractorTemplate<FIIData> = {
   name: 'B3_FII',
   schema: FIISchema,
   rules: [
-    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação', 'cotacao'],              extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
+    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação', 'cotacao'],              extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+)\s*(?:<[^>]*>)*\s*</i,    formatter: COMMON_FORMATTERS.num },
     { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'valorPatrimonial',  anchors: ['Valor Patrimonial', 'VP/Cota', 'VALOR PATRIMONIAL'],         extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i,    formatter: COMMON_FORMATTERS.num },
-    { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'valorPatrimonial',  anchors: ['Valor Patrimonial', 'VP/Cota', 'VALOR PATRIMONIAL'],         extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*</i,    formatter: COMMON_FORMATTERS.num },
+    { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
     { name: 'ultimoRendimento',  anchors: ['Último Rendimento', 'Rendimento', 'ÚLTIMO RENDIMENTO'],      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
     { name: 'vacanciaFisica',    anchors: ['Vacância Física', 'Vacância', 'VACÂNCIA'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'vacanciaFinanceira', anchors: ['Vacância Financeira'],                    extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'quantidadeAtivos',  anchors: ['Quantidade de Ativos', 'Qtd. Ativos'],      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,          formatter: COMMON_FORMATTERS.num },
     { name: 'numeroCotistas',    anchors: ['Nº de Cotistas', 'Número de Cotistas'],     extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
-    { name: 'variacaoDay',       anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day', 'Variação (12M)'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'variacaoDay',       anchors: ['Var. Dia', 'var-day'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'valorMercado',      anchors: ['Valor de Mercado', 'VALOR DE MERCADO'], extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
+
     { name: 'tipoGestao',        anchors: ['Tipo de Gestão'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa de Admin.'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'sector',            anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Setor</span>', 'SETOR</span>'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
@@ -632,7 +670,7 @@ export const etfTemplate: ExtractorTemplate<ETFData> = {
     { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
     { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*</i, formatter: COMMON_FORMATTERS.num },
     { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa Admin'],  extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
     { name: 'about',             anchors: ['Sobre o ETF', 'Descrição'],             extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
@@ -1394,8 +1432,39 @@ export class NexusEngine {
       const newsData = newsResult.status   === 'fulfilled' ? newsResult.value   : undefined;
       const combined = { ...scrape.data } as Record<string, any>;
 
+      // Prefer Yahoo for price and day variation as it's more reliable for real-time data
+      // but keep scrapers as fallback
+      if (quote) {
+        const q = quote as any;
+        combined['precoAtual'] = q.regularMarketPrice;
+        combined['variacaoDay'] = q.regularMarketChangePercent != null
+          ? q.regularMarketChangePercent.toFixed(2) + '%' 
+          : combined['variacaoDay'];
+        combined['name'] = q.longName || q.shortName || combined['name'];
+        
+        // Fill other fundamental data if missing
+        const fillIfMissing = (k: string, v: any) => {
+          if (combined[k] === undefined && v != null) {
+            combined[k] = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
+          }
+        };
+        
+        fillIfMissing('pl', q.trailingPE);
+        fillIfMissing('pvp', q.priceToBook);
+        fillIfMissing('vpa', q.bookValue);
+        fillIfMissing('lpa', q.epsTrailingTwelveMonths);
+        fillIfMissing('dividendYield', q.trailingAnnualDividendYield != null
+          ? (q.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
+        fillIfMissing('marketCap', q.marketCap);
+      }
+
+      // Prefer scraped market properties over Yahoo as they are usually more specific to the B3 market
+      if (combined['valorMercado']) combined['marketCap'] = combined['valorMercado'];
+      if (combined['patrimonioLiquido']) combined['equity'] = combined['patrimonioLiquido'];
+
       const fill = (k: string, v: unknown) => {
         if (combined[k] !== undefined || v == null) return;
+        
         const s = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
         if (!VALORES_INVALIDOS.has(s)) combined[k] = s;
       };

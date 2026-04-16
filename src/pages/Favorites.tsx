@@ -57,26 +57,26 @@ export default function Favorites() {
       <PageHeader 
         title="Favoritos"
         description="Acompanhe de perto os ativos que você mais gosta."
-        icon={Heart}
+        icon={Star}
       />
 
       <div className="relative max-w-md">
         <div className="absolute inset-y-0 left-4 flex items-center text-slate-500">
-          <Search size={18} />
+          <Search className="icon-sm" />
         </div>
         <input 
           type="text" 
           placeholder="Filtrar favoritos..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all font-medium"
+          className="w-full pl-12 pr-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm"
         />
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="animate-spin text-blue-500" size={32} />
-          <p className="text-slate-500 font-black uppercase tracking-widest text-[10px]">Carregando favoritos...</p>
+          <Loader2 className="animate-spin text-blue-500 icon-lg" />
+          <p className="text-label">Carregando favoritos...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -95,20 +95,20 @@ export default function Favorites() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
-                      <span className="font-black text-xs">{asset.ticker.substring(0, 2)}</span>
+                      <span className="text-label group-hover:text-white">{asset.ticker.substring(0, 2)}</span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors tracking-tight">{asset.ticker}</h3>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest line-clamp-1">{asset.name}</p>
+                      <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors tracking-tight text-base uppercase">{asset.ticker}</h3>
+                      <p className="text-label line-clamp-1">{asset.name}</p>
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-sm font-black text-white">
+                    <div className="text-display-sm text-white">
                       {typeof asset.price === 'number' ? `R$ ${asset.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : asset.price}
                     </div>
                     <div className={`flex items-center justify-end gap-1 text-[10px] font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {isPositive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                      {isPositive ? <TrendingUp className="icon-xs" /> : <TrendingDown className="icon-xs" />}
                       {asset.change}
                     </div>
                   </div>
@@ -118,13 +118,13 @@ export default function Favorites() {
           }) : (
             <div className="col-span-full py-20 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-500 mx-auto">
-                <Star size={32} />
+                <Star className="icon-xl" />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Nenhum favorito encontrado</p>
+                <p className="text-label text-slate-400">Nenhum favorito encontrado</p>
                 <p className="text-xs text-slate-600 mt-1">Busque por ativos e clique na estrela para favoritá-los.</p>
               </div>
-              <Link to="/search" className="inline-block px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-all">
+              <Link to="/search" className="btn-primary inline-flex">
                 Buscar Ativos
               </Link>
             </div>

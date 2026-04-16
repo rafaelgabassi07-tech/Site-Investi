@@ -6,9 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { financeService } from '../services/financeService';
 
 export function PortfolioSummary() {
-  const { portfolio, quotaHistory, transactions } = usePortfolio();
-  const [dividends, setDividends] = useState<any[]>([]);
-  const [loadingDivs, setLoadingDivs] = useState(true);
+  const { portfolio, quotaHistory, transactions, dividends } = usePortfolio();
   
   const totalInvested = portfolio.reduce((acc, item) => acc + item.totalInvested, 0);
   const currentTotalValue = portfolio.reduce((acc, item) => acc + (item.currentValue || item.totalInvested), 0);
@@ -16,42 +14,26 @@ export function PortfolioSummary() {
   const totalProfitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
   // Calculate monthly dividends
-  const monthlyDividends = useMemo(() => {
+  const monthlyDividends = (() => {
     const months: Record<string, number> = {};
-    dividends.forEach(d => {
+    dividends?.forEach(d => {
       const date = new Date(d.date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      months[key] = (months[key] || 0) + (d.amount || 0);
+      const asset = portfolio.find(p => p.ticker === d.ticker);
+      const qty = asset ? asset.quantity : 100;
+      months[key] = (months[key] || 0) + ((d.amount || 0) * qty);
     });
     return Object.entries(months)
       .map(([date, value]) => ({ date, value }))
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-6); // Last 6 months
-  }, [dividends]);
+  })();
 
-  useEffect(() => {
-    async function fetchDividends() {
-      setLoadingDivs(true);
-      try {
-        const tickers = portfolio.map(p => p.ticker);
-        const results = await Promise.all(
-          tickers.slice(0, 15).map(async (ticker) => {
-            try {
-              const divs = await financeService.getAssetDividends(ticker);
-              return Array.isArray(divs) ? divs : [];
-            } catch { return []; }
-          })
-        );
-        setDividends(results.flat());
-      } finally {
-        setLoadingDivs(false);
-      }
-    }
-    if (portfolio.length > 0) fetchDividends();
-    else setLoadingDivs(false);
-  }, [portfolio]);
-
-  const totalDividends = dividends.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  const totalDividends = (dividends || []).reduce((acc, curr) => {
+    const asset = portfolio.find(p => p.ticker === curr.ticker);
+    const qty = asset ? asset.quantity : 100;
+    return acc + ((curr.amount || 0) * qty);
+  }, 0);
   const dividendYield = currentTotalValue > 0 ? (totalDividends / currentTotalValue) * 100 : 0;
 
   const allocationData = useMemo(() => {
@@ -74,27 +56,27 @@ export function PortfolioSummary() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <Briefcase size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Patrimônio Total</span>
+            <Briefcase className="icon-xs" />
+            <span className="text-label">Patrimônio Total</span>
           </div>
-          <p className="text-lg md:text-xl font-black text-white tracking-tight">
+          <p className="text-display-sm text-white">
             R$ {currentTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <div className="flex items-center gap-1 mt-1">
-            <span className="text-[10px] font-bold text-slate-500">Investido: R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+            <span className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Investido: R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
           </div>
         </div>
 
         <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <TrendingUp size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Rentabilidade</span>
+            <TrendingUp className="icon-xs" />
+            <span className="text-label">Rentabilidade</span>
           </div>
-          <p className={`text-lg md:text-xl font-black tracking-tight ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <p className={`text-display-sm ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {totalProfit >= 0 ? '+' : ''}{totalProfitPercentage.toFixed(2)}%
           </p>
           <div className="flex items-center gap-1 mt-1">
-            <span className={`text-[10px] font-bold ${totalProfit >= 0 ? 'text-emerald-500/60' : 'text-red-500/60'}`}>
+            <span className={`text-tiny font-bold uppercase tracking-widest ${totalProfit >= 0 ? 'text-emerald-500/60' : 'text-red-500/60'}`}>
               R$ {totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
             </span>
           </div>
@@ -102,23 +84,23 @@ export function PortfolioSummary() {
 
         <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <Calendar size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Proventos (Total)</span>
+            <Calendar className="icon-xs" />
+            <span className="text-label">Proventos (Total)</span>
           </div>
-          <p className="text-lg md:text-xl font-black text-white tracking-tight">
+          <p className="text-display-sm text-white">
             R$ {totalDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <div className="flex items-center gap-1 mt-1">
-            <span className="text-[10px] font-bold text-slate-500">Yield: {dividendYield.toFixed(2)}%</span>
+            <span className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Yield: {dividendYield.toFixed(2)}%</span>
           </div>
         </div>
 
         <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <Target size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Meta Alcançada</span>
+            <Target className="icon-xs" />
+            <span className="text-label">Meta Alcançada</span>
           </div>
-          <p className="text-lg md:text-xl font-black text-white tracking-tight">
+          <p className="text-display-sm text-white">
             {((currentTotalValue / 100000) * 100).toFixed(1)}%
           </p>
           <div className="w-full bg-slate-800 h-1 rounded-full mt-2 overflow-hidden">
@@ -135,10 +117,10 @@ export function PortfolioSummary() {
         <div id="composicao" className="p-5 bg-[#0f172a] border border-slate-800 rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 text-slate-400">
-              <PieIcon size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Composição</span>
+              <PieIcon className="icon-sm" />
+              <span className="text-label">Composição</span>
             </div>
-            <Link to="/portfolio" className="text-[10px] font-bold text-blue-500 hover:underline uppercase">Detalhes</Link>
+            <Link to="/portfolio" className="text-label text-blue-500 hover:underline">Detalhes</Link>
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -180,10 +162,10 @@ export function PortfolioSummary() {
         <div className="p-5 bg-[#0f172a] border border-slate-800 rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 text-slate-400">
-              <Calendar size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Proventos Mensais</span>
+              <Calendar className="icon-sm" />
+              <span className="text-label">Proventos Mensais</span>
             </div>
-            <Link to="/portfolio/proventos" className="text-[10px] font-bold text-blue-500 hover:underline uppercase">Agenda</Link>
+            <Link to="/portfolio/proventos" className="text-label text-blue-500 hover:underline">Agenda</Link>
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -212,13 +194,13 @@ export function PortfolioSummary() {
         <div id="evolucao" className="p-5 bg-[#0f172a] border border-slate-800 rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 text-slate-400">
-              <BarChart3 size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Evolução</span>
+              <BarChart3 className="icon-sm" />
+              <span className="text-label">Evolução</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-[8px] font-bold text-slate-500 uppercase">Carteira</span>
+                <span className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Carteira</span>
               </div>
             </div>
           </div>

@@ -124,6 +124,14 @@ export default function AssetAnalysis() {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const handleGoBack = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/portfolio/resumo');
+    }
+  };
+
   useEffect(() => {
     if (!ticker) return;
 
@@ -206,11 +214,11 @@ export default function AssetAnalysis() {
             <div className="w-16 h-16 border-t-2 border-blue-500 rounded-full animate-spin" />
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <Activity className="icon-xl text-blue-500 animate-pulse" />
+            <Activity className="icon-2xl text-blue-500 animate-pulse" />
           </div>
         </div>
-        <h2 className="text-2xl font-display font-bold text-white tracking-tighter uppercase">Nexus Intelligence</h2>
-        <p className="text-slate-500 text-xs mt-3 font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Ativo: {ticker}</p>
+        <h2 className="text-display-md text-white">Nexus Intelligence</h2>
+        <p className="text-label text-slate-500 mt-3 animate-pulse">Sincronizando Ativo: {ticker}</p>
       </div>
     );
   }
@@ -224,7 +232,7 @@ export default function AssetAnalysis() {
         <h2 className="text-3xl font-display font-bold text-white mb-3 tracking-tighter uppercase">Ativo não encontrado</h2>
         <p className="text-slate-400 mb-10 max-w-md font-medium">Não conseguimos localizar os dados para <span className="text-white font-bold">{ticker}</span>. Verifique se o código está correto ou tente novamente mais tarde.</p>
         <button 
-          onClick={() => navigate(-1)}
+          onClick={handleGoBack}
           className="btn-primary"
         >
           <ArrowLeft className="icon-sm" />
@@ -241,7 +249,7 @@ export default function AssetAnalysis() {
         <div className="w-full px-4 md:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button 
-              onClick={() => navigate(-1)}
+              onClick={handleGoBack}
               className="group flex items-center gap-3 text-slate-400 hover:text-white transition-all"
             >
               <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-white/20 transition-all">
@@ -257,8 +265,8 @@ export default function AssetAnalysis() {
                 <BarChart2 className="icon-md" />
               </div>
               <div>
-                <h1 className="text-sm font-black text-white uppercase tracking-widest">Análise Profunda</h1>
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Nexus Engine v2.5.1</p>
+                <h1 className="text-label text-white uppercase italic">Análise Profunda</h1>
+                <p className="text-tiny text-slate-500 font-black uppercase tracking-[0.2em]">Nexus Engine v2.5.1</p>
               </div>
             </div>
           </div>
@@ -266,11 +274,11 @@ export default function AssetAnalysis() {
           <div className="flex items-center gap-4">
             <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-              <span className="text-[9px] font-black text-emerald-500/80 uppercase tracking-widest">Live Market Data</span>
+              <span className="text-tiny text-emerald-500/80 font-black uppercase tracking-widest">Live Market Data</span>
             </div>
             
             <button 
-              onClick={() => navigate(-1)}
+              onClick={handleGoBack}
               className="w-10 h-10 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-xl transition-all border border-white/10 flex items-center justify-center"
               title="Fechar"
             >
@@ -280,44 +288,44 @@ export default function AssetAnalysis() {
         </div>
       </header>
 
-      <main className="w-full px-4 md:px-8 py-12 space-y-12">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
         {/* Hero Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="lg:col-span-8 space-y-8"
+            className="lg:col-span-8 space-y-6"
           >
             {/* Asset Identity Card */}
-            <div className="relative p-8 md:p-12 bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5 overflow-hidden group">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10 rounded-full" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/5 blur-[100px] -z-10 rounded-full" />
+            <div className="relative p-6 md:p-8 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/5 overflow-hidden group">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10 rounded-full" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-600/5 blur-[80px] -z-10 rounded-full" />
               
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                <div className="flex items-center gap-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
                   <div className="relative">
-                    <AssetIcon assetType={assetDetails.assetType || 'ACAO'} ticker={assetDetails.ticker} className="w-24 h-24 md:w-32 md:h-32 shadow-2xl rounded-3xl" />
-                    <div className="absolute -bottom-2 -right-2 px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl border border-blue-400/30">
+                    <AssetIcon assetType={assetDetails.assetType || 'ACAO'} ticker={assetDetails.ticker} className="w-16 h-16 shadow-xl rounded-2xl" />
+                    <div className="absolute -bottom-2 -right-2 px-2 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-md shadow border border-blue-400/30">
                       {assetDetails.assetType || 'ATIVO'}
                     </div>
                   </div>
                   <div>
-                    <h2 className="text-5xl md:text-7xl font-display font-bold text-white tracking-tighter leading-none mb-2">
+                    <h2 className="text-display-2xl text-white uppercase mb-2">
                       {assetDetails.ticker}
                     </h2>
-                    <p className="text-slate-400 font-medium text-lg md:text-xl tracking-tight max-w-md">
+                    <p className="text-label text-slate-400 uppercase">
                       {assetDetails.results.name || 'Empresa Selecionada'}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-left md:text-right space-y-1">
-                  <p className="text-label">Cotação Atual</p>
-                  <p className="text-5xl md:text-6xl font-display font-bold text-white tracking-tighter">
+                  <p className="text-label uppercase">Cotação Atual</p>
+                  <p className="text-display-xl text-white">
                     {formatMetricValue('precoAtual', assetDetails.results.precoAtual)}
                   </p>
-                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black tracking-widest uppercase ${String(assetDetails.results.variacaoDay).includes('-') ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                    {String(assetDetails.results.variacaoDay).includes('-') ? <TrendingDown className="icon-sm" /> : <TrendingUp className="icon-sm" />}
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-tiny font-black tracking-widest uppercase ${String(assetDetails.results.variacaoDay).includes('-') ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                    {String(assetDetails.results.variacaoDay).includes('-') ? <TrendingDown className="icon-xs" /> : <TrendingUp className="icon-xs" />}
                     {assetDetails.results.variacaoDay || '0,00%'}
                   </div>
                 </div>
@@ -325,23 +333,23 @@ export default function AssetAnalysis() {
             </div>
 
             {/* Main Chart Card */}
-            <div className="p-8 bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500">
-                    <Activity className="icon-md" />
+            <div className="p-6 md:p-8 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
+                    <Activity className="icon-sm" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-white uppercase tracking-widest">Performance Histórica</h4>
-                    <p className="text-label">Janela de 12 Meses</p>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Performance Histórica</h4>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Janela de 12 Meses</p>
                   </div>
                 </div>
                 
-                <div className="flex gap-1 bg-white/5 p-1 rounded-2xl border border-white/5">
+                <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
                   {['1M', '6M', '1Y', 'MAX'].map(p => (
                     <button 
                       key={p} 
-                      className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${p === '1Y' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
+                      className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${p === '1Y' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
                     >
                       {p}
                     </button>
@@ -349,7 +357,7 @@ export default function AssetAnalysis() {
                 </div>
               </div>
 
-              <div className="h-[400px] w-full">
+              <div className="h-[250px] md:h-[300px] w-full">
                 {history.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={history}>
@@ -377,11 +385,11 @@ export default function AssetAnalysis() {
                           backgroundColor: 'rgba(15, 23, 42, 0.9)', 
                           backdropFilter: 'blur(16px)',
                           border: '1px solid rgba(255,255,255,0.1)', 
-                          borderRadius: '20px', 
+                          borderRadius: '16px', 
                           boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' 
                         }}
-                        itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
-                        labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                        itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}
+                        labelStyle={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                         formatter={(value: any) => [`R$ ${Number(value).toFixed(2)}`, 'FECHAMENTO']}
                         labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
                       />
@@ -389,18 +397,18 @@ export default function AssetAnalysis() {
                         type="monotone" 
                         dataKey="close" 
                         stroke="#3b82f6" 
-                        strokeWidth={4}
+                        strokeWidth={3}
                         fillOpacity={1} 
                         fill="url(#nexusChartGradient)" 
-                        animationDuration={2500}
-                        activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                        animationDuration={1500}
+                        activeDot={{ r: 4, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-600 border border-dashed border-white/5 rounded-3xl bg-white/[0.02]">
-                    <BarChart2 size={48} className="mb-4 opacity-20" />
-                    <p className="text-sm font-bold uppercase tracking-widest opacity-40 italic">Dados históricos indisponíveis</p>
+                  <div className="h-full flex flex-col items-center justify-center text-slate-600 border border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
+                    <BarChart2 size={32} className="mb-3 opacity-20" />
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 italic">Dados históricos indisponíveis</p>
                   </div>
                 )}
               </div>
@@ -409,34 +417,34 @@ export default function AssetAnalysis() {
 
           {/* Sidebar: Checklist & Quick Stats */}
           <motion.div 
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="lg:col-span-4 space-y-8"
+            className="lg:col-span-4 space-y-6"
           >
             {/* Quality Score Card */}
-            <div className="p-8 bg-blue-600/5 backdrop-blur-xl rounded-[2.5rem] border border-blue-500/10 shadow-2xl shadow-blue-900/10">
-              <div className="flex items-center justify-between mb-8">
-                <h4 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
-                  <ShieldCheck className="icon-md text-blue-500" /> Nexus Score
+            <div className="p-6 bg-blue-600/5 backdrop-blur-xl rounded-3xl border border-blue-500/10 shadow-xl shadow-blue-900/10 group">
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="text-[10px] font-black tracking-widest text-white flex items-center gap-2 uppercase italic">
+                  <ShieldCheck className="icon-sm text-blue-500" /> Nexus Score
                 </h4>
-                <div className="px-3 py-1 bg-blue-600 rounded-lg text-[10px] font-black text-white uppercase tracking-widest">
+                <div className="px-2 py-1 bg-blue-600 rounded-md text-[9px] font-black text-white uppercase tracking-widest shadow shadow-blue-600/20">
                   {Math.round((checklist.filter(i => i.ok).length / checklist.length) * 100)}%
                 </div>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {checklist.map((item, i) => (
                   <motion.div 
-                    initial={{ opacity: 0, x: 10 }}
+                    initial={{ opacity: 0, x: 5 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + (i * 0.05) }}
                     key={i} 
-                    className="flex items-center justify-between p-4 bg-slate-900/60 rounded-2xl border border-white/5 group hover:border-blue-500/30 transition-all"
+                    className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group/item hover:border-blue-500/30 transition-all"
                   >
-                    <span className="text-xs font-bold text-slate-400 group-hover:text-slate-200 transition-colors">{item.label}</span>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${item.ok ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                      {item.ok ? <CheckCircle2 className="icon-sm" /> : <XCircle className="icon-sm" />}
+                    <span className="text-[10px] font-bold text-slate-400 group-hover/item:text-slate-200 uppercase tracking-tight transition-colors">{item.label}</span>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${item.ok ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                      {item.ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                     </div>
                   </motion.div>
                 ))}
@@ -444,35 +452,35 @@ export default function AssetAnalysis() {
             </div>
 
             {/* Sector & Segment Card */}
-            <div className="p-8 bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5">
-              <h4 className="text-label mb-8">Classificação de Mercado</h4>
-              <div className="space-y-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400">
+            <div className="p-6 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/5">
+              <h4 className="text-[10px] font-black tracking-widest text-slate-400 mb-6 uppercase italic">Classificação de Mercado</h4>
+              <div className="space-y-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 border border-white/5">
                     <Building2 className="icon-sm" />
                   </div>
                   <div>
-                    <p className="text-label mb-1">Setor de Atuação</p>
-                    <p className="text-base font-bold text-slate-200 tracking-tight">{assetDetails.results.sector || 'N/A'}</p>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Setor de Atuação</p>
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{assetDetails.results.sector || 'N/A'}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 border border-white/5">
                     <PieChart className="icon-sm" />
                   </div>
                   <div>
-                    <p className="text-label mb-1">Subsetor / Segmento</p>
-                    <p className="text-base font-bold text-slate-200 tracking-tight">{assetDetails.results.subSector || 'N/A'}</p>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Subsetor / Segmento</p>
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{assetDetails.results.subSector || 'N/A'}</p>
                   </div>
                 </div>
                 {assetDetails.results.segmentoListagem && (
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 border border-white/5">
                       <ShieldCheck className="icon-sm" />
                     </div>
                     <div>
-                      <p className="text-label mb-1">Nível de Governança</p>
-                      <p className="text-base font-bold text-slate-200 tracking-tight">{assetDetails.results.segmentoListagem}</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Nível de Governança</p>
+                      <p className="text-[10px] font-black text-white uppercase tracking-widest">{assetDetails.results.segmentoListagem}</p>
                     </div>
                   </div>
                 )}
@@ -481,11 +489,11 @@ export default function AssetAnalysis() {
 
             {/* About Card */}
             {assetDetails.results.about && (
-              <div className="p-8 bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5">
-                <h4 className="text-label mb-6 flex items-center gap-2">
+              <div className="p-6 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/5">
+                <h4 className="text-[10px] font-black tracking-widest text-slate-400 mb-4 flex items-center gap-2 uppercase italic">
                   <Info className="icon-sm text-blue-500" /> Perfil Corporativo
                 </h4>
-                <p className="text-sm text-slate-400 leading-relaxed font-medium italic">
+                <p className="text-xs text-slate-400 leading-relaxed font-bold italic">
                   "{assetDetails.results.about}"
                 </p>
               </div>
@@ -494,13 +502,13 @@ export default function AssetAnalysis() {
         </section>
 
         {/* Indicators Grid */}
-        <section className="space-y-8">
+        <section className="space-y-6">
           <div className="flex items-center gap-4">
-            <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-            <h3 className="text-lg font-display font-bold text-white tracking-tighter uppercase">Indicadores Fundamentais</h3>
+            <div className="w-1.5 h-5 bg-blue-600 rounded-full" />
+            <h3 className="text-display-xs text-white uppercase italic">Indicadores Fundamentais</h3>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {['pl', 'pvp', 'dy', 'vpa', 'lpa', 'roe', 'roic', 'margemLiquida', 'vacanciaFisica', 'vacanciaFinanceira', 'quantidadeAtivos', 'numeroCotistas'].map((key, idx) => {
               const val = assetDetails.results[key];
               if (val === undefined || val === null) return null;
@@ -510,10 +518,10 @@ export default function AssetAnalysis() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 + (idx * 0.05) }}
                   key={key} 
-                  className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all group"
+                  className="p-4 bg-white/5 backdrop-blur-xl border border-white/5 rounded-2xl hover:border-blue-500/30 transition-all group"
                 >
-                  <p className="text-[9px] font-black text-slate-500 uppercase mb-3 tracking-widest group-hover:text-blue-400 transition-colors">{METRIC_LABELS[key] || key}</p>
-                  <p className="text-2xl font-display font-bold text-white tracking-tighter">{formatMetricValue(key, val)}</p>
+                  <p className="text-[10px] font-black tracking-widest text-slate-500 mb-1 group-hover:text-blue-400 transition-colors uppercase">{METRIC_LABELS[key] || key}</p>
+                  <p className="font-display font-bold text-sm md:text-base text-white group-hover:text-blue-400 transition-colors">{formatMetricValue(key, val)}</p>
                 </motion.div>
               );
             })}
@@ -522,13 +530,13 @@ export default function AssetAnalysis() {
 
         {/* Financial Results */}
         {(assetDetails.results.receitaLiquida || assetDetails.results.ebitda || assetDetails.results.lucroLiquido) && (
-          <section className="space-y-8">
+          <section className="space-y-6">
             <div className="flex items-center gap-4">
-              <div className="w-1.5 h-6 bg-emerald-600 rounded-full" />
-              <h3 className="text-lg font-display font-bold text-white tracking-tighter uppercase">Resultados Financeiros</h3>
+              <div className="w-1.5 h-5 bg-emerald-600 rounded-full" />
+              <h3 className="text-display-xs text-white uppercase italic">Resultados Financeiros</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
                 { key: 'receitaLiquida', icon: DollarSign, color: 'text-blue-500' },
                 { key: 'ebitda', icon: Zap, color: 'text-amber-500' },
@@ -538,17 +546,17 @@ export default function AssetAnalysis() {
                 if (!val) return null;
                 return (
                   <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 + (idx * 0.1) }}
                     key={item.key} 
-                    className="p-10 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] relative overflow-hidden group"
+                    className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl relative overflow-hidden group"
                   >
-                    <div className={`absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity ${item.color}`}>
-                      <item.icon className="icon-3xl" />
+                    <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${item.color}`}>
+                      <item.icon className="icon-2xl" />
                     </div>
-                    <p className="text-label mb-4">{METRIC_LABELS[item.key] || item.key}</p>
-                    <p className="text-4xl font-display font-bold text-white tracking-tighter">{formatMetricValue(item.key, val)}</p>
+                    <p className="text-[10px] font-black tracking-widest text-slate-500 mb-2 uppercase">{METRIC_LABELS[item.key] || item.key}</p>
+                    <p className="font-display font-black text-xl md:text-2xl text-white tracking-tight leading-none">{formatMetricValue(item.key, val)}</p>
                   </motion.div>
                 );
               })}
@@ -558,33 +566,33 @@ export default function AssetAnalysis() {
 
         {/* Dividends */}
         {assetDetails.results.dividendos && assetDetails.results.dividendos.length > 0 && (
-          <section className="space-y-8">
+          <section className="space-y-6">
             <div className="flex items-center gap-4">
-              <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-              <h3 className="text-lg font-display font-bold text-white tracking-tighter uppercase">Histórico de Proventos</h3>
+              <div className="w-1.5 h-5 bg-blue-600 rounded-full" />
+              <h3 className="text-display-xs text-white uppercase italic">Histórico de Proventos</h3>
             </div>
             
-            <div className="overflow-hidden border border-white/5 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl">
+            <div className="overflow-hidden border border-white/5 rounded-2xl bg-slate-900/40 backdrop-blur-xl">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white/5 border-b border-white/5">
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Data Com</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Pagamento</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Tipo</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Valor</th>
+                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-slate-500 uppercase">Data Com</th>
+                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-slate-500 uppercase">Pagamento</th>
+                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-slate-500 uppercase">Tipo</th>
+                    <th className="px-6 py-4 text-[10px] font-black tracking-widest text-slate-500 uppercase text-right">Valor</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {assetDetails.results.dividendos.map((div: any, i: number) => (
                     <tr key={i} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="px-8 py-6 text-sm font-bold text-slate-300 group-hover:text-white transition-colors">{div.dataCom}</td>
-                      <td className="px-8 py-6 text-sm font-bold text-slate-300 group-hover:text-white transition-colors">{div.pagamento}</td>
-                      <td className="px-8 py-6">
-                        <span className="px-2 py-1 bg-white/5 rounded text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">
+                      <td className="px-6 py-4 text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{div.dataCom}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{div.pagamento}</td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">
                           {div.tipo}
                         </span>
                       </td>
-                      <td className="px-8 py-6 text-base font-black text-white text-right font-mono">{div.valor}</td>
+                      <td className="px-6 py-4 font-display font-black text-sm md:text-base text-white text-right">{div.valor}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -595,36 +603,34 @@ export default function AssetAnalysis() {
       </main>
       
       {/* Footer Imersivo */}
-      <footer className="w-full px-4 md:px-8 mt-12">
-        <div className="p-12 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.8)]" />
+      <footer className="max-w-7xl mx-auto px-4 md:px-6 mt-6 md:mt-8">
+        <div className="p-6 md:p-8 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
             <div>
-              <p className="text-xs font-black text-white uppercase tracking-widest mb-1">Nexus Intelligence Engine</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sincronização Ativa • v2.5.1 • {new Date().toLocaleDateString('pt-BR')}</p>
+              <p className="text-sm font-bold text-white mb-1">Nexus Intelligence Engine</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sincronização Ativa • v2.5.1 • {new Date().toLocaleDateString('pt-BR')}</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate('/portfolio/lancamentos')}
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
             >
               Nova Operação
             </button>
             <button 
-              onClick={() => navigate(-1)}
-              className="px-8 py-4 bg-white/5 border border-white/10 text-slate-400 hover:text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all active:scale-95"
+              onClick={handleGoBack}
+              className="px-6 py-3 bg-white/5 border border-white/10 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-95"
             >
               Fechar Análise
             </button>
           </div>
         </div>
         
-        <div className="mt-8 text-center">
-          <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.5em]">
+        <div className="mt-6 text-center text-[10px] font-bold uppercase tracking-widest text-slate-700">
             As informações apresentadas não constituem recomendação de investimento.
-          </p>
         </div>
       </footer>
     </div>

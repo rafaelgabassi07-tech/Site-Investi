@@ -132,15 +132,15 @@ export default function Profitability() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: idx * 0.05 }}
-            className="bg-[#0f172a] border border-slate-800 p-6 rounded-3xl relative overflow-hidden shadow-lg"
+            className="bg-white/5 border border-white/5 p-6 rounded-3xl relative overflow-hidden shadow-lg group hover:border-blue-500/30 transition-all"
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className={`w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-blue-500 border border-slate-700`}>
-                <stat.icon size={16} />
+              <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-blue-500 border border-white/5 group-hover:bg-blue-600 group-hover:text-white transition-all`}>
+                <stat.icon className="icon-xs" />
               </div>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</span>
+              <span className="text-label text-slate-500 uppercase">{stat.label}</span>
             </div>
-            <div className={`text-2xl font-black tracking-tighter ${stat.value.startsWith('+') ? 'text-emerald-400' : stat.value.startsWith('-') ? 'text-red-400' : 'text-white'}`}>
+            <div className={`text-display-sm tracking-tighter ${stat.value.startsWith('+') ? 'text-emerald-400' : stat.value.startsWith('-') ? 'text-red-400' : 'text-white'}`}>
               {stat.value}
             </div>
           </motion.div>
@@ -151,19 +151,19 @@ export default function Profitability() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="lg:col-span-2 bg-[#0f172a] border border-slate-800 p-6 md:p-8 rounded-[2.5rem] shadow-xl"
+          className="lg:col-span-2 bg-white/5 border border-white/5 p-6 md:p-8 rounded-[2.5rem] shadow-xl"
         >
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
-              <Activity className="text-blue-500" size={20} />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <h3 className="text-label text-white uppercase tracking-tight flex items-center gap-3 italic">
+              <Activity className="text-blue-500 icon-sm" />
               Evolução da Rentabilidade (%)
             </h3>
             <div className="flex gap-4">
-              <span className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                <div className="w-3 h-3 rounded-full bg-blue-500" /> Carteira
+              <span className="flex items-center gap-2 text-tiny font-black text-slate-500 uppercase tracking-widest">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Carteira
               </span>
-              <span className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                <div className="w-3 h-3 rounded-full bg-slate-700" /> IBOVESPA
+              <span className="flex items-center gap-2 text-tiny font-black text-slate-500 uppercase tracking-widest">
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-700" /> IBOVESPA
               </span>
             </div>
           </div>
@@ -173,31 +173,33 @@ export default function Profitability() {
               <AreaChart data={performanceData}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                 <XAxis 
                   dataKey="month" 
-                  stroke="#64748b" 
+                  stroke="#475569" 
                   fontSize={10} 
+                  fontWeight="bold"
                   tickLine={false} 
                   axisLine={false} 
                   dy={10}
-                  tickFormatter={(val, idx) => idx % 2 === 0 ? val : ''}
+                  tickFormatter={(val, idx) => idx % 2 === 0 ? val.toUpperCase() : ''}
                 />
                 <YAxis 
-                  stroke="#64748b" 
+                  stroke="#475569" 
                   fontSize={10} 
+                  fontWeight="bold"
                   tickLine={false} 
                   axisLine={false} 
                   tickFormatter={(v) => `${v.toFixed(1)}%`} 
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
-                  itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                  labelStyle={{ color: '#64748b', marginBottom: '4px' }}
+                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                  itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}
+                  labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                   formatter={(v: any) => [`${Number(v).toFixed(2)}%`]}
                 />
                 <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" animationDuration={2000} />
@@ -211,20 +213,20 @@ export default function Profitability() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-[#0f172a] border border-slate-800 p-6 md:p-8 rounded-[2.5rem] shadow-xl"
+          className="bg-white/5 border border-white/5 p-6 md:p-8 rounded-[2.5rem] shadow-xl"
         >
-          <h3 className="text-xl font-bold text-white uppercase tracking-tight mb-8 flex items-center gap-3">
-            <PieChart className="text-purple-500" size={20} />
+          <h3 className="text-label text-white uppercase tracking-tight mb-8 flex items-center gap-3 italic">
+            <PieChart className="text-purple-500 icon-sm" />
             Alocação Atual
           </h3>
           <div className="space-y-8">
             {allocationByClass.length > 0 ? allocationByClass.map((item, idx) => (
               <div key={idx} className="space-y-3">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]">
+                <div className="flex justify-between text-tiny font-black uppercase tracking-[0.2em]">
                   <span className="text-slate-500">{item.label}</span>
                   <span className="text-white">{item.value.toFixed(1)}%</span>
                 </div>
-                <div className="h-2.5 bg-slate-800/50 rounded-full overflow-hidden border border-slate-800">
+                <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${item.value}%` }}
@@ -234,14 +236,14 @@ export default function Profitability() {
                 </div>
               </div>
             )) : (
-              <div className="py-20 text-center text-slate-500 text-xs font-bold uppercase tracking-widest">
+              <div className="py-20 text-center text-slate-500 text-xs font-bold uppercase tracking-widest italic">
                 Nenhum ativo na carteira
               </div>
             )}
           </div>
           
           <div className="mt-12 p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
-            <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider text-center">
+            <p className="text-tiny font-bold text-slate-400 leading-relaxed uppercase tracking-wider text-center italic">
               {stats[2].value.startsWith('+') 
                 ? `Sua carteira está superando o IBOVESPA em ${stats[2].value.replace('+', '')}.`
                 : `Sua carteira está performando ${stats[2].value.replace('-', '')} abaixo do IBOVESPA.`}

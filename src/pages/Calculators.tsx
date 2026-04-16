@@ -86,13 +86,13 @@ export default function Calculators() {
           <button 
             key={calc.id} 
             onClick={() => setActiveCalc(calc.id as CalcType)}
-            className={`px-6 py-3 rounded-2xl border text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all flex items-center gap-2 ${
+            className={`px-6 py-3 rounded-2xl border text-label whitespace-nowrap transition-all flex items-center gap-2 ${
               activeCalc === calc.id 
                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' 
                 : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
             }`}
           >
-            <calc.icon size={16} />
+            <calc.icon className="icon-xs" />
             {calc.label}
           </button>
         ))}
@@ -109,23 +109,23 @@ export default function Calculators() {
                 exit={{ opacity: 0, x: 20 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-bold text-white mb-4">Parâmetros</h3>
+                <h3 className="text-display-tiny text-white mb-4">Parâmetros</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Valor Inicial (R$)</label>
-                    <input type="number" value={initialAmount} onChange={(e) => setInitialAmount(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">Valor Inicial (R$)</label>
+                    <input type="number" value={initialAmount} onChange={(e) => setInitialAmount(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Aporte Mensal (R$)</label>
-                    <input type="number" value={monthlyContribution} onChange={(e) => setMonthlyContribution(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">Aporte Mensal (R$)</label>
+                    <input type="number" value={monthlyContribution} onChange={(e) => setMonthlyContribution(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Taxa Anual (%)</label>
-                    <input type="number" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">Taxa Anual (%)</label>
+                    <input type="number" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Período (Anos)</label>
-                    <input type="number" value={years} onChange={(e) => setYears(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">Período (Anos)</label>
+                    <input type="number" value={years} onChange={(e) => setYears(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                 </div>
               </motion.div>
@@ -139,15 +139,15 @@ export default function Calculators() {
                 exit={{ opacity: 0, x: 20 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-bold text-white mb-4">Método de Bazin</h3>
+                <h3 className="text-display-tiny text-white mb-4">Método de Bazin</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Dividendo Médio (5 anos)</label>
-                    <input type="number" value={avgDividend} onChange={(e) => setAvgDividend(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <label className="block text-label text-slate-500 mb-2">Dividendo Médio (5 anos)</label>
+                    <input type="number" value={avgDividend} onChange={(e) => setAvgDividend(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none font-bold" />
                   </div>
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Yield Desejado (%)</label>
-                    <input type="number" value={desiredYield} onChange={(e) => setDesiredYield(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">Yield Desejado (%)</label>
+                    <input type="number" value={desiredYield} onChange={(e) => setDesiredYield(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                 </div>
               </motion.div>
@@ -161,15 +161,15 @@ export default function Calculators() {
                 exit={{ opacity: 0, x: 20 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-bold text-white mb-4">Fórmula de Graham</h3>
+                <h3 className="text-display-tiny text-white mb-4">Fórmula de Graham</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">VPA (Valor Patrimonial por Ação)</label>
-                    <input type="number" value={vpa} onChange={(e) => setVpa(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">VPA (Valor Patrimonial por Ação)</label>
+                    <input type="number" value={vpa} onChange={(e) => setVpa(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">LPA (Lucro por Ação)</label>
-                    <input type="number" value={lpa} onChange={(e) => setLpa(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">LPA (Lucro por Ação)</label>
+                    <input type="number" value={lpa} onChange={(e) => setLpa(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                 </div>
               </motion.div>
@@ -183,15 +183,15 @@ export default function Calculators() {
                 exit={{ opacity: 0, x: 20 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-bold text-white mb-4">FIRE (Independência)</h3>
+                <h3 className="text-display-tiny text-white mb-4">FIRE (Independência)</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Gasto Mensal Desejado (R$)</label>
-                    <input type="number" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">Gasto Mensal Desejado (R$)</label>
+                    <input type="number" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                   <div>
-                    <label className="block text-xxs font-black text-slate-500 uppercase tracking-widest mb-2">Taxa de Retirada Anual (%)</label>
-                    <input type="number" value={withdrawalRate} onChange={(e) => setWithdrawalRate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all" />
+                    <label className="block text-label text-slate-500 mb-2">Taxa de Retirada Anual (%)</label>
+                    <input type="number" value={withdrawalRate} onChange={(e) => setWithdrawalRate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-bold" />
                   </div>
                 </div>
               </motion.div>
@@ -209,27 +209,27 @@ export default function Calculators() {
                 className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] -z-10" />
-                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-2">Valor Total Final</h3>
-                <div className="text-4xl md:text-6xl font-black text-white tracking-tighter">
+                <h3 className="text-label text-blue-400 mb-2">Valor Total Final</h3>
+                <div className="text-display-xl text-white tracking-tighter">
                   R$ {compoundResults.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                   <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                     <div className="flex items-center gap-2 mb-2">
-                      <DollarSign size={16} className="text-slate-400" />
-                      <span className="text-xxs font-black text-slate-500 uppercase tracking-widest">Total Investido</span>
+                      <DollarSign className="icon-xs text-slate-400" />
+                      <span className="text-label text-slate-500">Total Investido</span>
                     </div>
-                    <div className="text-2xl font-bold text-white">
+                    <div className="text-display-sm text-white">
                       R$ {compoundResults.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                   <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20">
                     <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp size={16} className="text-emerald-500" />
-                      <span className="text-xxs font-black text-emerald-500 uppercase tracking-widest">Total em Juros</span>
+                      <TrendingUp className="icon-xs text-emerald-500" />
+                      <span className="text-label text-emerald-500">Total em Juros</span>
                     </div>
-                    <div className="text-2xl font-bold text-emerald-400">
+                    <div className="text-display-sm text-emerald-400">
                       R$ {compoundResults.totalInterest.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -245,11 +245,11 @@ export default function Calculators() {
                 className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border border-emerald-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] -z-10" />
-                <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-widest mb-2">Preço Teto Estimado</h3>
-                <div className="text-4xl md:text-6xl font-black text-white tracking-tighter">
+                <h3 className="text-label text-emerald-400 mb-2">Preço Teto Estimado</h3>
+                <div className="text-display-xl text-white tracking-tighter">
                   R$ {bazinResults.ceilingPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg">
+                <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg italic font-medium">
                   O Método de Bazin sugere que este é o valor máximo a ser pago por uma ação para garantir o yield desejado, baseado na média de dividendos.
                 </p>
               </motion.div>
@@ -263,11 +263,11 @@ export default function Calculators() {
                 className="bg-gradient-to-br from-amber-600/20 to-amber-900/20 border border-amber-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] -z-10" />
-                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-2">Preço Justo (Graham)</h3>
-                <div className="text-4xl md:text-6xl font-black text-white tracking-tighter">
+                <h3 className="text-label text-amber-400 mb-2">Preço Justo (Graham)</h3>
+                <div className="text-display-xl text-white tracking-tighter">
                   R$ {grahamResults.fairPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg">
+                <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg italic font-medium">
                   A Fórmula de Graham calcula o preço intrínseco de uma ação considerando que o produto do P/L pelo P/VP não deve ultrapassar 22,5.
                 </p>
               </motion.div>
@@ -281,11 +281,11 @@ export default function Calculators() {
                 className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 border border-purple-500/30 p-6 rounded-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[80px] -z-10" />
-                <h3 className="text-sm font-bold text-purple-400 uppercase tracking-widest mb-2">Patrimônio Necessário</h3>
-                <div className="text-4xl md:text-6xl font-black text-white tracking-tighter">
+                <h3 className="text-label text-purple-400 mb-2">Patrimônio Necessário</h3>
+                <div className="text-display-xl text-white tracking-tighter">
                   R$ {fireResults.targetNetWorth.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </div>
-                <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg">
+                <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg italic font-medium">
                   Este é o montante total necessário investido para que você possa retirar mensalmente o valor desejado indefinidamente, seguindo a regra dos 4% (ou sua taxa personalizada).
                 </p>
               </motion.div>

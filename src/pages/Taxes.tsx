@@ -27,8 +27,8 @@ export default function Taxes() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-        <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Calculando Impostos...</p>
+        <Loader2 className="animate-spin text-blue-500 icon-xl" />
+        <p className="text-label text-slate-500 uppercase tracking-widest animate-pulse">Calculando Impostos...</p>
       </div>
     );
   }
@@ -43,93 +43,91 @@ export default function Taxes() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Isentômetro de Ações */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-8 shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-            <ShieldCheck size={120} />
+        <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+            <ShieldCheck className="w-32 h-32" />
           </div>
           
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-500">
-              <ShieldCheck size={20} />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-blue-600/10 rounded-[1.25rem] flex items-center justify-center text-blue-500 border border-blue-500/20">
+              <ShieldCheck className="icon-sm" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Isentômetro (Ações)</h3>
-              <p className="text-xs text-slate-400">Limite mensal de vendas: R$ 20.000,00</p>
+              <h3 className="text-display-tiny text-white uppercase italic">Isentômetro Nexus</h3>
+              <p className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Limite mensal de vendas: R$ 20.000,00</p>
             </div>
           </div>
 
-          <div className="mb-8">
-            <div className="flex justify-between items-end mb-2">
+          <div className="mb-10">
+            <div className="flex justify-between items-end mb-4 pr-1">
               <div>
-                <p className="text-sm text-slate-400 font-medium mb-1">Volume de Vendas no Mês</p>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-tiny font-black text-slate-600 uppercase tracking-[0.2em] mb-2 italic">Volume de Vendas no Mês</p>
+                <p className="text-display-sm text-white uppercase italic">
                   {currentTaxData.salesAcoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
               </div>
-              <div className={`text-sm font-bold px-3 py-1 rounded-full ${currentTaxData.isExemptAcoes ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+              <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-lg ${currentTaxData.isExemptAcoes ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/5' : 'bg-red-500/10 text-red-400 border-red-500/20 shadow-red-500/5'}`}>
                 {currentTaxData.isExemptAcoes ? 'ISENTO' : 'TRIBUTÁVEL'}
               </div>
             </div>
 
-            <div className="h-4 bg-slate-800 rounded-full overflow-hidden mt-4 relative">
+            <div className="h-4 bg-white/5 rounded-full overflow-hidden mt-6 relative border border-white/5">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercentage}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className={`h-full rounded-full ${currentTaxData.isExemptAcoes ? 'bg-emerald-500' : 'bg-red-500'}`}
+                transition={{ duration: 1.5, ease: "circOut" }}
+                className={`h-full rounded-full shadow-lg ${currentTaxData.isExemptAcoes ? 'bg-emerald-500' : 'bg-red-500'}`}
               />
-              {/* Marca de 20k */}
-              <div className="absolute top-0 bottom-0 left-full w-0.5 bg-white/50 -ml-0.5" />
             </div>
-            <div className="flex justify-between text-xs font-bold text-slate-500 mt-2">
-              <span>R$ 0</span>
-              <span>R$ 20.000</span>
+            <div className="flex justify-between text-[10px] font-black text-slate-700 mt-3 uppercase tracking-[0.2em] px-1">
+              <span>Mínimo R$ 0</span>
+              <span>Teto Isenção R$ 20.000</span>
             </div>
           </div>
 
-          <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 flex gap-3">
-            <Info className="text-blue-400 shrink-0 mt-0.5" size={18} />
-            <p className="text-sm text-slate-300 leading-relaxed">
-              A isenção aplica-se apenas ao lucro de operações comuns com ações, desde que o <strong>volume total de vendas</strong> no mês não ultrapasse R$ 20.000,00. Day Trade, FIIs, BDRs e ETFs não possuem isenção.
+          <div className="bg-white/5 border border-white/5 rounded-2xl p-5 flex gap-4 group/info hover:bg-white/10 transition-colors">
+            <Info className="text-blue-400 shrink-0 mt-0.5 icon-sm" />
+            <p className="text-tiny font-bold text-slate-400 leading-relaxed uppercase tracking-widest">
+              A isenção aplica-se apenas ao lucro de operações comuns com ações, desde que o <strong className="text-white">volume total de vendas</strong> no mês não ultrapasse R$ 20.000,00. Day Trade, FIIs, BDRs e ETFs não possuem isenção.
             </p>
           </div>
         </div>
 
         {/* Resumo Tributável e DARF */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-8 shadow-lg">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-indigo-600/20 rounded-xl flex items-center justify-center text-indigo-500">
-              <FileText size={20} />
+        <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 shadow-xl group">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-indigo-600/10 rounded-[1.25rem] flex items-center justify-center text-indigo-500 border border-indigo-500/20">
+              <FileText className="icon-sm" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Apuração de DARF</h3>
-              <p className="text-xs text-slate-400">Cálculo exato com compensação de prejuízos</p>
+              <h3 className="text-display-tiny text-white uppercase italic">Apuração de DARF</h3>
+              <p className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Cálculo inteligente com compensação</p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Ações */}
-            <div className="p-4 bg-slate-800/20 border border-slate-800 rounded-xl">
-              <div className="flex items-center justify-between mb-2">
+            <div className="p-6 bg-white/5 border border-white/5 rounded-3xl group/row hover:border-white/20 transition-all">
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-sm font-bold text-white">Ações Comuns</p>
-                  <p className="text-xs text-slate-400">Alíquota: 15%</p>
+                  <p className="text-label text-white uppercase italic">Ações Comuns</p>
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Alíquota: 15%</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-white">{currentTaxData.profitAcoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className={`text-xs font-bold ${currentTaxData.profitAcoes >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <p className="text-display-tiny text-white uppercase italic">{currentTaxData.profitAcoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className={`text-tiny font-black uppercase tracking-widest ${currentTaxData.profitAcoes >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {currentTaxData.profitAcoes >= 0 ? 'Lucro Bruto' : 'Prejuízo'}
                   </p>
                 </div>
               </div>
               {currentTaxData.lossCarryforwardAcoes > 0 && (
-                <div className="flex justify-between text-xs text-slate-400 border-t border-slate-700/50 pt-2 mt-2">
-                  <span>Prejuízo Compensado:</span>
+                <div className="flex justify-between text-tiny font-bold text-slate-500 border-t border-white/5 pt-4 mt-4 uppercase tracking-widest">
+                  <span>Prejuízo Compensado</span>
                   <span className="text-emerald-400">- {currentTaxData.lossCarryforwardAcoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm font-bold text-white border-t border-slate-700/50 pt-2 mt-2">
-                <span>Imposto Devido:</span>
+              <div className="flex justify-between text-tiny font-black text-white border-t border-white/5 pt-4 mt-4 uppercase tracking-[0.2em]">
+                <span>Imposto Devido</span>
                 <span className={currentTaxData.taxDueAcoes > 0 ? 'text-red-400' : 'text-emerald-400'}>
                   {currentTaxData.taxDueAcoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
@@ -137,27 +135,27 @@ export default function Taxes() {
             </div>
 
             {/* FIIs */}
-            <div className="p-4 bg-slate-800/20 border border-slate-800 rounded-xl">
-              <div className="flex items-center justify-between mb-2">
+            <div className="p-6 bg-white/5 border border-white/5 rounded-3xl group/row hover:border-white/20 transition-all">
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-sm font-bold text-white">Fundos Imobiliários (FIIs)</p>
-                  <p className="text-xs text-slate-400">Alíquota: 20%</p>
+                  <p className="text-label text-white uppercase italic">Fundos Imobiliários</p>
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Alíquota: 20%</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-white">{currentTaxData.profitFIIs.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  <p className={`text-xs font-bold ${currentTaxData.profitFIIs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <p className="text-display-tiny text-white uppercase italic">{currentTaxData.profitFIIs.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className={`text-tiny font-black uppercase tracking-widest ${currentTaxData.profitFIIs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {currentTaxData.profitFIIs >= 0 ? 'Lucro Bruto' : 'Prejuízo'}
                   </p>
                 </div>
               </div>
               {currentTaxData.lossCarryforwardFIIs > 0 && (
-                <div className="flex justify-between text-xs text-slate-400 border-t border-slate-700/50 pt-2 mt-2">
-                  <span>Prejuízo Compensado:</span>
+                <div className="flex justify-between text-tiny font-bold text-slate-500 border-t border-white/5 pt-4 mt-4 uppercase tracking-widest">
+                  <span>Prejuízo Compensado</span>
                   <span className="text-emerald-400">- {currentTaxData.lossCarryforwardFIIs.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm font-bold text-white border-t border-slate-700/50 pt-2 mt-2">
-                <span>Imposto Devido:</span>
+              <div className="flex justify-between text-tiny font-black text-white border-t border-white/5 pt-4 mt-4 uppercase tracking-[0.2em]">
+                <span>Imposto Devido</span>
                 <span className={currentTaxData.taxDueFIIs > 0 ? 'text-red-400' : 'text-emerald-400'}>
                   {currentTaxData.taxDueFIIs.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
@@ -165,21 +163,21 @@ export default function Taxes() {
             </div>
             
             {/* Total DARF */}
-            <div className="mt-6 p-4 bg-blue-600/10 border border-blue-500/20 rounded-xl flex items-center justify-between">
+            <div className="mt-8 p-6 bg-blue-600/5 border border-blue-500/20 rounded-[1.5rem] flex items-center justify-between shadow-lg shadow-blue-500/5 group/darf hover:bg-blue-600/10 transition-colors">
               <div>
-                <p className="text-sm text-blue-400 font-bold mb-1">Total DARF a Pagar</p>
-                <p className="text-xs text-slate-400">Vencimento: Último dia útil do mês seguinte</p>
+                <p className="text-label text-blue-400 uppercase italic mb-1">Total DARF a Pagar</p>
+                <p className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Vencimento: Último dia útil</p>
               </div>
-              <div className="text-2xl font-black text-white">
+              <div className="text-display-sm text-white uppercase italic">
                 {(currentTaxData.taxDueAcoes + currentTaxData.taxDueFIIs).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </div>
             </div>
           </div>
 
           {!currentTaxData.isExemptAcoes && currentTaxData.taxDueAcoes > 0 && (
-            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
-              <AlertTriangle className="text-red-400 shrink-0 mt-0.5" size={16} />
-              <p className="text-xs text-red-300/80">Você ultrapassou o limite de R$ 20.000 em vendas de ações. O imposto acima já considera a alíquota de 15% sobre o lucro líquido.</p>
+            <div className="mt-6 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-4">
+              <AlertTriangle className="text-red-400 shrink-0 mt-0.5 icon-sm" />
+              <p className="text-tiny font-bold text-red-400/80 uppercase tracking-widest leading-relaxed">Você ultrapassou o limite de R$ 20.000 em vendas de ações. O imposto acima já considera a alíquota de 15% sobre o lucro líquido.</p>
             </div>
           )}
         </div>
