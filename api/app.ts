@@ -151,19 +151,15 @@ export async function createServer() {
 
     app.get("/api/market-stats", async (_req, res) => {
       const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD", "IFIX.SA"];
-      console.log(`[API] Fetching market stats for: ${tickers.join(', ')}`);
+      console.log(`[API] [${new Date().toISOString()}] GET /api/market-stats`);
       try {
         const results = await Promise.all(tickers.map(async (t) => {
           try {
             const data = await NexusEngine.fetchAtivo(t, 'ACAO');
-            console.log(`[API] Market stat for ${t}:`, JSON.stringify(data.results));
-            if (t === 'USDBRL=X' && (!data.results.precoAtual || data.results.precoAtual === 0)) {
-              console.warn(`[API] WARNING: USDBRL=X returned zero or empty:`, JSON.stringify(data));
-            }
             return data;
           } catch (e) {
             console.error(`[API] Error fetching market stat for ${t}:`, e);
-            return { ticker: t, results: {}, cacheStatus: 'ERROR' };
+            return { ticker: t, results: { precoAtual: 0, variacaoDay: '0.00%' }, cacheStatus: 'ERROR' };
           }
         }));
 
@@ -181,8 +177,8 @@ export async function createServer() {
           return {
             ticker: tickers[idx],
             label,
-            price: typeof preco === 'number' ? preco.toLocaleString('pt-BR') : (preco || '---'),
-            value: typeof preco === 'number' ? preco.toLocaleString('pt-BR') : (preco || '---'),
+            price: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR') : (preco || '---'),
+            value: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR') : (preco || '---'),
             change: variacao,
             color: variacao.startsWith('-') ? 'red' : 'emerald'
           };
@@ -190,7 +186,7 @@ export async function createServer() {
         res.json(stats);
       } catch (error) {
         console.error(`[API] Critical error in market-stats:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: 'Failed to fetch market stats', details: (error as Error).message });
       }
     });
 
@@ -229,6 +225,15 @@ export async function createServer() {
         message: 'Corporate events synced successfully',
         events_processed: mockEvents.length,
         data: mockEvents
+      });
+    });
+
+    // API 404 Handler
+    app.use('/api/*', (req, res) => {
+      res.status(404).json({ 
+        error: 'API Route Not Found', 
+        path: req.originalUrl,
+        method: req.method 
       });
     });
 

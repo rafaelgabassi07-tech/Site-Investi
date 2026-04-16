@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/ui/PageHeader';
-import { GitCompare, Search, X, TrendingUp, TrendingDown, Info, Loader2 } from 'lucide-react';
+import { GitCompare, Search, TrendingUp, TrendingDown, Info, Loader2 } from 'lucide-react';
 import { financeService, AssetDetails } from '../services/financeService';
 import { motion, AnimatePresence } from 'motion/react';
 import { AssetIcon } from '../components/ui/AssetIcon';

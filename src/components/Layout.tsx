@@ -173,7 +173,7 @@ export default function Layout() {
               {/* Search Bar (Desktop) */}
               <div className="hidden lg:block relative">
                 <form onSubmit={handleSearch} className="flex items-center gap-2 px-4 py-2 bg-[#0f172a] border border-slate-800 rounded-xl focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all duration-300">
-                  <Search size={16} className="text-slate-500" />
+                  <Search className="icon-sm text-slate-500" />
                   <input 
                     type="text" 
                     value={searchQuery}
@@ -221,20 +221,20 @@ export default function Layout() {
                 onClick={() => navigate('/search')}
                 className="lg:hidden p-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl border border-white/10 transition-all"
               >
-                <Search size={20} />
+                <Search className="icon-md" />
               </button>
 
               <Link 
                 to="/settings" 
                 className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all hidden sm:flex"
               >
-                <SettingsIcon size={20} />
+                <SettingsIcon className="icon-md" />
               </Link>
               <button
                 onClick={handleLogout}
                 className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
               >
-                <LogOut size={18} />
+                <LogOut className="icon-sm" />
                 Sair
               </button>
             </div>
@@ -349,26 +349,26 @@ export default function Layout() {
       <div className="fixed bottom-0 left-0 right-0 bg-[#020617]/90 backdrop-blur-2xl border-t border-white/5 z-[100] md:hidden h-[72px] pb-safe flex items-center">
         <div className="flex items-center justify-around w-full px-2">
           <Link to="/" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <LayoutDashboard size={20} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
+            <LayoutDashboard className={`icon-md ${location.pathname === '/' ? 'stroke-[2.5]' : 'stroke-2'}`} />
             <span className="text-[9px] font-black uppercase tracking-widest">Home</span>
           </Link>
           <Link to="/portfolio" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/portfolio' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <Briefcase size={20} strokeWidth={location.pathname === '/portfolio' ? 2.5 : 2} />
+            <Briefcase className={`icon-md ${location.pathname === '/portfolio' ? 'stroke-[2.5]' : 'stroke-2'}`} />
             <span className="text-[9px] font-black uppercase tracking-widest">Carteira</span>
           </Link>
           <Link to="/search" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/search' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <Search size={20} strokeWidth={location.pathname === '/search' ? 2.5 : 2} />
+            <Search className={`icon-md ${location.pathname === '/search' ? 'stroke-[2.5]' : 'stroke-2'}`} />
             <span className="text-[9px] font-black uppercase tracking-widest">Busca</span>
           </Link>
           <Link to="/ranking" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/ranking' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
-            <TrendingUp size={20} strokeWidth={location.pathname === '/ranking' ? 2.5 : 2} />
+            <TrendingUp className={`icon-md ${location.pathname === '/ranking' ? 'stroke-[2.5]' : 'stroke-2'}`} />
             <span className="text-[9px] font-black uppercase tracking-widest">Ranking</span>
           </Link>
           <button 
             onClick={() => setIsMenuOpen(true)}
             className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${isMenuOpen ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}
           >
-            <Menu size={20} strokeWidth={isMenuOpen ? 2.5 : 2} />
+            <Menu className={`icon-md ${isMenuOpen ? 'stroke-[2.5]' : 'stroke-2'}`} />
             <span className="text-[9px] font-black uppercase tracking-widest">Menu</span>
           </button>
         </div>

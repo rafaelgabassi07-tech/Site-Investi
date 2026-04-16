@@ -414,6 +414,20 @@ export function universalLexer<T = any>(
   const results: any = { ...existingResults };
   const htmlLower = html.toLowerCase();
 
+  // Extração especial para dividendos (tabelas)
+  if (html.includes('table-dividends') || html.includes('dividendos')) {
+    const divRegex = /<tr>\s*<td>([\d/]+)<\/td>\s*<td>([\d/]+)<\/td>\s*<td>([R$\s\d,.]+)<\/td>\s*<td>([^<]+)<\/td>\s*<\/tr>/gi;
+    const matches = [...html.matchAll(divRegex)];
+    if (matches.length > 0) {
+      results.dividendos = matches.slice(0, 10).map(m => ({
+        dataCom: m[1].trim(),
+        pagamento: m[2].trim(),
+        valor: m[3].trim(),
+        tipo: m[4].trim()
+      }));
+    }
+  }
+
   for (const rule of template.rules) {
     if (results[rule.name] !== undefined && !rule.multiple) continue;
 
@@ -479,6 +493,20 @@ export const B3Schema = z.object({
   about:         z.string().optional(),
   sector:        z.string().optional(),
   subSector:     z.string().optional(),
+  liquidezMediaDiaria: z.union([z.number(), z.string()]).optional(),
+  segmentoListagem: z.string().optional(),
+  tagAlong: z.string().optional(),
+  freeFloat: z.string().optional(),
+  payout: z.string().optional(),
+  receitaLiquida: z.string().optional(),
+  ebitda: z.string().optional(),
+  lucroLiquido: z.string().optional(),
+  dividendos: z.array(z.object({
+    dataCom: z.string(),
+    pagamento: z.string(),
+    valor: z.string(),
+    tipo: z.string()
+  })).optional(),
 });
 
 export const FIISchema = z.object({
@@ -489,11 +517,22 @@ export const FIISchema = z.object({
   liquidezDiaria:    z.union([z.number(), z.string()]).optional(),
   ultimoRendimento:  z.union([z.number(), z.string()]).optional(),
   vacanciaFisica:    z.string().optional(),
+  vacanciaFinanceira: z.string().optional(),
+  quantidadeAtivos:  z.union([z.number(), z.string()]).optional(),
+  numeroCotistas:    z.union([z.number(), z.string()]).optional(),
   patrimonioLiquido: z.union([z.number(), z.string()]).optional(),
   variacaoDay:       z.string().optional(),
   about:             z.string().optional(),
   sector:            z.string().optional(),
   subSector:         z.string().optional(),
+  tipoGestao:        z.string().optional(),
+  taxaAdmin:         z.string().optional(),
+  dividendos: z.array(z.object({
+    dataCom: z.string(),
+    pagamento: z.string(),
+    valor: z.string(),
+    tipo: z.string()
+  })).optional(),
 });
 
 export const ETFSchema = z.object({
@@ -541,7 +580,21 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
     { name: 'pAtivo',        anchors: ['P/Ativo'],                                      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
     { name: 'pCapGiro',      anchors: ['P/Cap. Giro', 'P/Capital de Giro'],             extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
     { name: 'dividaLiquidaEbitda', anchors: ['Dív. Líq. / EBITDA', 'Divida Liquida / EBITDA'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'dividaLiquidaPatrimonio', anchors: ['Dív. Líq. / Patrimônio', 'Dív. Líq. / Patrimônio Líquido'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
+    { name: 'margemEbit',    anchors: ['Margem EBIT'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'giroAtivos',    anchors: ['Giro Ativos'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'liquidezCorrente', anchors: ['Liquidez Corrente'],                        extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'cagrReceita5Anos', anchors: ['CAGR Receita 5 Anos', 'CAGR Receita (5a)'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'cagrLucro5Anos', anchors: ['CAGR Lucro 5 Anos', 'CAGR Lucro (5a)'],     extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
+    { name: 'variacaoDay',   anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day', 'Variação (12M)'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'liquidezMediaDiaria', anchors: ['Liquidez Média Diária', 'Liquidez Diária'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
+    { name: 'segmentoListagem', anchors: ['Segmento de Listagem'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
+    { name: 'tagAlong', anchors: ['Tag Along'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'freeFloat', anchors: ['Free Float'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'payout', anchors: ['Payout'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'receitaLiquida', anchors: ['Receita Líquida', 'Receita Liquida'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
+    { name: 'ebitda',        anchors: ['EBITDA'],                                       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
+    { name: 'lucroLiquido',  anchors: ['Lucro Líquido', 'Lucro Liquido'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
     { name: 'sector',        anchors: ['Setor</span>', 'SETOR</span>'],                           extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'subSector',     anchors: ['Subsetor</span>', 'Segmento</span>', 'SEGMENTO</span>'],       extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',         anchors: ['Sobre a Empresa', 'Descrição'],                 extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
@@ -559,8 +612,13 @@ export const fiiTemplate: ExtractorTemplate<FIIData> = {
     { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
     { name: 'ultimoRendimento',  anchors: ['Último Rendimento', 'Rendimento', 'ÚLTIMO RENDIMENTO'],      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
     { name: 'vacanciaFisica',    anchors: ['Vacância Física', 'Vacância', 'VACÂNCIA'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'vacanciaFinanceira', anchors: ['Vacância Financeira'],                    extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'quantidadeAtivos',  anchors: ['Quantidade de Ativos', 'Qtd. Ativos'],      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,          formatter: COMMON_FORMATTERS.num },
+    { name: 'numeroCotistas',    anchors: ['Nº de Cotistas', 'Número de Cotistas'],     extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,          formatter: COMMON_FORMATTERS.num },
     { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|Milhões|Bilhões)?)\s*</i, formatter: COMMON_FORMATTERS.num },
     { name: 'variacaoDay',       anchors: ['Variação', 'variacao', 'Var. Dia', 'var-day', 'Variação (12M)'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
+    { name: 'tipoGestao',        anchors: ['Tipo de Gestão'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
+    { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa de Admin.'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'sector',            anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Setor</span>', 'SETOR</span>'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',             anchors: ['Sobre o Fundo', 'Descrição'],           extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
@@ -795,7 +853,7 @@ export class NexusEngine {
         clearTimeout(timer);
 
         if (res.status === 404 || res.status === 451) {
-          throw new Error(`Critical HTTP ${res.status}`);
+          throw new Error(`HTTP ${res.status}`);
         }
         if (res.status === 410) {
           console.warn(`Resource gone (410): ${url}`);
@@ -1029,6 +1087,7 @@ export class NexusEngine {
         tickers.map((ticker: string) => async () => {
           try {
             const data = await this.fetchAtivo(ticker, type);
+            if (!data || !data.results) return null;
             return {
               ticker: ticker,
               name: data.results.name || ticker,
@@ -1036,7 +1095,8 @@ export class NexusEngine {
               subValue: `R$ ${data.results.precoAtual || '0,00'}`,
               raw: data.results
             };
-          } catch {
+          } catch (err) {
+            console.warn(`[Nexus] Failed to fetch ticker ${ticker} for ranking:`, err);
             return null;
           }
         })
@@ -1411,11 +1471,28 @@ export class NexusEngine {
   static async fetchHistoricoGrafico(ticker: string, range: string = '1y', interval: string = '1d'): Promise<any[]> {
     const cleanTicker = canonicalizeTicker(ticker);
     const symbols = [`${cleanTicker}.SA`, cleanTicker];
+    
+    // Calculate period1 based on range
+    const now = new Date();
+    let period1: Date;
+    switch (range) {
+      case '1d': period1 = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
+      case '5d': period1 = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000); break;
+      case '1mo': 
+      case '1m': period1 = new Date(new Date().setMonth(now.getMonth() - 1)); break;
+      case '6mo':
+      case '6m': period1 = new Date(new Date().setMonth(now.getMonth() - 6)); break;
+      case '1y': period1 = new Date(new Date().setFullYear(now.getFullYear() - 1)); break;
+      case '5y': period1 = new Date(new Date().setFullYear(now.getFullYear() - 5)); break;
+      case 'max': period1 = new Date(0); break;
+      default: period1 = new Date(new Date().setFullYear(now.getFullYear() - 1));
+    }
       
     for (const symbol of symbols) {
       try {
+        console.log(`[YAHOO] Fetching chart for ${symbol}, period1: ${period1.toISOString()}, interval: ${interval}`);
         const result = await yahooFinance.chart(symbol, {
-          period1: range, // yahoo-finance2 handles '1y', '1mo', etc.
+          period1: period1,
           interval: interval as any
         });
         

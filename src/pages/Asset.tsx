@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper, Building2, Wallet, BarChart3, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper, Building2, Wallet, BarChart3, ShieldCheck, Zap, PieChart, DollarSign } from 'lucide-react';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -76,13 +76,6 @@ export default function Asset() {
           <h2 className="text-2xl font-black text-white uppercase tracking-tighter animate-pulse">Analisando {ticker}</h2>
           <p className="text-slate-400 font-medium max-w-xs mx-auto text-sm">Processando dados em tempo real...</p>
         </div>
-        
-        {/* Skeleton Preview */}
-        <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 opacity-20">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="h-32 bg-slate-800 rounded-2xl animate-pulse" />
-          ))}
-        </div>
       </div>
     );
   }
@@ -95,12 +88,7 @@ export default function Asset() {
         </div>
         <h2 className="text-xl font-bold text-white">Ops! Algo deu errado</h2>
         <p className="text-slate-400 max-w-xs">{error || 'Não foi possível encontrar este ativo.'}</p>
-        <button 
-          onClick={() => navigate(-1)}
-          className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-full transition-colors"
-        >
-          Voltar
-        </button>
+        <button onClick={() => navigate(-1)} className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-full transition-colors">Voltar</button>
       </div>
     );
   }
@@ -111,19 +99,92 @@ export default function Asset() {
     : true;
 
   const indicators = [
-    { label: 'Dividend Yield', value: results.dividendYield || 'N/A', icon: Wallet, color: 'emerald', desc: 'Rendimento de Dividendos' },
-    { label: 'P/L', value: results.pl || 'N/A', icon: BarChart3, color: 'blue', desc: 'Preço sobre Lucro' },
-    { label: 'P/VP', value: results.pvp || 'N/A', icon: TrendingUp, color: 'indigo', desc: 'Preço sobre Valor Patr.' },
+    { label: 'Dividend Yield', value: results.dividendYield || results.dy || 'N/A', icon: Wallet, color: 'emerald', desc: 'Rendimento de Dividendos' },
+    { label: 'P/L', value: results.pl || results.p_l || 'N/A', icon: BarChart3, color: 'blue', desc: 'Preço sobre Lucro' },
+    { label: 'P/VP', value: results.pvp || results.p_vp || 'N/A', icon: TrendingUp, color: 'indigo', desc: 'Preço sobre Valor Patr.' },
     { label: 'ROE', value: results.roe || 'N/A', icon: Activity, color: 'purple', desc: 'Retorno sobre Patrimônio' },
     { label: 'ROA', value: results.roa || 'N/A', icon: Activity, color: 'cyan', desc: 'Retorno sobre Ativos' },
-    { label: 'VPA', value: results.vpa || 'N/A', icon: Building2, color: 'cyan', desc: 'Valor Patr. por Ação' },
-    { label: 'LPA', value: results.lpa || 'N/A', icon: TrendingUp, color: 'emerald', desc: 'Lucro por Ação' },
-    { label: 'Margem Líq.', value: results.margemLiquida || 'N/A', icon: ShieldCheck, color: 'blue', desc: 'Eficiência de Lucro' },
-    { label: 'Margem Bruta', value: results.margemBruta || 'N/A', icon: ShieldCheck, color: 'indigo', desc: 'Lucro Bruto' },
-    { label: 'Dívida/EBITDA', value: results.dividaLiquidaEbitda || 'N/A', icon: Zap, color: 'red', desc: 'Alavancagem' },
-    { label: 'PEG Ratio', value: results.pegRatio || 'N/A', icon: BarChart3, color: 'purple', desc: 'Preço/Lucro ao Crescimento' },
-    { label: 'Forward P/E', value: results.forwardPE || 'N/A', icon: TrendingUp, color: 'blue', desc: 'P/L Projetado' },
+    { label: 'VPA', value: results.vpa || results.vpa_val || 'N/A', icon: Building2, color: 'cyan', desc: 'Valor Patr. por Ação' },
+    { label: 'LPA', value: results.lpa || results.lpa_val || 'N/A', icon: TrendingUp, color: 'emerald', desc: 'Lucro por Ação' },
+    { label: 'Margem Líq.', value: results.margemLiquida || results.margem_liquida || 'N/A', icon: ShieldCheck, color: 'blue', desc: 'Eficiência de Lucro' },
+    { label: 'Margem EBIT', value: results.margemEbit || results.margem_ebit || 'N/A', icon: ShieldCheck, color: 'indigo', desc: 'Eficiência Operacional' },
+    { label: 'Dívida/EBITDA', value: results.dividaLiquidaEbitda || results.divida_liquida_ebitda || 'N/A', icon: Zap, color: 'red', desc: 'Alavancagem' },
+    { label: 'CAGR Receita', value: results.cagrReceita5Anos || 'N/A', icon: TrendingUp, color: 'purple', desc: 'Crescimento Receita (5a)' },
+    { label: 'CAGR Lucro', value: results.cagrLucro5Anos || 'N/A', icon: TrendingUp, color: 'blue', desc: 'Crescimento Lucro (5a)' },
   ];
+
+  if (results.liquidezMediaDiaria || results.liquidezDiaria) {
+    indicators.push({ label: 'Liq. Diária', value: results.liquidezMediaDiaria || results.liquidezDiaria, icon: Activity, color: 'cyan', desc: 'Liquidez Média Diária' });
+  }
+  if (results.tagAlong) {
+    indicators.push({ label: 'Tag Along', value: results.tagAlong, icon: ShieldCheck, color: 'emerald', desc: 'Proteção ao Minoritário' });
+  }
+  if (results.freeFloat) {
+    indicators.push({ label: 'Free Float', value: results.freeFloat, icon: PieChart, color: 'blue', desc: 'Ações em Circulação' });
+  }
+  if (results.payout) {
+    indicators.push({ label: 'Payout', value: results.payout, icon: Wallet, color: 'purple', desc: 'Lucro Distribuído' });
+  }
+  if (results.vacanciaFisica) {
+    indicators.push({ label: 'Vacância Fís.', value: results.vacanciaFisica, icon: Building2, color: 'red', desc: 'Imóveis Vagos' });
+  }
+  if (results.vacanciaFinanceira) {
+    indicators.push({ label: 'Vacância Fin.', value: results.vacanciaFinanceira, icon: DollarSign, color: 'red', desc: 'Receita Não Realizada' });
+  }
+  if (results.quantidadeAtivos) {
+    indicators.push({ label: 'Qtd. Ativos', value: results.quantidadeAtivos, icon: Building2, color: 'indigo', desc: 'Número de Imóveis' });
+  }
+  if (results.taxaAdmin) {
+    indicators.push({ label: 'Taxa Admin.', value: results.taxaAdmin, icon: Zap, color: 'red', desc: 'Taxa de Administração' });
+  }
+
+  // Filter out N/A indicators to keep the UI clean
+  const validIndicators = indicators.filter(ind => ind.value !== 'N/A' && ind.value != null);
+
+  const checklistItems = [
+    { label: 'P/L abaixo de 15', check: () => {
+      const val = parseFinanceValue(results.pl || results.p_l);
+      return val > 0 && val < 15;
+    }},
+    { label: 'P/VP abaixo de 2.0', check: () => {
+      const val = parseFinanceValue(results.pvp || results.p_vp);
+      return val > 0 && val < 2;
+    }},
+    { label: 'Dividend Yield > 6%', check: () => {
+      const val = parseFinanceValue(results.dividendYield || results.dy);
+      return val >= 6;
+    }},
+    { label: 'ROE acima de 10%', check: () => {
+      const val = parseFinanceValue(results.roe);
+      return val >= 10;
+    }},
+    { label: 'Margem Líquida > 10%', check: () => {
+      const val = parseFinanceValue(results.margemLiquida || results.margem_liquida);
+      return val >= 10;
+    }},
+    { label: 'Dívida Controlada', check: () => {
+      const val = parseFinanceValue(results.dividaLiquidaEbitda || results.divida_liquida_ebitda);
+      return val > 0 && val < 3;
+    }},
+    { label: 'Crescimento (CAGR) > 0', check: () => {
+      const val = parseFinanceValue(results.cagrReceita5Anos);
+      return val > 0;
+    }},
+    { label: 'Boa Liquidez (> 1M)', check: () => {
+      const val = parseFinanceValue(results.liquidezMediaDiaria || results.liquidezDiaria);
+      return val >= 1000000;
+    }},
+    { label: 'Multi-Ativo (FII)', check: () => {
+      if (!results.quantidadeAtivos) return null;
+      const val = parseFinanceValue(results.quantidadeAtivos);
+      return val > 1;
+    }},
+    { label: 'Vacância Baixa (< 10%)', check: () => {
+      if (!results.vacanciaFisica) return null;
+      const val = parseFinanceValue(results.vacanciaFisica);
+      return val < 10;
+    }},
+  ].filter(item => item.check() !== null);
 
   return (
     <div className="space-y-3 pb-12 max-w-5xl mx-auto">
@@ -205,28 +266,14 @@ export default function Asset() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
-                    <XAxis 
-                      dataKey="date" 
-                      hide 
-                    />
-                    <YAxis 
-                      hide 
-                      domain={['auto', 'auto']}
-                    />
+                    <XAxis dataKey="date" hide />
+                    <YAxis hide domain={['auto', 'auto']} />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', color: '#fff', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', color: '#fff' }}
                       itemStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
                       labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="close" 
-                      stroke="#3b82f6" 
-                      fillOpacity={1} 
-                      fill="url(#colorPrice)" 
-                      strokeWidth={3}
-                      animationDuration={1500}
-                    />
+                    <Area type="monotone" dataKey="close" stroke="#3b82f6" fillOpacity={1} fill="url(#colorPrice)" strokeWidth={3} animationDuration={1500} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
@@ -239,7 +286,7 @@ export default function Asset() {
 
           {/* Indicators Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-slate-800/50 pb-8">
-            {indicators.map((ind, idx) => (
+            {validIndicators.map((ind, idx) => (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -266,28 +313,16 @@ export default function Asset() {
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                 <Info size={20} />
               </div>
-              <h2 className="text-xl font-bold text-white">Sobre a {results.name || assetData.ticker}</h2>
+              <h2 className="text-xl font-bold text-white">Sobre a {results.name || ticker}</h2>
             </div>
             <p className="text-slate-400 leading-relaxed font-medium">
-              {results.about || `A ${results.name || assetData.ticker} é uma das principais empresas do seu setor, com forte presença no mercado brasileiro. Suas operações abrangem diversas áreas estratégicas, focando em eficiência e retorno para o acionista.`}
+              {results.about || `A ${results.name || ticker} é uma das principais empresas do seu setor, com forte presença no mercado brasileiro.`}
             </p>
-            
-            <div className="grid grid-cols-2 gap-8 mt-8 pt-8 border-t border-slate-800">
-              <div>
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Setor</div>
-                <div className="text-sm font-bold text-white">{results.sector || 'N/A'}</div>
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Subsetor</div>
-                <div className="text-sm font-bold text-white">{results.subSector || 'N/A'}</div>
-              </div>
-            </div>
           </div>
         </div>
 
         {/* Right Column: Checklist & News */}
         <div className="space-y-8">
-          {/* Checklist Card */}
           <div className="border-b border-slate-800/50 pb-8">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
@@ -295,52 +330,16 @@ export default function Asset() {
               </div>
               <h2 className="text-lg font-bold text-white tracking-tight">Checklist Nexus</h2>
             </div>
-            
             <div className="space-y-4">
-              {[
-                { label: 'P/L abaixo de 15', check: () => {
-                  const val = parseFinanceValue(results.pl);
-                  return val > 0 && val < 15;
-                }},
-                { label: 'P/VP abaixo de 2.0', check: () => {
-                  const val = parseFinanceValue(results.pvp);
-                  return val > 0 && val < 2;
-                }},
-                { label: 'Dividend Yield > 6%', check: () => {
-                  const val = parseFinanceValue(results.dividendYield);
-                  return val >= 6;
-                }},
-                { label: 'ROE acima de 10%', check: () => {
-                  const val = parseFinanceValue(results.roe);
-                  return val >= 10;
-                }},
-                { label: 'Margem Líquida > 10%', check: () => {
-                  const val = parseFinanceValue(results.margemLiquida);
-                  return val >= 10;
-                }},
-                { label: 'Dívida Controlada', check: () => {
-                  const val = parseFinanceValue(results.dividaLiquidaEbitda);
-                  return val > 0 && val < 3;
-                }},
-              ].map((item, idx) => {
+              {checklistItems.map((item, idx) => {
                 const passed = item.check();
                 return (
                   <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-800/50">
                     <span className="text-xs text-slate-300 font-bold uppercase tracking-wide">{item.label}</span>
-                    {passed ? (
-                      <CheckCircle2 size={18} className="text-emerald-500" />
-                    ) : (
-                      <XCircle size={18} className="text-slate-600" />
-                    )}
+                    {passed ? <CheckCircle2 size={18} className="text-emerald-500" /> : <XCircle size={18} className="text-slate-600" />}
                   </div>
                 );
               })}
-            </div>
-            
-            <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
-              <p className="text-xs text-slate-500 font-bold leading-relaxed text-center uppercase tracking-wider">
-                Análise baseada em fundamentos clássicos de Buy & Hold.
-              </p>
             </div>
           </div>
 
@@ -366,114 +365,8 @@ export default function Asset() {
                   </div>
                 ))}
               </div>
-              <Link to="/portfolio/proventos" className="mt-6 block text-center py-3 text-xs font-bold text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest">Ver Agenda Completa</Link>
             </div>
           )}
-
-          {/* News Feed */}
-          {assetData.news && assetData.news.length > 0 && (
-            <div className="border-b border-slate-800/50 pb-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
-                  <Newspaper size={20} />
-                </div>
-                <h2 className="text-lg font-bold text-white">Notícias</h2>
-              </div>
-              <div className="space-y-4">
-                {assetData.news.slice(0, 3).map((item: any, idx: number) => (
-                  <a 
-                    key={idx} 
-                    href={item.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="block group"
-                  >
-                    <h3 className="text-xs font-bold text-slate-300 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">{item.title}</h3>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-tiny font-black text-blue-500 uppercase tracking-widest">{item.source || 'Nexus'}</span>
-                      <span className="text-tiny font-bold text-slate-600">{new Date(item.pubDate).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Comparison Section */}
-      <div className="px-1 md:px-0">
-        <section className="border-b border-slate-800/50 pb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-inner">
-                <Users size={24} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">Comparação com o Setor</h2>
-                <p className="text-sm text-slate-500 font-medium mt-1">Como este ativo se comporta em relação aos seus pares.</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => navigate('/compare')}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"
-            >
-              Comparador Completo <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <div className="overflow-x-auto no-scrollbar -mx-8 px-8">
-            <table className="w-full text-left border-separate border-spacing-y-2">
-              <thead>
-                <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="pb-4 pl-4">Ativo</th>
-                  <th className="pb-4 text-right">P/L</th>
-                  <th className="pb-4 text-right">P/VP</th>
-                  <th className="pb-4 text-right">DY (%)</th>
-                  <th className="pb-4 text-right pr-4">ROE (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { ticker: assetData.ticker, pl: results.pl, pvp: results.pvp, dy: results.dividendYield?.toString().replace('%', ''), roe: results.roe?.toString().replace('%', ''), current: true },
-                  ...peers
-                ].map((peer, i) => (
-                  <tr 
-                    key={i} 
-                    onClick={() => !peer.current && navigate(`/asset/${peer.ticker}`)}
-                    className={`group cursor-pointer transition-all ${peer.current ? 'bg-blue-600/10' : 'bg-slate-900/30 hover:bg-slate-800/50'}`}
-                  >
-                    <td className="py-4 pl-4 rounded-l-2xl border-y border-l border-transparent group-hover:border-slate-700">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center p-1 border border-slate-800 shadow-sm">
-                          <AssetIcon assetType="ACAO" ticker={peer.ticker} className="w-full h-full" />
-                        </div>
-                        <span className={`font-bold ${peer.current ? 'text-blue-400' : 'text-white'}`}>{peer.ticker}</span>
-                        {peer.current && <span className="text-tiny font-black bg-blue-500 text-white px-1.5 py-0.5 rounded uppercase tracking-widest">Atual</span>}
-                      </div>
-                    </td>
-                    <td className="py-4 text-right text-sm text-slate-300 font-mono font-bold border-y border-transparent group-hover:border-slate-700">{peer.pl}</td>
-                    <td className="py-4 text-right text-sm text-slate-300 font-mono font-bold border-y border-transparent group-hover:border-slate-700">{peer.pvp}</td>
-                    <td className="py-4 text-right text-sm text-emerald-400 font-mono font-bold border-y border-transparent group-hover:border-slate-700">{peer.dy}%</td>
-                    <td className="py-4 text-right text-sm text-slate-300 font-mono font-bold pr-4 rounded-r-2xl border-y border-r border-transparent group-hover:border-slate-700">{peer.roe}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-
-      <div className="px-1 md:px-0">
-        <div className="py-8 flex items-start gap-4">
-          <AlertCircle size={20} className="text-slate-600 shrink-0 mt-1" />
-          <div>
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Aviso Legal</h4>
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              As informações apresentadas são obtidas de fontes públicas e podem conter atrasos ou imprecisões. Este conteúdo tem caráter meramente informativo e não constitui recomendação de compra, venda ou manutenção de ativos. O investimento em renda variável envolve riscos e rentabilidade passada não é garantia de rentabilidade futura.
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -308,7 +308,7 @@ export default function Home() {
                   <div className="absolute top-0 right-0 w-20 h-20 bg-blue-600/5 blur-2xl -z-10 group-hover:bg-blue-600/10 transition-all" />
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors">
-                      <stat.icon size={16} />
+                      <stat.icon className="icon-sm" />
                     </div>
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
                   </div>
@@ -334,116 +334,146 @@ export default function Home() {
       </section>
 
       {/* Market Sentiment & Quick Stats */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 bg-[#0f172a] border border-slate-800 rounded-2xl p-4 md:p-6 relative overflow-hidden group shadow-lg">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10 group-hover:bg-blue-600/10 transition-all duration-1000" />
           
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                <Gauge size={20} className="text-blue-500" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-500/20 shadow-lg shadow-blue-500/5">
+                <Gauge className="icon-lg text-blue-500" />
               </div>
-              <h2 className="text-lg font-bold text-white">Sentimento do Mercado</h2>
-            </div>
-            <button 
-              onClick={() => setShowSentimentInfo(true)}
-              className="text-slate-500 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-lg"
-            >
-              <HelpCircle size={18} />
-            </button>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-10">
-            <div className="relative w-64 h-32 flex items-center justify-center">
-              {/* Background Glow */}
-              <div className={`absolute inset-0 blur-[60px] opacity-20 transition-all duration-1000 ${
-                sentiment.color === 'emerald' ? 'bg-emerald-500' : sentiment.color === 'red' ? 'bg-red-500' : 'bg-slate-500'
-              }`} />
-              
-              <svg className="w-full h-full" viewBox="0 0 100 50">
-                {/* Background Path */}
-                <path 
-                  d="M 10 50 A 40 40 0 0 1 90 50" 
-                  fill="none" 
-                  stroke="#1e293b" 
-                  strokeWidth="8" 
-                  strokeLinecap="round"
-                />
-                
-                {/* Segments Indicators */}
-                <path d="M 10 50 A 40 40 0 0 1 26 15.4" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
-                <path d="M 26 15.4 A 40 40 0 0 1 50 10" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
-                <path d="M 50 10 A 40 40 0 0 1 74 15.4" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
-                <path d="M 74 15.4 A 40 40 0 0 1 90 50" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
-                
-                {/* Active Path with Gradient */}
-                <defs>
-                  <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#ef4444" />
-                    <stop offset="50%" stopColor="#f59e0b" />
-                    <stop offset="100%" stopColor="#10b981" />
-                  </linearGradient>
-                </defs>
-                
-                <path 
-                  d="M 10 50 A 40 40 0 0 1 90 50" 
-                  fill="none" 
-                  stroke="url(#gaugeGradient)" 
-                  strokeWidth="8" 
-                  strokeLinecap="round"
-                  strokeDasharray="125.6"
-                  strokeDashoffset={125.6 - (sentiment.score / 100) * 125.6}
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              
-              {/* Needle */}
-              <motion.div 
-                initial={{ rotate: -90 }}
-                animate={{ rotate: (sentiment.score / 100) * 180 - 90 }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-24 origin-bottom z-10"
-              >
-                <div className="w-full h-full bg-gradient-to-t from-white to-transparent rounded-full shadow-[0_0_15px_rgba(255,255,255,0.8)]" />
-              </motion.div>
-              
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-900 border-4 border-white rounded-full z-20 shadow-xl" />
-              
-              {/* Labels */}
-              <div className="absolute -bottom-2 left-4 text-[9px] font-black text-red-500 uppercase tracking-widest">Extremo Medo</div>
-              <div className="absolute -bottom-2 right-4 text-[9px] font-black text-emerald-500 uppercase tracking-widest">Extrema Ganância</div>
+              <div>
+                <h2 className="text-xl font-display font-bold text-white tracking-tighter uppercase">Nexus Sentiment</h2>
+                <p className="text-label">Análise de Medo & Ganância</p>
+              </div>
             </div>
             
-            <div className="flex-1 space-y-4 text-center md:text-left">
-              <div className="space-y-1">
-                <div className={`text-[10px] font-black uppercase tracking-[0.2em] ${
-                  sentiment.color === 'emerald' ? 'text-emerald-500' : sentiment.color === 'red' ? 'text-red-500' : 'text-slate-500'
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atualizado agora</span>
+              </div>
+              <button 
+                onClick={() => setShowSentimentInfo(true)}
+                className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/10"
+              >
+                <HelpCircle className="icon-md" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="relative flex flex-col items-center">
+              <div className="relative w-full max-w-[280px] aspect-[2/1]">
+                <svg className="w-full h-full" viewBox="0 0 100 50">
+                  <path 
+                    d="M 10 50 A 40 40 0 0 1 90 50" 
+                    fill="none" 
+                    stroke="rgba(255,255,255,0.05)" 
+                    strokeWidth="10" 
+                    strokeLinecap="round"
+                  />
+                  
+                  <defs>
+                    <linearGradient id="nexusSentimentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#ef4444" />
+                      <stop offset="40%" stopColor="#f59e0b" />
+                      <stop offset="60%" stopColor="#f59e0b" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <path 
+                    d="M 10 50 A 40 40 0 0 1 90 50" 
+                    fill="none" 
+                    stroke="url(#nexusSentimentGradient)" 
+                    strokeWidth="10" 
+                    strokeLinecap="round"
+                    strokeDasharray="125.6"
+                    strokeDashoffset={125.6 - (sentiment.score / 100) * 125.6}
+                    className="transition-all duration-[2000ms] ease-out"
+                  />
+                </svg>
+                
+                <motion.div 
+                  initial={{ rotate: -90 }}
+                  animate={{ rotate: (sentiment.score / 100) * 180 - 90 }}
+                  transition={{ duration: 2, ease: "easeOut" }}
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-32 origin-bottom z-10"
+                >
+                  <div className="w-full h-full bg-gradient-to-t from-white to-transparent rounded-full shadow-[0_0_20px_rgba(255,255,255,0.5)]" />
+                </motion.div>
+                
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-slate-900 border-4 border-white/20 rounded-full z-20 shadow-2xl" />
+              </div>
+              
+              <div className="mt-6 flex justify-between w-full max-w-[280px] px-2">
+                <span className="text-[9px] font-black text-red-500/60 uppercase tracking-widest">Medo</span>
+                <span className="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest">Ganância</span>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                  sentiment.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' : sentiment.color === 'red' ? 'bg-red-500/10 text-red-400' : 'bg-slate-500/10 text-slate-400'
                 }`}>
-                  Status do Mercado
-                </div>
-                <h3 className="text-4xl font-black text-white tracking-tighter italic flex items-baseline gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                    sentiment.color === 'emerald' ? 'bg-emerald-500' : sentiment.color === 'red' ? 'bg-red-500' : 'bg-slate-500'
+                  }`} />
                   {sentiment.label}
-                  <span className="text-slate-600 text-xl font-medium not-italic">({sentiment.score})</span>
+                </div>
+                <h3 className="text-6xl font-display font-bold text-white tracking-tighter leading-none">
+                  {sentiment.score}
                 </h3>
               </div>
-              <p className="text-sm text-slate-400 leading-relaxed max-w-md font-medium">
-                {sentiment.desc}
+              
+              <p className="text-slate-400 text-sm leading-relaxed font-medium italic">
+                "{sentiment.desc}"
               </p>
-              <div className="flex items-center gap-4 pt-2">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Ontem</span>
-                  <span className="text-sm font-bold text-white">42 (Medo)</span>
+              
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Ontem</p>
+                  <p className="text-sm font-bold text-slate-300">42 <span className="text-[10px] font-medium opacity-60">Medo</span></p>
                 </div>
-                <div className="w-px h-8 bg-slate-800" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Semana Passada</span>
-                  <span className="text-sm font-bold text-white">58 (Neutro)</span>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Semana Passada</p>
+                  <p className="text-sm font-bold text-slate-300">58 <span className="text-[10px] font-medium opacity-60">Neutro</span></p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="flex-1 bg-blue-600/10 border border-blue-500/20 rounded-[2.5rem] p-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+              <Zap className="icon-3xl text-blue-500" />
+            </div>
+            <h4 className="text-xs font-black text-blue-400 uppercase tracking-[0.2em] mb-4">Nexus Insight</h4>
+            <p className="text-slate-200 text-base font-bold leading-tight tracking-tight mb-4">
+              "A diversificação inteligente é a única ferramenta gratuita no mercado financeiro."
+            </p>
+            <p className="text-xs text-slate-400 font-medium leading-relaxed">
+              O sentimento atual sugere cautela em ativos de alta volatilidade. Considere rebalancear sua exposição.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between group cursor-pointer hover:border-white/10 transition-all">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors">
+                <Newspaper className="icon-lg" />
+              </div>
+              <div>
+                <p className="text-label">Market News</p>
+                <p className="text-sm font-bold text-white">Últimas do Mercado</p>
+              </div>
+            </div>
+            <ArrowRight className="icon-md text-slate-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
+          </div>
+        </div>
       </section>
       
       {/* Rankings Section - Enhanced with Tabs and Real Data */}
@@ -451,7 +481,7 @@ export default function Home() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-              <Award size={20} className="text-blue-500" />
+              <Award className="icon-md text-blue-500" />
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">Rankings de Ativos</h2>
           </div>
@@ -579,62 +609,68 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-[#0f172a] border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
+              className="relative w-full max-w-xl bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-8 md:p-12 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
             >
               <button 
                 onClick={() => setShowSentimentInfo(false)}
-                className="absolute top-4 right-4 p-2 text-slate-500 hover:text-white transition-colors"
+                className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-all border border-white/10"
               >
                 <X size={20} />
               </button>
 
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                  <Info size={24} className="text-blue-500" />
+              <div className="flex items-center gap-6 mb-10">
+                <div className="w-16 h-16 rounded-[1.5rem] bg-blue-600/10 flex items-center justify-center border border-blue-500/20 shadow-lg shadow-blue-500/5">
+                  <Info size={32} className="text-blue-500" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Como calculamos o Sentimento?</h3>
-                  <p className="text-sm text-slate-500">Fear & Greed Index by Nexus</p>
+                  <h3 className="text-2xl font-display font-bold text-white tracking-tighter uppercase">Nexus Sentiment</h3>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Metodologia de Cálculo</p>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <p className="text-slate-300 leading-relaxed">
-                  Nosso índice de sentimento é uma métrica proprietária que analisa o comportamento do mercado em tempo real através de 4 pilares fundamentais:
+              <div className="space-y-8">
+                <p className="text-slate-400 text-sm leading-relaxed font-medium">
+                  Nosso índice de sentimento é uma métrica proprietária que analisa o comportamento do mercado em tempo real através de 4 pilares fundamentais, ponderados por relevância:
                 </p>
 
                 <div className="grid gap-4">
                   {[
                     { 
                       title: 'Momentum do Mercado (60%)', 
-                      desc: 'Analisamos o desempenho do Ibovespa e S&P 500. Preços subindo indicam otimismo (Greed).',
+                      desc: 'Desempenho relativo do Ibovespa e S&P 500. Tendências de alta sinalizam apetite por risco elevado.',
                       icon: TrendingUp,
-                      color: 'text-emerald-400'
+                      color: 'text-emerald-400',
+                      bgColor: 'bg-emerald-500/5'
                     },
                     { 
                       title: 'Safe Haven Demand (20%)', 
-                      desc: 'Monitoramos o Dólar. Quando o dólar sobe bruscamente, indica busca por proteção (Fear).',
+                      desc: 'Fluxo de capital para o Dólar. Picos de valorização indicam busca por proteção e aversão ao risco.',
                       icon: Shield,
-                      color: 'text-blue-400'
+                      color: 'text-blue-400',
+                      bgColor: 'bg-blue-500/5'
                     },
                     { 
                       title: 'Apetite por Risco (10%)', 
-                      desc: 'O desempenho do Bitcoin serve como termômetro para o apetite por ativos de alta volatilidade.',
+                      desc: 'Volatilidade e preço do Bitcoin. Ativos digitais servem como termômetro de liquidez global.',
                       icon: Zap,
-                      color: 'text-amber-400'
+                      color: 'text-amber-400',
+                      bgColor: 'bg-amber-500/5'
                     },
                     { 
                       title: 'Estabilidade Real (10%)', 
-                      desc: 'O IFIX (Fundos Imobiliários) traz a visão sobre a estabilidade do mercado interno e juros.',
+                      desc: 'Comportamento do IFIX. Reflete a percepção de juros e estabilidade do mercado imobiliário interno.',
                       icon: Building2,
-                      color: 'text-purple-400'
+                      color: 'text-purple-400',
+                      bgColor: 'bg-purple-500/5'
                     }
                   ].map((item, i) => (
-                    <div key={i} className="flex gap-4 p-4 bg-slate-900/50 border border-slate-800 rounded-2xl">
-                      <item.icon size={20} className={item.color} />
-                      <div>
-                        <h4 className="text-sm font-bold text-white mb-1">{item.title}</h4>
-                        <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+                    <div key={i} className={`flex gap-5 p-6 ${item.bgColor} border border-white/5 rounded-[2rem] hover:border-white/10 transition-all group`}>
+                      <div className={`w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center ${item.color} group-hover:scale-110 transition-transform`}>
+                        <item.icon size={22} />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-white mb-1 tracking-tight">{item.title}</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed font-medium">{item.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -642,9 +678,9 @@ export default function Home() {
 
                 <button 
                   onClick={() => setShowSentimentInfo(false)}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-600/20"
+                  className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[2rem] font-bold transition-all shadow-xl shadow-blue-600/20 uppercase tracking-widest text-xs"
                 >
-                  Entendi
+                  Entendi, Nexus
                 </button>
               </div>
             </motion.div>

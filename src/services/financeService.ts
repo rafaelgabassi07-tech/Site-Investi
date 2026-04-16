@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 export interface AssetDetails {
   ticker: string;
+  assetType?: string;
   results: Record<string, any>;
   cacheStatus: string;
   news?: any[];
@@ -40,8 +41,20 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
         await new Promise(resolve => setTimeout(resolve, 1000));
         return fetchWithRetry(url, options, retries - 1);
       }
-      const errorData = await response.json().catch(() => ({}));
-      const message = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+      
+      let message = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        message = errorData.message || errorData.error || message;
+      } catch (e) {
+        // If it's not JSON, try to get text
+        const text = await response.text().catch(() => '');
+        if (text.includes('<!doctype') || text.includes('<html')) {
+          message = `Server returned HTML instead of JSON (Status ${response.status}). This usually means the API route was not found or the server crashed.`;
+        } else if (text) {
+          message = `Server error: ${text.slice(0, 100)}`;
+        }
+      }
       throw new Error(message);
     }
     return response;
