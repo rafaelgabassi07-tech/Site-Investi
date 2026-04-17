@@ -62,27 +62,43 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
     });
 
     return (
-      <section className="space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="w-1.5 h-5 bg-indigo-500 rounded-full" />
-          <h3 className="text-display-xs text-white uppercase italic flex items-center gap-2">
-            <Target className="icon-sm text-indigo-500" />
+      <section className="space-y-8 pt-12 border-t border-white/5">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
+          <h3 className="text-display-xs text-white uppercase italic tracking-tighter">
             Comparação com Índices
           </h3>
         </div>
-        <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
+        <div className="h-[240px] md:h-[400px] w-full -mx-4 md:mx-0">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-              <XAxis dataKey="date" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} minTickGap={30} />
-              <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff10', borderRadius: '12px' }}
-                formatter={(val: number) => `${val.toFixed(2)}%`}
+            <LineChart data={comparisonData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+              <XAxis 
+                dataKey="date" 
+                stroke="#475569" 
+                fontSize={10} 
+                tickLine={false} 
+                axisLine={false} 
+                minTickGap={40}
+                tick={{ fill: '#64748b', fontWeight: 600 }}
               />
-              <Legend iconType="circle" />
-              <Line type="monotone" dataKey={ticker} stroke="#ef4444" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="IBOV" stroke="#3b82f6" strokeWidth={3} dot={false} />
+              <YAxis 
+                stroke="#475569" 
+                fontSize={10} 
+                tickLine={false} 
+                axisLine={false} 
+                tickFormatter={(v) => `${v.toFixed(0)}%`}
+                tick={{ fill: '#64748b', fontWeight: 600 }}
+              />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                labelStyle={{ fontSize: '10px', color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                formatter={(val: number) => [`${val.toFixed(2)}%`, undefined]}
+              />
+              <Legend iconType="circle" verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} />
+              <Line type="monotone" dataKey={ticker} stroke="#ef4444" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+              <Line type="monotone" dataKey="IBOV" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -108,33 +124,36 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
 
   const renderRadar = () => {
     return (
-      <section className="space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="w-1.5 h-5 bg-emerald-500 rounded-full" />
-          <h3 className="text-display-xs text-white uppercase italic flex items-center gap-2">
-            <Calendar className="icon-sm text-emerald-500" />
-            Radar de Dividendos Inteligente
+      <section className="space-y-8">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
+          <h3 className="text-display-xs text-white uppercase italic tracking-tighter">
+            Radar de Proventos
           </h3>
         </div>
         
-        <div className="p-4 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] md:rounded-2xl">
-          <p className="text-slate-400 text-xs md:text-sm mb-6 max-w-2xl px-2">
-            Com base no histórico de proventos, o Radar identifica os meses com maior probabilidade de pagamentos no futuro.
+        <div className="space-y-8">
+          <p className="text-slate-500 text-xs md:text-sm max-w-2xl px-2 font-medium leading-relaxed italic">
+            Mapeamento dos meses com maior probabilidade histórica de pagamentos baseados nos ciclos de proventos do ativo.
           </p>
-          <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-1.5 md:gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 border-t border-white/5">
             {MONTHS.map((m, i) => {
               const isProbable = dividendMonths.includes(i);
               return (
                 <div 
                   key={m} 
-                  className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-xl border ${
-                    isProbable 
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                    : 'bg-slate-800/30 border-white/5 text-slate-500'
-                  }`}
+                  className={`flex flex-col items-center justify-center py-8 group relative overflow-hidden transition-colors border-b border-white/5 hover:bg-white/[0.01] ${i % 3 < 2 ? 'border-r md:border-r' : 'md:border-r'} ${i % 6 === 5 ? 'lg:border-r-0' : ''}`}
                 >
-                  <span className="font-bold text-sm uppercase tracking-widest">{m}</span>
-                  {isProbable && <span className="text-[10px] uppercase font-black tracking-widest mt-1">Previsto</span>}
+                  <span className={`font-black text-sm uppercase tracking-[0.2em] italic ${isProbable ? 'text-emerald-500' : 'text-slate-600'}`}>{m}</span>
+                  {isProbable && (
+                    <motion.span 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-[8px] uppercase font-black tracking-widest mt-2 bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full border border-emerald-500/20"
+                    >
+                      Provável
+                    </motion.span>
+                  )}
                 </div>
               );
             })}
@@ -166,24 +185,25 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
     }
 
     return (
-      <div className="space-y-8">
+      <div className="space-y-20">
         {/* Receitas e Lucros */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 h-5 bg-blue-500 rounded-full" />
-            <h3 className="text-display-xs text-white uppercase italic">Receitas e Lucros (Anual)</h3>
+        <section className="space-y-8">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
+            <h3 className="text-display-xs text-white uppercase italic tracking-tighter">Receitas e Lucros (Anual)</h3>
           </div>
-          <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
+          <div className="h-[240px] md:h-[400px] w-full -mx-4 md:mx-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={formattedFunds} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                <XAxis dataKey="year" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}M`} />
+              <BarChart data={formattedFunds} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                <XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} />
+                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}M`} tick={{ fill: '#64748b', fontWeight: 600 }} />
                 <Tooltip 
-                  cursor={{ fill: '#ffffff05' }}
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff10', borderRadius: '12px' }}
+                  cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px' }}
+                  labelStyle={{ fontSize: '10px', color: '#64748b', marginBottom: '4px', textTransform: 'uppercase' }}
                 />
-                <Legend iconType="circle" />
+                <Legend iconType="circle" verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
                 <Bar dataKey="Receita" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Lucro" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -192,58 +212,59 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
         </section>
 
         {/* Lucro X Cotação */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 h-5 bg-yellow-500 rounded-full" />
-            <h3 className="text-display-xs text-white uppercase italic flex items-center gap-2">
-              <TrendingUp className="icon-sm text-yellow-500" />
+        <section className="space-y-8">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-1.5 h-6 bg-yellow-500 rounded-full" />
+            <h3 className="text-display-xs text-white uppercase italic tracking-tighter flex items-center gap-2">
               Lucro x Cotação
             </h3>
           </div>
-          <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
-             <p className="text-slate-400 text-xs md:text-sm mb-6 max-w-2xl px-2">
-               Análise das cotações (escala direita) comparado com o Lucro Líquido anual (escala esquerda).
+          <div className="space-y-8">
+             <p className="text-slate-500 text-xs md:text-sm max-w-2xl px-2 font-medium leading-relaxed italic">
+               Acompanhe a correlação histórica entre o lucro líquido e o preço das ações.
              </p>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={formattedFunds.filter(f => f.Cotacao > 0 && f.Lucro !== 0)} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                <XAxis dataKey="year" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="left" stroke="#10b981" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}M`} />
-                <YAxis yAxisId="right" orientation="right" stroke="#eab308" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${v.toFixed(2)}`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff10', borderRadius: '12px' }}
-                />
-                <Legend iconType="circle" />
-                <Line yAxisId="left" type="monotone" dataKey="Lucro" stroke="#10b981" strokeWidth={3} activeDot={{ r: 8 }} />
-                <Line yAxisId="right" type="monotone" dataKey="Cotacao" name="Cotação" stroke="#eab308" strokeWidth={3} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="h-[240px] md:h-[400px] w-full -mx-4 md:mx-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={formattedFunds.filter(f => f.Cotacao > 0 && f.Lucro !== 0)} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                  <XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} />
+                  <YAxis yAxisId="left" stroke="#10b981" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}M`} tick={{ fill: '#64748b', fontWeight: 600 }} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#eab308" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${v.toFixed(0)}`} tick={{ fill: '#64748b', fontWeight: 600 }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px' }}
+                  />
+                  <Legend iconType="circle" verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                  <Line yAxisId="left" type="monotone" dataKey="Lucro" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="Cotacao" name="Cotação" stroke="#eab308" strokeWidth={3} dot={{ r: 4, fill: '#eab308' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </section>
 
         {/* Evolução do Patrimônio */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 h-5 bg-purple-500 rounded-full" />
-            <h3 className="text-display-xs text-white uppercase italic">Evolução do Patrimônio</h3>
+        <section className="space-y-8">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-1.5 h-6 bg-purple-500 rounded-full" />
+            <h3 className="text-display-xs text-white uppercase italic tracking-tighter">Evolução do Patrimônio</h3>
           </div>
-          <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
+          <div className="h-[240px] md:h-[400px] w-full -mx-4 md:mx-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={formattedFunds} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <AreaChart data={formattedFunds} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
                 <defs>
                   <linearGradient id="patrimonio" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2}/>
                     <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                <XAxis dataKey="year" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}M`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                <XAxis dataKey="year" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} />
+                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}M`} tick={{ fill: '#64748b', fontWeight: 600 }} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff10', borderRadius: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px' }}
                 />
-                <Legend iconType="circle" />
-                <Area type="monotone" dataKey="Patrimonio" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#patrimonio)" />
+                <Legend iconType="circle" verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                <Area type="monotone" dataKey="Patrimonio" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#patrimonio)" activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -260,33 +281,32 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
     ];
     
     return (
-      <section className="space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="w-1.5 h-5 bg-cyan-500 rounded-full" />
-          <h3 className="text-display-xs text-white uppercase italic flex items-center gap-2">
-            <Globe className="icon-sm text-cyan-500" />
-            Regiões que Geram Receita
+      <section className="space-y-8">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-1.5 h-6 bg-cyan-500 rounded-full" />
+          <h3 className="text-display-xs text-white uppercase italic tracking-tighter flex items-center gap-2">
+            Regiões do Negócio
           </h3>
         </div>
-        <div className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl flex flex-col md:flex-row items-center gap-8">
-          <div className="h-[250px] w-[250px]">
+        <div className="flex flex-col md:flex-row items-center gap-12 px-6">
+          <div className="h-[220px] w-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={data} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                <Pie data={data} innerRadius={60} outerRadius={85} paddingAngle={8} dataKey="value" stroke="none">
                   {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff10', borderRadius: '8px' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex-1 space-y-3 w-full">
+          <div className="flex-1 space-y-4 w-full">
             {data.map((d, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+              <div key={i} className="flex items-center justify-between py-4 border-b border-white/5 last:border-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
-                  <span className="text-sm font-bold text-white">{d.name}</span>
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                  <span className="text-sm font-bold text-white uppercase italic tracking-tight">{d.name}</span>
                 </div>
-                <span className="text-sm font-black text-slate-400">{d.value}%</span>
+                <span className="text-sm font-black text-slate-400 italic">{d.value}%</span>
               </div>
             ))}
           </div>
@@ -302,24 +322,28 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
       { name: 'Outros', value: 10 },
     ];
     return (
-      <section className="space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="w-1.5 h-5 bg-orange-500 rounded-full" />
-          <h3 className="text-display-xs text-white uppercase italic flex items-center gap-2">
-            <Building2 className="icon-sm text-orange-500" />
-            Negócios que Geram Receita
+      <section className="space-y-8">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
+          <h3 className="text-display-xs text-white uppercase italic tracking-tighter flex items-center gap-2">
+            Segmentos de Receita
           </h3>
         </div>
-        <div className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl flex flex-col md:flex-row items-center gap-8">
-          <div className="flex-1 space-y-3 w-full">
+        <div className="px-6 w-full">
+          <div className="space-y-6">
             {data.map((d, i) => (
-              <div key={i} className="flex flex-col gap-2 p-4 bg-white/5 rounded-xl border border-white/5">
+              <div key={i} className="space-y-3 pb-6 border-b border-white/5 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-white">{d.name}</span>
-                  <span className="text-sm font-black text-orange-400">{d.value}%</span>
+                  <span className="text-sm font-bold text-white uppercase italic tracking-tight">{d.name}</span>
+                  <span className="text-sm font-black text-orange-400 italic">{d.value}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-orange-500 rounded-full" style={{ width: `${d.value}%` }} />
+                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${d.value}%` }}
+                    transition={{ duration: 1, delay: 0.5 + (i * 0.1) }}
+                    className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.3)]" 
+                  />
                 </div>
               </div>
             ))}
@@ -338,13 +362,27 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
   }
 
   return (
-    <div className="space-y-12 mt-12 pt-12 border-t border-white/5">
-      {renderRadar()}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {renderRegionsMock()}
-        {renderSegmentsMock()}
+    <div className="space-y-12 mt-12 pt-12 border-t border-white/10">
+      <div className="px-2">
+        {renderRadar()}
       </div>
-      {renderFundamentals()}
+      
+      <div className="h-px bg-white/5 mx-2" />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="space-y-8">
+          {renderRegionsMock()}
+        </div>
+        <div className="space-y-8">
+          {renderSegmentsMock()}
+        </div>
+      </div>
+
+      <div className="h-px bg-white/5 mx-2" />
+      
+      <div className="pt-4">
+        {renderFundamentals()}
+      </div>
     </div>
   );
 }

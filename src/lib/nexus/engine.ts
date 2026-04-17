@@ -7,7 +7,8 @@ const yahooFinance = new (yahooFinanceRaw as any)({
   validation: {
     logErrors: false,
     logOptionsErrors: false,
-    allowAdditionalProps: true
+    allowAdditionalProps: true,
+    strict: false,
   }
 });
 
@@ -123,6 +124,17 @@ function safeCpuDeltaMs(start: any | null): number {
 function formatYahooError(error: any): string {
   if (!error) return 'Erro desconhecido';
   
+  // Clean up validation errors from yahoo-finance2
+  if (error.name === 'Failed validation' || (typeof error.message === 'string' && error.message.includes('validation'))) {
+    return 'Yahoo Finance data validation warning (non-critical)';
+  }
+
+  // Handle objects with subErrors or errors array
+  const errors = error.errors || error.subErrors || (Array.isArray(error) ? error : null);
+  if (Array.isArray(errors)) {
+    return errors.map((e: any) => e.message || e.description || e.title || (typeof e === 'string' ? e : JSON.stringify(e))).join('; ');
+  }
+
   // If it's a string, try to parse it as JSON
   if (typeof error === 'string') {
     try {
@@ -133,11 +145,6 @@ function formatYahooError(error: any): string {
     } catch {
       return error;
     }
-  }
-
-  // If it has an errors array (common in yahoo-finance2)
-  if (error.errors && Array.isArray(error.errors)) {
-    return error.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
   }
 
   // If it has a message property
@@ -154,7 +161,11 @@ function formatYahooError(error: any): string {
   }
 
   // Fallback
-  return JSON.stringify(error);
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════

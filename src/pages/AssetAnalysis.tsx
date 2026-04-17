@@ -333,24 +333,22 @@ export default function AssetAnalysis() {
               </div>
             </div>
 
-            {/* Main Chart Card */}
-            <div className="p-6 md:p-8 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/5">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            {/* Main Chart Section - Clean, No Container */}
+            <div className="py-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
-                    <Activity className="icon-sm" />
-                  </div>
+                  <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Performance Histórica</h4>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Janela de 12 Meses</p>
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white italic">Performance Histórica</h4>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">Janela de 12 Meses</p>
                   </div>
                 </div>
                 
-                <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
+                <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5 backdrop-blur-md">
                   {['1M', '6M', '1Y', 'MAX'].map(p => (
                     <button 
                       key={p} 
-                      className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${p === '1Y' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
+                      className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${p === '1Y' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
                     >
                       {p}
                     </button>
@@ -358,17 +356,21 @@ export default function AssetAnalysis() {
                 </div>
               </div>
 
-              <div className="h-[250px] md:h-[300px] w-full">
+              <div className="h-[250px] md:h-[350px] w-full">
                 {history.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={history}>
                       <defs>
                         <linearGradient id="nexusChartGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
                         </linearGradient>
+                        <filter id="analysisGlow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="8" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                      <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.02)" vertical={false} />
                       <XAxis 
                         dataKey="date" 
                         hide 
@@ -376,21 +378,21 @@ export default function AssetAnalysis() {
                       <YAxis 
                         domain={['auto', 'auto']} 
                         orientation="right"
-                        tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }}
+                        tick={{ fontSize: 10, fill: '#475569', fontWeight: '900', italic: true }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={(v) => `R$ ${v}`}
                       />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: 'rgba(15, 23, 42, 0.9)', 
+                          backgroundColor: 'rgba(11, 15, 25, 0.95)', 
                           backdropFilter: 'blur(16px)',
-                          border: '1px solid rgba(255,255,255,0.1)', 
-                          borderRadius: '16px', 
-                          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' 
+                          border: '1px solid rgba(255,255,255,0.08)', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8)' 
                         }}
-                        itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}
-                        labelStyle={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                        itemStyle={{ color: '#3b82f6', fontWeight: 'black', fontSize: '12px', fontStyle: 'italic' }}
+                        labelStyle={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em', fontStyle: 'italic' }}
                         formatter={(value: any) => [`R$ ${Number(value).toFixed(2)}`, 'FECHAMENTO']}
                         labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
                       />
@@ -398,18 +400,19 @@ export default function AssetAnalysis() {
                         type="monotone" 
                         dataKey="close" 
                         stroke="#3b82f6" 
-                        strokeWidth={3}
+                        strokeWidth={2}
                         fillOpacity={1} 
                         fill="url(#nexusChartGradient)" 
-                        animationDuration={1500}
-                        activeDot={{ r: 4, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                        animationDuration={2000}
+                        filter="url(#analysisGlow)"
+                        activeDot={{ r: 5, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-600 border border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
-                    <BarChart2 size={32} className="mb-3 opacity-20" />
-                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 italic">Dados históricos indisponíveis</p>
+                  <div className="h-full flex flex-col items-center justify-center text-slate-800 border border-dashed border-white/5 rounded-3xl bg-white/[0.01]">
+                    <BarChart2 size={32} className="mb-3 opacity-10" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 italic">Análise gráfica indisponível</p>
                   </div>
                 )}
               </div>
@@ -421,30 +424,31 @@ export default function AssetAnalysis() {
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="lg:col-span-4 space-y-6"
+            className="lg:col-span-4 space-y-8"
           >
-            {/* Quality Score Card */}
-            <div className="p-6 bg-blue-600/5 backdrop-blur-xl rounded-3xl border border-blue-500/10 shadow-xl shadow-blue-900/10 group">
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="text-[10px] font-black tracking-widest text-white flex items-center gap-2 uppercase italic">
-                  <ShieldCheck className="icon-sm text-blue-500" /> Nexus Score
-                </h4>
-                <div className="px-2 py-1 bg-blue-600 rounded-md text-[9px] font-black text-white uppercase tracking-widest shadow shadow-blue-600/20">
+            {/* Quality Score - Cleaned up */}
+            <div className="py-2 px-2">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                  <h4 className="text-[11px] font-black tracking-widest text-white uppercase italic">Nexus Score</h4>
+                </div>
+                <div className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-blue-600/30">
                   {Math.round((checklist.filter(i => i.ok).length / checklist.length) * 100)}%
                 </div>
               </div>
               
-              <div className="space-y-2">
+              <div className="divide-y divide-white/5">
                 {checklist.map((item, i) => (
                   <motion.div 
-                    initial={{ opacity: 0, x: 5 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + (i * 0.05) }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 + (i * 0.03) }}
                     key={i} 
-                    className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group/item hover:border-blue-500/30 transition-all"
+                    className="flex items-center justify-between py-4 group/item hover:bg-white/[0.01] transition-all"
                   >
-                    <span className="text-[10px] font-bold text-slate-400 group-hover/item:text-slate-200 uppercase tracking-tight transition-colors">{item.label}</span>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${item.ok ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                    <span className="text-[10px] font-black text-slate-500 group-hover/item:text-slate-300 uppercase tracking-tight italic transition-colors">{item.label}</span>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${item.ok ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
                       {item.ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                     </div>
                   </motion.div>
@@ -452,49 +456,32 @@ export default function AssetAnalysis() {
               </div>
             </div>
 
-            {/* Sector & Segment Card */}
-            <div className="p-6 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/5">
-              <h4 className="text-[10px] font-black tracking-widest text-slate-400 mb-6 uppercase italic">Classificação de Mercado</h4>
+            {/* Sector & Segment - Cleaned up */}
+            <div className="py-2 px-2 border-t border-white/5 pt-8">
+              <h4 className="text-[11px] font-black tracking-widest text-slate-400 mb-8 uppercase italic">Classificação de Mercado</h4>
               <div className="space-y-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 border border-white/5">
-                    <Building2 className="icon-sm" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Setor de Atuação</p>
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{assetDetails.results.sector || 'N/A'}</p>
-                  </div>
+                <div className="flex items-center justify-between group">
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-400 transition-colors">Setor</p>
+                  <p className="text-[11px] font-black text-white uppercase tracking-widest italic">{assetDetails.results.sector || 'N/A'}</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 border border-white/5">
-                    <PieChart className="icon-sm" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Subsetor / Segmento</p>
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{assetDetails.results.subSector || 'N/A'}</p>
-                  </div>
+                <div className="flex items-center justify-between group">
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-400 transition-colors">Segm.</p>
+                  <p className="text-[11px] font-black text-white uppercase tracking-widest italic">{assetDetails.results.subSector || 'N/A'}</p>
                 </div>
                 {assetDetails.results.segmentoListagem && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 border border-white/5">
-                      <ShieldCheck className="icon-sm" />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Nível de Governança</p>
-                      <p className="text-[10px] font-black text-white uppercase tracking-widest">{assetDetails.results.segmentoListagem}</p>
-                    </div>
+                  <div className="flex items-center justify-between group">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-400 transition-colors">Gov.</p>
+                    <p className="text-[11px] font-black text-white uppercase tracking-widest italic">{assetDetails.results.segmentoListagem}</p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* About Card */}
+            {/* About - Cleaned up */}
             {assetDetails.results.about && (
-              <div className="p-6 bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/5">
-                <h4 className="text-[10px] font-black tracking-widest text-slate-400 mb-4 flex items-center gap-2 uppercase italic">
-                  <Info className="icon-sm text-blue-500" /> Perfil Corporativo
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed font-bold italic">
+              <div className="py-2 px-2 border-t border-white/5 pt-8">
+                <h4 className="text-[11px] font-black tracking-widest text-blue-500 mb-6 uppercase italic">Perfil Corporativo</h4>
+                <p className="text-xs text-slate-400 leading-relaxed font-bold italic opacity-80 hover:opacity-100 transition-opacity">
                   "{assetDetails.results.about}"
                 </p>
               </div>
@@ -502,42 +489,42 @@ export default function AssetAnalysis() {
           </motion.div>
         </section>
 
-        {/* Indicators Grid */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 h-5 bg-blue-600 rounded-full" />
-            <h3 className="text-display-xs text-white uppercase italic">Indicadores Fundamentais</h3>
+        {/* Indicators Section - Cleaned up */}
+        <section className="space-y-8 pt-12 border-t border-white/5">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+            <h3 className="text-display-xs text-white uppercase italic tracking-tighter">Indicadores Fundamentais</h3>
           </div>
           
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 border-t border-white/5">
             {['pl', 'pvp', 'dy', 'vpa', 'lpa', 'roe', 'roic', 'margemLiquida', 'vacanciaFisica', 'vacanciaFinanceira', 'quantidadeAtivos', 'numeroCotistas'].map((key, idx) => {
               const val = assetDetails.results[key];
               if (val === undefined || val === null) return null;
               return (
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.4 + (idx * 0.05) }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 + (idx * 0.02) }}
                   key={key} 
-                  className="p-4 bg-white/5 backdrop-blur-xl border border-white/5 rounded-2xl hover:border-blue-500/30 transition-all group"
+                  className={`py-8 px-6 group border-b border-white/5 hover:bg-white/[0.01] transition-colors relative ${idx % 2 === 0 ? 'border-r md:border-r' : 'md:border-r'} ${idx % 6 === 5 ? 'lg:border-r-0' : ''}`}
                 >
-                  <p className="text-[10px] font-black tracking-widest text-slate-500 mb-1 group-hover:text-blue-400 transition-colors uppercase">{METRIC_LABELS[key] || key}</p>
-                  <p className="font-display font-bold text-sm md:text-base text-white group-hover:text-blue-400 transition-colors">{formatMetricValue(key, val)}</p>
+                  <p className="text-[10px] font-black tracking-widest text-slate-500 mb-2 group-hover:text-blue-400 transition-colors uppercase italic">{METRIC_LABELS[key] || key}</p>
+                  <p className="font-display font-black text-lg md:text-xl text-white group-hover:text-blue-400 transition-colors italic tracking-tighter">{formatMetricValue(key, val)}</p>
                 </motion.div>
               );
             })}
           </div>
         </section>
 
-        {/* Financial Results */}
+        {/* Financial Results - Cleaned up */}
         {(assetDetails.results.receitaLiquida || assetDetails.results.ebitda || assetDetails.results.lucroLiquido) && (
-          <section className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-1.5 h-5 bg-emerald-600 rounded-full" />
-              <h3 className="text-display-xs text-white uppercase italic">Resultados Financeiros</h3>
+          <section className="space-y-8 pt-12">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-1.5 h-6 bg-emerald-600 rounded-full" />
+              <h3 className="text-display-xs text-white uppercase italic tracking-tighter">Resultados Financeiros</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 border-t border-white/5">
               {[
                 { key: 'receitaLiquida', icon: DollarSign, color: 'text-blue-500' },
                 { key: 'ebitda', icon: Zap, color: 'text-amber-500' },
@@ -547,17 +534,17 @@ export default function AssetAnalysis() {
                 if (!val) return null;
                 return (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 + (idx * 0.1) }}
                     key={item.key} 
-                    className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl relative overflow-hidden group"
+                    className={`py-10 px-8 group border-b border-white/5 hover:bg-white/[0.01] transition-all relative overflow-hidden ${idx < 2 ? 'md:border-r' : ''}`}
                   >
-                    <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${item.color}`}>
-                      <item.icon className="icon-2xl" />
+                    <div className={`absolute -right-4 -bottom-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${item.color}`}>
+                      <item.icon className="icon-3xl" />
                     </div>
-                    <p className="text-[10px] font-black tracking-widest text-slate-500 mb-2 uppercase">{METRIC_LABELS[item.key] || item.key}</p>
-                    <p className="font-display font-black text-xl md:text-2xl text-white tracking-tight leading-none">{formatMetricValue(item.key, val)}</p>
+                    <p className="text-[11px] font-black tracking-widest text-slate-500 mb-3 uppercase italic">{METRIC_LABELS[item.key] || item.key}</p>
+                    <p className="font-display font-black text-2xl md:text-3xl text-white tracking-tighter leading-none italic">{formatMetricValue(item.key, val)}</p>
                   </motion.div>
                 );
               })}

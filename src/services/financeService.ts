@@ -45,13 +45,19 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
       let message = `HTTP error! status: ${response.status}`;
       try {
         const contentType = response.headers.get('content-type');
+        const text = await response.text();
         if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json();
-          message = errorData.message || errorData.error || message;
+          try {
+            if (text && text.trim()) {
+              const errorData = JSON.parse(text);
+              message = errorData.message || errorData.error || message;
+            }
+          } catch (e) {
+            message = `Malformed JSON error response: ${text?.slice(0, 100)}`;
+          }
         } else {
-          const text = await response.text().catch(() => '');
           if (text.includes('<!doctype') || text.includes('<html')) {
-            message = `Server returned an HTML page (Status ${response.status}) instead of JSON. This often happens on timeouts (504) or route collisions.`;
+            message = `Nexus Engine is warming up or routing error (Status ${response.status}). Please try again in a few seconds.`;
           } else if (text) {
             message = `Server error: ${text.slice(0, 100)}`;
           }
@@ -61,6 +67,16 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
       }
       throw new Error(message);
     }
+
+    // Check if we got JSON even if status is OK
+    const contentType = response.headers.get('content-type');
+    if (options.method === 'GET' && contentType && !contentType.includes('application/json')) {
+      const text = await response.clone().text();
+      if (text.includes('<!doctype') || text.includes('<html')) {
+        throw new Error(`Unexpected HTML response for ${url}. This might be a session timeout or internal routing issue.`);
+      }
+    }
+
     return response;
   } catch (error) {
     if (retries > 0 && (error instanceof TypeError || (error as any).name === 'AbortError')) {

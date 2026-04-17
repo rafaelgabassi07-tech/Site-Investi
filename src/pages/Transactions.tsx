@@ -604,146 +604,123 @@ export default function Transactions() {
               </div>
             </div>
 
-            <div className="overflow-hidden bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl">
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-white/5 border-b border-white/5">
-                      <th className="px-6 py-4 text-label">Data</th>
-                      <th className="px-6 py-4 text-label">Ativo</th>
-                      <th className="px-6 py-4 text-label text-center">Tipo</th>
-                      <th className="px-6 py-4 text-label text-right">Qtd.</th>
-                      <th className="px-6 py-4 text-label text-right">Preço</th>
-                      <th className="px-6 py-4 text-label text-right">Total</th>
-                      <th className="px-6 py-4 text-label text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
-                      <motion.tr 
-                        key={tx.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: idx * 0.02 }}
-                        className="hover:bg-white/5 transition-all group"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-slate-500 text-tiny font-bold uppercase tracking-widest">
-                            <Calendar className="icon-xs text-slate-600" />
-                            {new Date(tx.date).toLocaleDateString('pt-BR')}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-8 h-8" />
-                            <div>
-                              <div className="text-sm font-bold text-white uppercase tracking-tight">{tx.ticker}</div>
-                              <div className="text-tiny font-black text-slate-600 uppercase tracking-widest">{tx.assetType || tx.asset_type}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-tiny font-black uppercase tracking-widest border ${
-                            tx.type === 'BUY' 
-                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-                              : 'bg-red-500/10 text-red-400 border-red-500/20'
-                          }`}>
-                            {tx.type === 'BUY' ? <ArrowUpRight className="icon-xs" /> : <ArrowDownRight className="icon-xs" />}
-                            {tx.type === 'BUY' ? 'Compra' : 'Venda'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-300 tracking-tight">{tx.quantity}</td>
-                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-300 tracking-tight">
-                          R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-6 py-4 text-right text-display-tiny text-white">
-                          R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                            <button 
-                              onClick={() => startEdit(tx)}
-                              className="p-1.5 bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white rounded-md transition-all border border-white/10"
-                              title="Editar"
-                            >
-                              <Edit2 className="icon-xs" />
-                            </button>
-                            <button 
-                              onClick={() => setShowDeleteConfirm(tx.id)}
-                              className="p-1.5 bg-white/5 hover:bg-red-600 text-slate-400 hover:text-white rounded-md transition-all border border-white/10"
-                              title="Excluir"
-                            >
-                              <Trash2 className="icon-xs" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile History Cards */}
-              <div className="md:hidden divide-y divide-slate-800/50">
-                {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
-                  <motion.div 
-                    key={tx.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.02 }}
-                    className="p-4 space-y-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10" />
+            <div className="overflow-hidden">
+              {/* Desktop List */}
+              <div className="hidden md:block">
+                <div className="flex items-center px-6 py-4 bg-white/[0.02] border-b border-white/5">
+                  <div className="flex-1 text-[10px] font-black uppercase text-slate-500 tracking-widest">Ativo & Tipo</div>
+                  <div className="w-32 text-center text-[10px] font-black uppercase text-slate-500 tracking-widest">Tipo</div>
+                  <div className="w-40 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Qtd & Preço</div>
+                  <div className="w-48 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Total Operação</div>
+                  <div className="w-16 text-right"></div>
+                </div>
+                <div className="divide-y divide-white/5">
+                  {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
+                    <motion.div 
+                      key={tx.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.01 }}
+                      className="flex items-center px-6 py-5 hover:bg-white/[0.03] transition-all group"
+                    >
+                      <div className="flex-1 flex items-center gap-4">
+                        <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
                         <div>
-                          <div className="text-sm font-bold text-white uppercase tracking-tight">{tx.ticker}</div>
-                          <div className="text-tiny font-black text-slate-600 uppercase tracking-widest">{tx.assetType || tx.asset_type}</div>
+                          <div className="text-display-tiny text-white uppercase italic">{tx.ticker}</div>
+                          <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
                         </div>
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-tiny font-black uppercase tracking-widest border ${
-                        tx.type === 'BUY' 
-                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-                          : 'bg-red-500/10 text-red-400 border-red-500/20'
-                      }`}>
-                        {tx.type === 'BUY' ? 'Compra' : 'Venda'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-tiny font-black text-slate-600 uppercase tracking-widest mb-0.5">Qtd / Preço</p>
-                        <p className="text-xs font-bold text-slate-300 tracking-tight">{tx.quantity} x R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <div className="w-32 flex justify-center">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                          tx.type === 'BUY' 
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {tx.type === 'BUY' ? 'Compra' : 'Venda'}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-tiny font-black text-slate-600 uppercase tracking-widest mb-0.5">Total</p>
-                        <p className="text-display-tiny text-white">R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <div className="w-40 text-right">
+                        <div className="text-[11px] font-black text-slate-300">{tx.quantity} <span className="opacity-40">UND</span></div>
+                        <div className="text-[10px] font-black text-slate-600 italic">@ R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                      <div className="text-tiny text-slate-500 font-bold uppercase tracking-widest italic">
-                        {new Date(tx.date).toLocaleDateString('pt-BR')}
+                      <div className="w-48 text-right">
+                        <div className="text-display-tiny text-white uppercase italic">R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="w-16 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                         <button 
                           onClick={() => startEdit(tx)}
-                          className="p-2 bg-white/5 text-slate-400 rounded-lg border border-white/10"
+                          className="p-1.5 bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white rounded-lg transition-all border border-white/10"
                         >
                           <Edit2 className="icon-xs" />
                         </button>
                         <button 
                           onClick={() => setShowDeleteConfirm(tx.id)}
-                          className="p-2 bg-white/5 text-slate-400 rounded-lg border border-white/10"
+                          className="p-1.5 bg-white/5 hover:bg-red-600 text-slate-400 hover:text-white rounded-lg transition-all border border-white/10"
                         >
                           <Trash2 className="icon-xs" />
                         </button>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
+
+                <div className="md:hidden divide-y divide-white/5 border-t border-white/5">
+                  {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
+                    <motion.div 
+                      key={tx.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.01 }}
+                      className="p-5 space-y-4 hover:bg-white/[0.02] transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
+                          <div>
+                            <div className="text-display-tiny text-white uppercase italic">{tx.ticker}</div>
+                            <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
+                          </div>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                          tx.type === 'BUY' 
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {tx.type === 'BUY' ? 'Compra' : 'Venda'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-0.5">Qtd / Preço</p>
+                          <p className="text-xs font-bold text-slate-300 italic">{tx.quantity} x R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-0.5">Total</p>
+                          <p className="text-display-tiny text-white italic tracking-tight">R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+                        <button 
+                          onClick={() => startEdit(tx)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-slate-500 rounded-lg border border-white/10 text-[10px] font-black uppercase tracking-widest"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => setShowDeleteConfirm(tx.id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-slate-500 rounded-lg border border-white/10 text-[10px] font-black uppercase tracking-widest"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Excluir
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
 
               {transactions.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-center">

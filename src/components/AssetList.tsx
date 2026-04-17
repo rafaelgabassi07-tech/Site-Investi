@@ -62,58 +62,52 @@ export function AssetList() {
 
               <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 {/* Desktop Table (Condensed) */}
-                <div className="hidden md:block overflow-hidden bg-slate-900/20 border border-white/5 rounded-2xl">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-white/[0.02] border-b border-white/5">
-                        <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Ativo</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">Posição</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">Preço Médio</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">Valor Atual</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">Performance</th>
-                        <th className="px-6 py-4"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {items.map((item) => {
-                        const profit = item.profit || 0;
-                        const isPositive = profit >= 0;
-                        return (
-                          <tr 
-                            key={item.ticker} 
-                            className="hover:bg-white/[0.04] transition-all group cursor-pointer"
-                            onClick={() => handleFetchDetails(item.ticker, item.assetType)}
-                          >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-4">
-                                <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
-                                <div>
-                                  <div className="text-display-tiny text-white uppercase italic group-hover:text-blue-500 transition-colors">{item.ticker}</div>
-                                  <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-60">{item.assetType}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-right font-black text-slate-400 text-[10px]">{item.totalQuantity} <span className="opacity-30">UND</span></td>
-                            <td className="px-6 py-4 text-right font-black text-slate-400 text-[10px]">R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-6 py-4 text-right text-display-tiny text-white uppercase italic">R$ {(item.currentValue || item.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className={`px-6 py-4 text-right ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
-                              <div className="flex flex-col items-end">
-                                <span className="text-[10px] font-black italic">R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                <span className="text-[9px] font-black opacity-80">{isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <ChevronRight className="w-4 h-4 text-slate-700 group-hover:text-blue-500" />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="hidden md:block">
+                  <div className="flex items-center px-6 py-4 bg-white/[0.02] border-b border-white/5">
+                    <div className="flex-1 text-[10px] font-black uppercase text-slate-500 tracking-widest">Ativo</div>
+                    <div className="w-32 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Posição</div>
+                    <div className="w-40 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Preço Médio</div>
+                    <div className="w-40 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Valor Atual</div>
+                    <div className="w-40 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Performance</div>
+                    <div className="w-10"></div>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {items.map((item) => {
+                      const profit = item.profit || 0;
+                      const isPositive = profit >= 0;
+                      return (
+                        <div 
+                          key={item.ticker} 
+                          className="flex items-center px-6 py-5 hover:bg-white/[0.03] transition-all group cursor-pointer"
+                          onClick={() => handleFetchDetails(item.ticker, item.assetType)}
+                        >
+                          <div className="flex-1 flex items-center gap-4">
+                            <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
+                            <div>
+                              <div className="text-display-tiny text-white uppercase italic group-hover:text-blue-500 transition-colors">{item.ticker}</div>
+                              <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-60">{item.assetType}</div>
+                            </div>
+                          </div>
+                          <div className="w-32 text-right font-black text-slate-400 text-[10px]">{item.totalQuantity} <span className="opacity-30">UND</span></div>
+                          <div className="w-40 text-right font-black text-slate-400 text-[10px]">R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                          <div className="w-40 text-right text-display-tiny text-white uppercase italic">R$ {(item.currentValue || item.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                          <div className={`w-40 text-right ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] font-black italic">R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              <span className="text-[9px] font-black opacity-80">{isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%</span>
+                            </div>
+                          </div>
+                          <div className="w-10 flex justify-end">
+                            <ChevronRight className="w-4 h-4 text-slate-700 group-hover:text-blue-500" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Mobile List (Condensed) */}
-                <div className="md:hidden space-y-3 px-1 lg:px-2">
+                <div className="md:hidden divide-y divide-white/5 border-t border-white/5">
                   {items.map((item) => {
                     const profit = item.profit || 0;
                     const isPositive = profit >= 0;

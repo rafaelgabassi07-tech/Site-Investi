@@ -264,34 +264,29 @@ export default function Asset() {
             </div>
             
             {/* Chart */}
-            <div className="h-[200px] md:h-[300px] w-full -mx-4 md:mx-0">
+            <div className="h-[220px] md:h-[320px] w-full -mx-4 md:mx-0">
               {history.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
                       </linearGradient>
-                      <filter id="shadow" height="200%">
-                        <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur" />
-                        <feOffset in="blur" dx="0" dy="5" result="offsetBlur" />
-                        <feFlood floodColor="#3b82f6" floodOpacity="0.3" result="offsetColor" />
-                        <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetBlur" />
-                        <feMerge>
-                          <feMergeNode />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
+                      <filter id="chartGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="6" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
                       </filter>
                     </defs>
-                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#ffffff03" />
+                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(255,255,255,0.02)" />
                     <XAxis 
                       dataKey="date" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#475569', fontSize: 9, fontWeight: 900 }} 
+                      tick={{ fill: '#475569', fontSize: 10, fontWeight: 700 }} 
                       tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { month: 'short' })}
-                      minTickGap={30}
+                      minTickGap={40}
+                      dy={10}
                     />
                     <YAxis 
                       hide 
@@ -299,15 +294,15 @@ export default function Asset() {
                     />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)', 
-                        border: '1px solid rgba(255, 255, 255, 0.05)', 
-                        borderRadius: '16px', 
-                        backdropFilter: 'blur(12px)',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                        backgroundColor: 'rgba(11, 15, 25, 0.95)', 
+                        border: '1px solid rgba(255, 255, 255, 0.08)', 
+                        borderRadius: '12px', 
+                        backdropFilter: 'blur(16px)',
+                        boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.8)',
                         padding: '12px'
                       }}
-                      itemStyle={{ color: '#fff', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}
-                      labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700' }}
+                      itemStyle={{ color: '#3b82f6', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}
+                      labelStyle={{ color: '#64748b', marginBottom: '6px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '800' }}
                       labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
                       formatter={(val: number) => [`R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'FECHAMENTO']}
                     />
@@ -317,41 +312,38 @@ export default function Asset() {
                       stroke="#3b82f6" 
                       fillOpacity={1} 
                       fill="url(#colorPrice)" 
-                      strokeWidth={3} 
-                      filter="url(#shadow)"
-                      animationDuration={1500} 
-                      activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 3, fill: '#fff' }}
+                      strokeWidth={2} 
+                      filter="url(#chartGlow)"
+                      animationDuration={2000} 
+                      activeDot={{ r: 5, stroke: '#3b82f6', strokeWidth: 2, fill: '#fff' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center bg-slate-900/20 rounded-3xl border border-dashed border-white/5 group">
-                  <p className="text-slate-700 text-xs font-black uppercase tracking-[0.2em] group-hover:text-slate-500 transition-colors">Dados históricos indisponíveis</p>
+                <div className="h-full flex items-center justify-center bg-white/[0.01] rounded-3xl border border-dashed border-white/5">
+                  <p className="text-slate-700 text-[10px] font-black uppercase tracking-[0.3em] italic opacity-40">Nenhum dado histórico encontrado</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Indicators Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-b border-white/5 pb-6">
+          {/* Indicators Grid - Cleaner, No Containers */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 border-t border-white/5">
             {validIndicators.map((ind, idx) => (
               <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.03 }}
+                transition={{ delay: idx * 0.02 }}
                 key={idx} 
-                className="p-3 bg-slate-900/10 border border-white/5 rounded-xl transition-all duration-500 hover:bg-slate-900/40 group relative overflow-hidden hover:border-blue-500/20"
+                className={`py-6 px-4 group border-b border-white/5 relative hover:bg-white/[0.01] transition-colors ${idx % 2 === 0 ? 'border-r md:border-r' : 'md:border-r'} ${idx % 4 === 3 ? 'md:border-r-0' : ''}`}
               >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/5 blur-[40px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-slate-600 group-hover:text-blue-500 transition-colors border border-white/5 group-hover:border-blue-500/30">
-                    <ind.icon className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-500 group-hover:text-blue-400 transition-colors uppercase italic tracking-widest">{ind.label}</span>
+                <div className="flex items-center gap-2 mb-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                  <ind.icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">{ind.label}</span>
                 </div>
-                <div className="text-sm md:text-base font-display font-bold text-white mb-1 group-hover:text-white transition-colors italic tracking-tighter leading-none">{ind.value}</div>
-                <div className="text-[8px] font-black text-slate-600 group-hover:text-slate-400 transition-colors uppercase tracking-[0.2em] italic opacity-60 line-clamp-1">{ind.desc}</div>
+                <div className="text-lg font-display font-black text-white italic tracking-tight">{ind.value}</div>
+                <div className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] italic opacity-40 group-hover:opacity-60 transition-opacity">{ind.desc}</div>
               </motion.div>
             ))}
           </div>
@@ -371,32 +363,39 @@ export default function Asset() {
         </div>
 
         {/* Right Column: Checklist & News */}
-        <div className="space-y-6">
-          <div className="border-b border-white/5 pb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-md shadow-emerald-500/5">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">Checklist Nexus</h2>
+        <div className="space-y-6 pt-6">
+          <div className="pb-8">
+            <div className="flex items-center gap-3 mb-8 px-2">
+              <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
+              <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] italic">Checklist Nexus</h2>
             </div>
-            <div className="space-y-2">
+            <div className="divide-y divide-white/5">
               {checklistItems.map((item, idx) => {
                 const passed = item.check();
                 return (
                   <motion.div 
-                    initial={{ opacity: 0, x: 5 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
-                    transition={{ delay: idx * 0.05 }}
+                    transition={{ delay: idx * 0.03 }}
                     key={idx} 
-                    className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group"
+                    className="flex items-center justify-between py-4 px-2 hover:bg-white/[0.01] transition-all group"
                   >
-                    <span className="text-[9px] font-black text-slate-400 group-hover:text-slate-200 uppercase tracking-[0.1em] transition-colors">{item.label}</span>
-                    {passed ? (
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500 bg-emerald-500/10 rounded-full" />
-                    ) : (
-                      <AlertCircle className="w-3 h-3 text-slate-700 bg-white/5 rounded-full" />
-                    )}
+                    <span className="text-[10px] font-black text-slate-500 group-hover:text-slate-300 uppercase tracking-widest italic transition-colors">{item.label}</span>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[8px] font-black tracking-widest uppercase italic transition-opacity ${passed ? 'text-emerald-500' : 'text-slate-700 group-hover:text-slate-600'}`}>
+                        {passed ? 'APROVADO' : 'REVISAR'}
+                      </span>
+                      {passed ? (
+                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3 h-3" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-slate-700 border border-white/5">
+                          <AlertCircle className="w-3 h-3" />
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -406,29 +405,27 @@ export default function Asset() {
           {/* Dividends Summary */}
           {dividends.length > 0 && (
             <div className="pb-8">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-8 px-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-md shadow-blue-500/5">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">Proventos</h2>
+                  <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                  <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] italic">Proventos</h2>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="divide-y divide-white/5">
                 {dividends.slice(0, 5).map((div, idx) => (
                   <motion.div 
-                    initial={{ opacity: 0, y: 5 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
-                    transition={{ delay: idx * 0.05 }}
+                    transition={{ delay: idx * 0.03 }}
                     key={idx} 
-                    className="flex items-center justify-between p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-blue-500/20 transition-all hover:bg-slate-900/60 shadow-md group"
+                    className="flex items-center justify-between py-5 px-2 hover:bg-white/[0.01] transition-all group"
                   >
                     <div>
-                      <div className="text-sm font-display font-bold text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-widest leading-none mb-1">R$ {div.amount.toFixed(3)}</div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest opacity-60 italic">{new Date(div.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                      <div className="text-base font-display font-black text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-none mb-1.5">R$ {div.amount.toFixed(3)}</div>
+                      <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">{new Date(div.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                     </div>
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase rounded-md border border-emerald-500/20 shadow-sm shadow-emerald-500/5 italic">EFETIVADO</span>
+                    <span className="px-2.5 py-1 bg-white/[0.03] text-slate-500 text-[9px] font-black uppercase rounded-md border border-white/5 italic group-hover:border-emerald-500/20 group-hover:text-emerald-500 transition-all">EFETIVADO</span>
                   </motion.div>
                 ))}
               </div>
