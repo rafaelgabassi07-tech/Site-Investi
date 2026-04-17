@@ -86,6 +86,11 @@ export const financeService = {
     return res.json();
   },
 
+  async getHistoricalFundamentals(ticker: string): Promise<any[]> {
+    const res = await fetchWithRetry(`/api/historical-fundamentals/${encodeURIComponent(ticker)}`);
+    return res.json();
+  },
+
   async getNews(ticker?: string): Promise<NewsItem[]> {
     const url = ticker ? `/api/news?ticker=${encodeURIComponent(ticker)}` : '/api/news';
     const res = await fetchWithRetry(url);

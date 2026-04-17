@@ -446,10 +446,11 @@ export function universalLexer<T = any>(
 
   // Extração especial para dividendos (tabelas)
   if (html.includes('table-dividends') || html.includes('dividendos') || html.includes('rendimentos')) {
-    // Regex mais flexível para capturar tabelas de dividendos do Investidor10 e StatusInvest
-    // Formato comum: Data Com | Data Pagto | Valor | Tipo
-    const divRegex = /<tr>\s*<td>([\d/]+)<\/td>\s*<td>([\d/.-]+)<\/td>\s*(?:<td>.*?<\/td>\s*)?<td>([R$\s\d,.]+)<\/td>\s*<td>([^<]+)<\/td>\s*<\/tr>/gi;
-    const matches = [...html.matchAll(divRegex)];
+    // Investidor10 has normal HTML tables for dividends.
+    // Data Com | Data Pagamento | Valor | Tipo
+    // Let's use a very robust parser for the table rows.
+    const rowRegex = /<tr>\s*<td>([\d\/]+)<\/td>\s*<td>([\d\/.-]*|-)<\/td>\s*<td>([R$\s\d,.]+)<\/td>\s*<td>([^<]+)<\/td>\s*<\/tr>/gi;
+    const matches = [...html.matchAll(rowRegex)];
     if (matches.length > 0) {
       results.dividendos = matches.slice(0, 50).map(m => ({
         dataCom: m[1].trim(),
@@ -457,6 +458,18 @@ export function universalLexer<T = any>(
         valor: m[3].trim(),
         tipo: m[4].trim()
       }));
+    } else {
+      // Investidor10 alternative table format
+      const altRowRegex = /<tr>\s*<td>([\w\s]+)<\/td>\s*<td>([\d\/]+)<\/td>\s*<td>([\d\/.-]*|-)<\/td>\s*<td>([R$\s\d,.]+)<\/td>\s*<\/tr>/gi;
+      const altMatches = [...html.matchAll(altRowRegex)];
+      if (altMatches.length > 0) {
+        results.dividendos = altMatches.slice(0, 50).map(m => ({
+          tipo: m[1].trim(),
+          dataCom: m[2].trim(),
+          pagamento: m[3].trim(),
+          valor: m[4].trim()
+        }));
+      }
     }
   }
 
@@ -912,6 +925,66 @@ export class NexusEngine {
       }
     }
     throw lastErr;
+  }
+
+  static async fetchHistoricalFundamentals(ticker: string) {
+    const cleanTicker = canonicalizeTicker(ticker);
+    const symbols = [`${cleanTicker}.SA`, cleanTicker];
+
+    for (const symbol of symbols) {
+      try {
+        const result = await yahooFinance.quoteSummary(symbol, {
+          modules: ['incomeStatementHistory', 'balanceSheetHistory', 'earningsHistory', 'defaultKeyStatistics']
+        });
+
+        if (!result) continue;
+
+        if ((result as any).errors || (result as any).error) continue;
+
+        const incomeHistory = result?.incomeStatementHistory?.incomeStatementHistory || [];
+        const balanceHistory = result?.balanceSheetHistory?.balanceSheetStatements || [];
+
+        // Combine by year
+        const historyData: any[] = [];
+        
+        incomeHistory.forEach((inc: any) => {
+          const dt = inc.endDate;
+          if (dt) {
+            const year = dt.getFullYear();
+            historyData.push({
+              year,
+              revenue: inc.totalRevenue,
+              netIncome: inc.netIncome || inc.netIncomeApplicableToCommonShares,
+              ebitda: inc.ebitda || inc.ebit
+            });
+          }
+        });
+
+        // Merge balance sheet data
+        balanceHistory.forEach((bal: any) => {
+          const dt = bal.endDate;
+          if (dt) {
+            const year = dt.getFullYear();
+            let existing = historyData.find(h => h.year === year);
+            if (!existing) {
+              existing = { year };
+              historyData.push(existing);
+            }
+            existing.patrimony = bal.totalStockholderEquity;
+            existing.totalAssets = bal.totalAssets;
+            existing.totalLiabilities = bal.totalLiab;
+          }
+        });
+
+        if (historyData.length > 0) {
+          return historyData.sort((a, b) => a.year - b.year);
+        }
+
+      } catch (e) {
+        continue;
+      }
+    }
+    return [];
   }
 
   static async execute<T>(
@@ -1415,7 +1488,6 @@ export class NexusEngine {
       const t       = cleanTicker.toLowerCase();
       const sources: ScrapeSource<any>[] = preset ? [
         { url: `${preset.i10Base}/${t}/`, template: preset.template, requireStealth: true },
-        { url: `${preset.siBase}/${t}/`,  template: preset.template, requireStealth: true },
       ] : [];
 
       const startTime = performance.now();

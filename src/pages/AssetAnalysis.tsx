@@ -22,6 +22,7 @@ import { motion } from 'motion/react';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AssetIntelligence } from '../components/AssetIntelligence';
 
 const METRIC_LABELS: Record<string, string> = {
   precoAtual: 'Preço Atual',
@@ -600,6 +601,9 @@ export default function AssetAnalysis() {
             </div>
           </section>
         )}
+
+        {/* Módulos de Inteligência Avançada */}
+        <AssetIntelligence ticker={ticker} assetDetails={assetDetails} />
       </main>
       
       {/* Footer Imersivo */}

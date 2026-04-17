@@ -71,6 +71,17 @@ export async function createServer() {
       }
     });
 
+    app.get("/api/historical-fundamentals/:ticker", async (req, res) => {
+      const { ticker } = req.params;
+      try {
+        const data = await NexusEngine.fetchHistoricalFundamentals(ticker);
+        res.json(data);
+      } catch (error) {
+        console.error(`[API] ERROR /api/historical-fundamentals/${ticker}:`, error);
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
     app.get("/api/search", async (req, res) => {
       const { q } = req.query;
       console.log(`[API] [${new Date().toISOString()}] GET /api/search q=${q}`);
