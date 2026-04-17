@@ -689,12 +689,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-      
-      <section id="news" className="scroll-mt-32">
-        <NewsWidget />
-      </section>
-
       <div className="h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
 
       {/* Meus Recursos Section */}
@@ -713,13 +707,13 @@ export default function Home() {
             { icon: BarChart3, label: 'Calculadoras', to: '/calculators', color: 'cyan' },
             { icon: Shield, label: 'Renda Fixa', to: '/renda-fixa', color: 'orange' },
           ].map((item, idx) => (
-            <Link key={idx} to={item.to} className="flex flex-col p-5 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:bg-slate-800/50 transition-all group gap-3 shadow-sm hover:border-white/10">
-              <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+            <Link key={idx} to={item.to} className="flex items-center p-4 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-white/5 hover:bg-slate-800/50 transition-all group gap-4 shadow-sm hover:border-white/10">
+              <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0`}>
                 <item.icon className="icon-md text-slate-400 group-hover:text-white transition-colors" />
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-300">{item.label}</span>
-                <ChevronRight className="icon-sm text-slate-600 group-hover:text-slate-400 transition-colors" />
+              <div className="flex-1 flex items-center justify-between min-w-0">
+                <span className="text-sm font-bold text-slate-300 truncate">{item.label}</span>
+                <ChevronRight className="icon-sm text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
               </div>
             </Link>
           ))}

@@ -53,54 +53,68 @@ export function PortfolioSummary() {
   return (
     <div className="space-y-4">
       {/* Top Cards - Investidor10 Style */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <Briefcase className="icon-xs" />
-            <span className="text-label">Patrimônio Total</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-6 bg-[#0f172a] border border-slate-800 rounded-3xl shadow-lg relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Briefcase size={64} />
           </div>
-          <p className="text-display-sm text-white">
+          <div className="flex items-center gap-2 mb-3 text-slate-500 font-bold uppercase tracking-widest text-[9px]">
+            <Briefcase className="w-3 h-3" />
+            <span>Patrimônio Total</span>
+          </div>
+          <p className="text-2xl md:text-3xl font-display font-bold text-white tracking-tighter mb-2">
             R$ {currentTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Investido: R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Custo: R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+            <div className="w-1 h-1 bg-slate-800 rounded-full" />
+            <span className="text-[10px] font-black text-blue-500/60 uppercase tracking-widest">{portfolio.length} ATIVOS</span>
           </div>
         </div>
 
-        <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <TrendingUp className="icon-xs" />
-            <span className="text-label">Rentabilidade</span>
+        <div className="p-6 bg-[#0f172a] border border-slate-800 rounded-3xl shadow-lg relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <TrendingUp size={64} />
           </div>
-          <p className={`text-display-sm ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <div className="flex items-center gap-2 mb-3 text-slate-500 font-bold uppercase tracking-widest text-[9px]">
+            <TrendingUp className="w-3 h-3" />
+            <span>Rentabilidade</span>
+          </div>
+          <p className={`text-2xl md:text-3xl font-display font-bold tracking-tighter mb-2 ${totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {totalProfit >= 0 ? '+' : ''}{totalProfitPercentage.toFixed(2)}%
           </p>
-          <div className="flex items-center gap-1 mt-1">
-            <span className={`text-tiny font-bold uppercase tracking-widest ${totalProfit >= 0 ? 'text-emerald-500/60' : 'text-red-500/60'}`}>
-              R$ {totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-black uppercase tracking-widest ${totalProfit >= 0 ? 'text-emerald-500/60' : 'text-red-500/60'}`}>
+              Lucro: R$ {totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
             </span>
           </div>
         </div>
 
-        <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <Calendar className="icon-xs" />
-            <span className="text-label">Proventos (Total)</span>
+        <div className="p-6 bg-[#0f172a] border border-slate-800 rounded-3xl shadow-lg relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Calendar size={64} />
           </div>
-          <p className="text-display-sm text-white">
+          <div className="flex items-center gap-2 mb-3 text-slate-500 font-bold uppercase tracking-widest text-[9px]">
+            <Calendar className="w-3 h-3" />
+            <span>Proventos Acumulados</span>
+          </div>
+          <p className="text-2xl md:text-3xl font-display font-bold text-white tracking-tighter mb-2">
             R$ {totalDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-tiny font-bold text-slate-500 uppercase tracking-widest">Yield: {dividendYield.toFixed(2)}%</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Yield On Cost: {dividendYield.toFixed(2)}%</span>
           </div>
         </div>
 
-        <div className="p-4 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-sm">
-          <div className="flex items-center gap-2 mb-1 text-slate-500">
-            <Target className="icon-xs" />
-            <span className="text-label">Meta Alcançada</span>
+        <div className="p-6 bg-[#0f172a] border border-slate-800 rounded-3xl shadow-lg relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Target size={64} />
           </div>
-          <p className="text-display-sm text-white">
+          <div className="flex items-center gap-2 mb-3 text-slate-500 font-bold uppercase tracking-widest text-[9px]">
+            <Target className="w-3 h-3" />
+            <span>Progresso da Meta</span>
+          </div>
+          <p className="text-2xl md:text-3xl font-display font-bold text-white tracking-tighter mb-2">
             {((currentTotalValue / 100000) * 100).toFixed(1)}%
           </p>
           <div className="w-full bg-slate-800 h-1 rounded-full mt-2 overflow-hidden">

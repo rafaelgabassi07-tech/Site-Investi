@@ -9,6 +9,10 @@ export function AssetList() {
   const { portfolio, loading } = usePortfolio();
   const navigate = useNavigate();
 
+  const totalPortfolioValue = useMemo(() => {
+    return portfolio.reduce((sum, item) => sum + (item.currentValue || item.totalInvested), 0);
+  }, [portfolio]);
+
   const groupedPortfolio = useMemo(() => {
     return portfolio.reduce((acc, item) => {
       const type = item.assetType || 'OUTROS';
@@ -75,6 +79,9 @@ export function AssetList() {
                     {items.map((item) => {
                       const profit = item.profit || 0;
                       const isPositive = profit >= 0;
+                      const currentVal = item.currentValue || item.totalInvested;
+                      const allocation = totalPortfolioValue > 0 ? (currentVal / totalPortfolioValue) * 100 : 0;
+                      
                       return (
                         <div 
                           key={item.ticker} 
@@ -85,12 +92,23 @@ export function AssetList() {
                             <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
                             <div>
                               <div className="text-display-tiny text-white uppercase italic group-hover:text-blue-500 transition-colors">{item.ticker}</div>
-                              <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-60">{item.assetType}</div>
+                              <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-60">
+                                {item.assetType} • {allocation.toFixed(1)}% <span className="text-[8px] italic">DA CARTEIRA</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="w-32 text-right font-black text-slate-400 text-[10px]">{item.totalQuantity} <span className="opacity-30">UND</span></div>
-                          <div className="w-40 text-right font-black text-slate-400 text-[10px]">R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                          <div className="w-40 text-right text-display-tiny text-white uppercase italic">R$ {(item.currentValue || item.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                          <div className="w-32 text-right">
+                            <div className="font-black text-slate-400 text-[10px]">{item.totalQuantity} <span className="opacity-30">UND</span></div>
+                            <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">QTD TOTAL</div>
+                          </div>
+                          <div className="w-40 text-right">
+                            <div className="font-black text-slate-400 text-[10px]">R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">PREÇO MÉDIO</div>
+                          </div>
+                          <div className="w-40 text-right">
+                            <div className="text-display-tiny text-white uppercase italic">R$ {currentVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest">VALOR ATUAL</div>
+                          </div>
                           <div className={`w-40 text-right ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
                             <div className="flex flex-col items-end">
                               <span className="text-[10px] font-black italic">R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -107,31 +125,49 @@ export function AssetList() {
                 </div>
 
                 {/* Mobile List (Condensed) */}
-                <div className="md:hidden divide-y divide-white/5 border-t border-white/5">
+                <div className="md:hidden space-y-3">
                   {items.map((item) => {
                     const profit = item.profit || 0;
                     const isPositive = profit >= 0;
+                    const currentVal = item.currentValue || item.totalInvested;
+                    const allocation = totalPortfolioValue > 0 ? (currentVal / totalPortfolioValue) * 100 : 0;
+
                     return (
                       <div
                         key={item.ticker}
                         onClick={() => handleFetchDetails(item.ticker, item.assetType)}
                         className="p-4 bg-white/5 border border-white/5 rounded-2xl active:scale-[0.98] transition-all"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
                             <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
                             <div>
                               <div className="text-display-tiny text-white uppercase italic">{item.ticker}</div>
-                              <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{item.assetType}</div>
+                              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                {item.assetType} • {allocation.toFixed(1)}%
+                              </div>
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="text-display-tiny text-white uppercase italic">
-                              R$ {(item.currentValue || item.totalInvested).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {currentVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                             <div className={`text-[9px] font-black flex items-center justify-end gap-1 uppercase tracking-widest ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
                               {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                               {isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                          <div>
+                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-0.5">Qtd / Médio</div>
+                            <div className="text-[10px] font-bold text-slate-400">{item.totalQuantity} UND • R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-0.5">Lucro/Prejuízo</div>
+                            <div className={`text-[10px] font-bold ${isPositive ? 'text-emerald-500/80' : 'text-red-400/80'}`}>
+                              R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                           </div>
                         </div>
