@@ -446,10 +446,8 @@ export function universalLexer<T = any>(
 
   // Extração especial para dividendos (tabelas)
   if (html.includes('table-dividends') || html.includes('dividendos') || html.includes('rendimentos')) {
-    // Investidor10 has normal HTML tables for dividends.
-    // Data Com | Data Pagamento | Valor | Tipo
-    // Let's use a very robust parser for the table rows.
-    const rowRegex = /<tr>\s*<td>([\d\/]+)<\/td>\s*<td>([\d\/.-]*|-)<\/td>\s*<td>([R$\s\d,.]+)<\/td>\s*<td>([^<]+)<\/td>\s*<\/tr>/gi;
+    // Regex flexível para: <td> ... </td> com <td class="..."> e <tr class="..."> ignorados
+    const rowRegex = /<tr[^>]*>\s*<td[^>]*>([\d\/]+)<\/td>\s*<td[^>]*>([\w\d\/.-]*|-)<\/td>\s*<td[^>]*>([R$\s\d,.]+)<\/td>\s*<td[^>]*>([^<]+)<\/td>\s*<\/tr>/gi;
     const matches = [...html.matchAll(rowRegex)];
     if (matches.length > 0) {
       results.dividendos = matches.slice(0, 50).map(m => ({
@@ -459,15 +457,15 @@ export function universalLexer<T = any>(
         tipo: m[4].trim()
       }));
     } else {
-      // Investidor10 alternative table format
-      const altRowRegex = /<tr>\s*<td>([\w\s]+)<\/td>\s*<td>([\d\/]+)<\/td>\s*<td>([\d\/.-]*|-)<\/td>\s*<td>([R$\s\d,.]+)<\/td>\s*<\/tr>/gi;
+      // Investidor10 format: Tipo | Data Com | Pagamento | Valor
+      const altRowRegex = /<tr[^>]*>\s*<td[^>]*>([\w\s.]+)<\/td>\s*<td[^>]*>([\d\/]+)<\/td>\s*<td[^>]*>([\w\d\/.-]*|-)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/gi;
       const altMatches = [...html.matchAll(altRowRegex)];
       if (altMatches.length > 0) {
         results.dividendos = altMatches.slice(0, 50).map(m => ({
           tipo: m[1].trim(),
           dataCom: m[2].trim(),
           pagamento: m[3].trim(),
-          valor: m[4].trim()
+          valor: m[4].replace(/\\n/g, '').replace(/\s+/g, '').trim()
         }));
       }
     }
