@@ -39,9 +39,7 @@ export default function Search() {
       setLoading(true);
       setHasSearched(true);
       try {
-        console.log(`[Search] Searching for: ${debouncedQuery}`);
         const data = await financeService.search(debouncedQuery);
-        console.log(`[Search] Results:`, data);
         setResults(data);
       } catch (err) {
         console.error('Search failed', err);
@@ -83,20 +81,20 @@ export default function Search() {
         icon={SearchIcon}
       />
 
-      <div className="relative flex items-center w-full bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] focus-within:border-blue-500/30 transition-all p-2 overflow-hidden group">
+      <div className="relative flex items-center w-full bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] focus-within:border-blue-500/30 transition-all p-1.5 overflow-hidden group">
         <div className="absolute inset-0 bg-blue-600/[0.02] opacity-0 group-focus-within:opacity-100 transition-opacity" />
-        <div className="pl-4 md:pl-6 text-slate-500 relative z-10">
+        <div className="pl-3 md:pl-5 text-slate-500 relative z-10">
           {loading ? (
-            <Loader2 className="icon-md md:icon-lg text-blue-500 animate-spin" />
+            <Loader2 className="icon-sm md:icon-md text-blue-500 animate-spin" />
           ) : (
-            <SearchIcon className="icon-md md:icon-lg group-focus-within:text-blue-500 transition-colors" />
+            <SearchIcon className="icon-sm md:icon-md group-focus-within:text-blue-500 transition-colors" />
           )}
         </div>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent border-none outline-none py-4 px-4 md:py-6 md:px-6 text-sm md:text-lg text-white font-medium placeholder:text-slate-700 placeholder:italic relative z-10"
+          className="flex-1 min-w-0 bg-transparent border-none outline-none py-2.5 px-3 md:py-4 md:px-5 text-xs md:text-base text-white font-medium placeholder:text-slate-700 placeholder:italic relative z-10"
           placeholder="Buscar ativos (ex: PETR4, AAPL, BTC-USD)"
         />
         <AnimatePresence>
@@ -137,8 +135,7 @@ export default function Search() {
             </span>
           )}
         </div>
-        
-        <div className="overflow-hidden bg-slate-900/30 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]">
+              <div className="overflow-hidden bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl md:rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]">
           <div className="divide-y divide-white/5">
             <AnimatePresence mode="popLayout">
               {(hasSearched ? results : mostSearched).map((asset, idx) => {
@@ -148,17 +145,17 @@ export default function Search() {
                 return (
                   <Link key={ticker} to={`/asset/${ticker.replace('.SA', '')}`}>
                     <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, x: -10 }}
                       transition={{ delay: idx * 0.02 }}
-                      className="py-10 px-10 flex flex-col md:flex-row md:items-center justify-between group cursor-pointer hover:bg-white/[0.03] transition-all relative overflow-hidden"
+                      className="py-4 px-4 md:py-5 md:px-6 flex items-center justify-between group cursor-pointer hover:bg-white/[0.03] transition-all relative overflow-hidden"
                     >
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-blue-600 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]" />
-                      <div className="absolute inset-0 bg-blue-600/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="flex items-center gap-8 relative z-10 mb-6 md:mb-0">
-                        <div className="w-16 h-16 rounded-[1.25rem] bg-white p-3.5 shadow-2xl border border-white/10 group-hover:scale-110 transition-transform duration-700 shrink-0 flex items-center justify-center relative">
-                          <div className="absolute inset-0 bg-blue-600/5 rounded-[1.25rem] opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 shadow-[0_0_15px_rgba(59,130,246,0.6)]" />
+                      
+                      <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white p-2 shadow-xl border border-white/10 group-hover:scale-105 transition-transform duration-500 shrink-0 flex items-center justify-center relative">
+                          <div className="absolute inset-0 bg-blue-600/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                           <AssetIcon 
                             assetType={mapQuoteTypeToAssetType(asset)} 
                             ticker={ticker} 
@@ -166,35 +163,41 @@ export default function Search() {
                           />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-4 mb-2">
-                            <span className="text-display-sm text-white uppercase italic group-hover:text-blue-400 transition-colors tracking-tighter leading-none">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-display-tiny text-sm text-white uppercase italic group-hover:text-blue-400 transition-colors tracking-tighter leading-none">
                               {ticker.replace('.SA', '')}
                             </span>
-                            <span className="px-4 py-1.5 bg-white/5 text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl border border-white/5 shadow-inner italic">
-                              {asset.exchange || 'B3'}
-                            </span>
+                            <div className="flex items-center gap-1.5 font-black uppercase text-[8px] tracking-[0.15em] italic">
+                              <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded-md border border-blue-500/10">
+                                {asset.exchange || 'B3'}
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded-md border ${
+                                (asset.type || asset.quoteType) === 'EQUITY' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' :
+                                (asset.type || asset.quoteType) === 'ETF' ? 'bg-purple-500/10 text-purple-500 border-purple-500/10' :
+                                (asset.type || asset.quoteType) === 'CRYPTOCURRENCY' ? 'bg-amber-500/10 text-amber-500 border-amber-500/10' :
+                                'bg-slate-500/10 text-slate-500 border-slate-500/10'
+                              }`}>
+                                {asset.type || asset.quoteType || 'EQUITY'}
+                              </span>
+                            </div>
                           </div>
-                          <div className="text-[10px] font-black text-slate-600 group-hover:text-slate-400 transition-colors uppercase tracking-[0.3em] italic opacity-60 truncate max-w-[200px] md:max-w-md">
+                          <div className="text-[9px] font-black text-slate-500 group-hover:text-slate-400 transition-colors uppercase tracking-[0.2em] italic opacity-60 truncate">
                             {asset.shortname || asset.name || ticker}
                           </div>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <div className="flex items-center gap-4 justify-end">
-                          <span className="text-display-tiny text-white uppercase italic">
-                            {asset.currency || 'R$'} {asset.price || '---'}
-                          </span>
+                      <div className="text-right ml-4 shrink-0">
+                        <div className="flex flex-col items-end">
+                          <div className="text-display-tiny text-sm text-white uppercase italic tracking-tighter">
+                             {asset.currency === 'BRL' ? 'R$' : (asset.currency || 'R$')} {asset.price || '---'}
+                          </div>
                           {asset.change && (
-                            <span className={`flex items-center text-[10px] font-black px-2 py-1 rounded-lg shadow-sm ${asset.positive !== false ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-red-400 bg-red-500/10 border border-red-500/20'}`}>
+                            <div className={`flex items-center text-[9px] font-black mt-0.5 ${asset.positive !== false ? 'text-emerald-400' : 'text-red-400'}`}>
                               {asset.change}
-                              {asset.positive !== false ? <TrendingUp className="icon-xs ml-1" /> : <ArrowDownRight className="icon-xs ml-1 rotate-45" />}
-                            </span>
+                              {asset.positive !== false ? <TrendingUp className="w-2.5 h-2.5 ml-0.5" /> : <ArrowDownRight className="w-2.5 h-2.5 ml-0.5 rotate-45" />}
+                            </div>
                           )}
-                        </div>
-                        <div className="text-[10px] font-black text-slate-600 mt-1.5 uppercase tracking-widest italic flex items-center justify-end gap-1.5">
-                          <div className="w-1 h-1 rounded-full bg-slate-700" />
-                          {asset.type || asset.quoteType || 'EQUITY'}
                         </div>
                       </div>
                     </motion.div>

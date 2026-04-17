@@ -48,7 +48,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     // Prevent syncing too often (once every 15 mins)
     const now = Date.now();
     if (now - lastSyncRef.current < 15 * 60 * 1000) {
-      console.log('[SYNC] Skipped - last sync was recent.');
       return;
     }
 
@@ -56,19 +55,15 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     lastSyncRef.current = now;
 
     try {
-      console.log(`[SYNC] Iniciando varredura para ${portfolio.length} ativos...`);
       
       const results = await Promise.all(
         portfolio.slice(0, 30).map(async (item) => {
           try {
-            console.log(`[SYNC] Buscando dividendos para: ${item.ticker}...`);
             const divs = await financeService.getAssetDividends(item.ticker);
             if (!divs || !Array.isArray(divs)) {
-              console.log(`[SYNC] Nenhum dado retornado para ${item.ticker}`);
               return [];
             }
             
-            console.log(`[SYNC] ${divs.length} dividendos encontrados para ${item.ticker}`);
             return divs.map(d => ({
               ticker: item.ticker.toUpperCase(),
               type: item.assetType || (item.ticker.toUpperCase().endsWith('11') ? 'FII' : 'ACAO'),
@@ -84,7 +79,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       );
 
       const flatDividends = results.flat().filter(d => d && d.date && d.amount > 0);
-      console.log(`[SYNC] Total de ${flatDividends.length} registros brutos encontrados.`);
 
       // Predição Automática (1 mês para FII, 3 meses para Ações)
       const futurePredictions: any[] = [];
@@ -126,7 +120,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       if (isConfigured) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          console.log(`[SYNC] Salvando ${allToSync.length} registros no Supabase...`);
           // Batch check exists would be better but let's do sequential for safety with RLS
           let added = 0;
           for (const div of allToSync) {
@@ -140,7 +133,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
               if (!error) added++;
             }
           }
-          console.log(`[SYNC] Sucesso! ${added} novos proventos salvos na nuvem.`);
         }
       } else {
         const local = JSON.parse(localStorage.getItem('invest_dividends') || '[]');
@@ -154,7 +146,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         if (changed) {
           localStorage.setItem('invest_dividends', JSON.stringify(local));
           window.dispatchEvent(new Event('invest_dividends_updated'));
-          console.log('[SYNC] Sucesso! Novos proventos salvos localmente.');
         }
       }
       

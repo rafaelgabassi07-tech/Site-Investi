@@ -2,7 +2,14 @@ import { z } from 'zod';
 import yahooFinanceRaw from 'yahoo-finance2';
 
 // Instantiate yahooFinance to avoid "Call new YahooFinance() first" error
-const yahooFinance = new (yahooFinanceRaw as any)();
+// We disable validation logging to prevent library from spamming logs on schema mismatches
+const yahooFinance = new (yahooFinanceRaw as any)({
+  validation: {
+    logErrors: false,
+    logOptionsErrors: false,
+    allowAdditionalProps: true
+  }
+});
 
 // 1. TIPAGENS E CONTRATOS
 // ════════════════════════════════════════════════════════════════════════════
@@ -412,7 +419,7 @@ function getStealthHeaders(url: string): Record<string, string> {
     'Pragma'                   : 'no-cache',
     'Upgrade-Insecure-Requests': '1',
     'DNT'                      : '1',
-    'Referer'                  : hostname.includes('statusinvest') ? 'https://www.google.com/' : `https://${hostname}/`,
+    'Referer'                  : `https://${hostname}/`,
     'Sec-Fetch-Dest'           : 'document',
     'Sec-Fetch-Mode'           : 'navigate',
     'Sec-Fetch-Site'           : 'none',
@@ -692,15 +699,14 @@ export const etfTemplate: ExtractorTemplate<ETFData> = {
 
 const ASSET_PRESETS: Record<string, {
   i10Base: string;
-  siBase:  string;
   template: ExtractorTemplate<any>;
 }> = {
-  ACAO: { i10Base: 'https://investidor10.com.br/acoes',  siBase: 'https://statusinvest.com.br/acoes',              template: acaoTemplate },
-  FII:  { i10Base: 'https://investidor10.com.br/fiis',   siBase: 'https://statusinvest.com.br/fundos-imobiliarios', template: fiiTemplate  },
-  BDR:  { i10Base: 'https://investidor10.com.br/bdrs',   siBase: 'https://statusinvest.com.br/bdrs',               template: bdrTemplate  },
-  ETF:  { i10Base: 'https://investidor10.com.br/etfs',   siBase: 'https://statusinvest.com.br/etfs',               template: etfTemplate  },
-  STOCK: { i10Base: 'https://investidor10.com.br/stocks', siBase: 'https://statusinvest.com.br/stocks',            template: acaoTemplate },
-  CRYPTO: { i10Base: 'https://investidor10.com.br/cripto', siBase: 'https://statusinvest.com.br/cripto',           template: acaoTemplate },
+  ACAO: { i10Base: 'https://investidor10.com.br/acoes',  template: acaoTemplate },
+  FII:  { i10Base: 'https://investidor10.com.br/fiis',   template: fiiTemplate  },
+  BDR:  { i10Base: 'https://investidor10.com.br/bdrs',   template: bdrTemplate  },
+  ETF:  { i10Base: 'https://investidor10.com.br/etfs',   template: etfTemplate  },
+  STOCK: { i10Base: 'https://investidor10.com.br/stocks', template: acaoTemplate },
+  CRYPTO: { i10Base: 'https://investidor10.com.br/cripto', template: acaoTemplate },
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -738,15 +744,12 @@ interface YahooFundamentalsData {
 
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
-  console.log(`[YAHOO] Fetching quote for ${ticker}, trying symbols: ${symbols.join(', ')}`);
 
   for (const symbol of symbols) {
     try {
       const quote = await yahooFinance.quote(symbol);
-      console.log(`[YAHOO] Raw quote for ${symbol}:`, JSON.stringify(quote));
       
       if (!quote) {
-        console.log(`[YAHOO] No quote found for ${symbol}`);
         continue;
       }
 
@@ -757,11 +760,9 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
       }
       
       if (!quote.regularMarketPrice) {
-        console.log(`[YAHOO] Quote found for ${symbol} but no regularMarketPrice`);
         continue;
       }
       
-      console.log(`[YAHOO] Successfully fetched quote for ${symbol}: ${quote.regularMarketPrice}`);
       return {
         regularMarketPrice:          quote.regularMarketPrice,
         regularMarketChangePercent:  quote.regularMarketChangePercent,
@@ -850,7 +851,7 @@ export class NexusEngine {
     maxRetries:       3,
     retryBaseDelay:   500,
     fetchTimeoutMs:   10_000,
-    concurrencyLimit: 5,
+    concurrencyLimit: 15,
     domainRps:        2,
     domainBurst:      5,
   };
@@ -1172,7 +1173,7 @@ export class NexusEngine {
 
   /**
    * Busca rankings de ativos baseados em critérios específicos.
-   * Simula a extração de dados de rankings do Investidor10/StatusInvest.
+   * Simula a extração de dados de rankings do Investidor10.
    */
   static async fetchRanking(category: string, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
     const cacheKey = `ranking:${category}:${type}`;
@@ -1183,12 +1184,33 @@ export class NexusEngine {
       // Como não temos uma API direta de ranking, vamos buscar os top ativos do Yahoo Finance
       // ou simular baseado em uma lista pré-definida de ativos populares se a busca falhar.
       const popularTickers: any = {
-        ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3', 'GGBR4', 'SUZB3', 'JBSS3', 'BRFS3', 'LREN3'],
-        FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 'KNIP11', 'DEVA11', 'RECR11', 'VGIR11', 'TGAR11', 'MALV11'],
-        BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'DISB34', 'NFLX34', 'PYPL34'],
-        ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'GOLD11', 'EURP11'],
-        STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'BRK-B', 'V', 'JPM', 'UNH', 'MA', 'PG', 'HD'],
-        CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'DOT-USD', 'MATIC-USD', 'LINK-USD']
+        ACAO: [
+          'PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 
+          'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3', 'GGBR4', 'SUZB3', 'JBSS3', 'BRFS3', 'LREN3',
+          'RADL3', 'EQTL3', 'VIVT3', 'SANB11', 'ENGI11', 'TAEE11', 'TRPL4', 'KLBN11', 'CPFE3', 'BBSE3',
+          'GOAU4', 'CCRO3', 'TIMS3', 'BRAP4', 'USIM5', 'MRFG3', 'ASAI3', 'HAPV3', 'RDOR3', 'SBSP3'
+        ],
+        FII: [
+          'HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 
+          'KNIP11', 'DEVA11', 'RECR11', 'VGIR11', 'TGAR11', 'MALL11', 'HGBS11', 'HGRU11', 'BRCR11',
+          'JSRE11', 'RECT11', 'VILG11', 'RBRP11', 'ALZR11', 'GALG11', 'CPFF11', 'KNSC11', 'RBRR11'
+        ],
+        BDR: [
+          'AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'DISB34', 'NFLX34', 
+          'PYPL34', 'NIKE34', 'COCA34', 'MCDC34', 'HOME34', 'VISA34', 'JPMC34', 'WMTB34', 'PEP434'
+        ],
+        ETF: [
+          'BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'GOLD11', 'EURP11',
+          'NASD11', 'USTK11', 'FIXA11', 'LFTS11', 'WRLD11', 'QBTC11', 'QETH11'
+        ],
+        STOCK: [
+          'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'BRK-B', 'V', 'JPM', 'UNH', 
+          'MA', 'PG', 'HD', 'LLY', 'AVGO', 'COST', 'CVX', 'ABBV', 'PEP', 'KO', 'BAC', 'ADBE'
+        ],
+        CRYPTO: [
+          'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'DOT-USD', 
+          'MATIC-USD', 'LINK-USD', 'SHIB-USD', 'AVA-USD', 'LTC-USD', 'UNI-USD', 'ATOM-USD'
+        ]
       };
 
       const tickers = popularTickers[type] || popularTickers.ACAO;
@@ -1631,7 +1653,6 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        console.log(`[YAHOO] Fetching chart for ${symbol}, period1: ${period1.toISOString()}, interval: ${interval}`);
         const result = await yahooFinance.chart(symbol, {
           period1: period1,
           interval: interval as any
@@ -1667,15 +1688,13 @@ export class NexusEngine {
     const assetType = inferAssetType(cleanTicker);
     const isBrazilian = /^[A-Z]{4}[3-6]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
 
-    // Para ativos brasileiros, tentamos primeiro o Scraper (Investidor10/StatusInvest)
+    // Para ativos brasileiros, tentamos primeiro o Scraper (Investidor10)
     // pois o Yahoo Finance é instável com dividendos brasileiros (especialmente FIIs)
     if (isBrazilian) {
       try {
-        console.log(`[SCRAPER] Buscando dividendos via Nexus Scraper para ${cleanTicker}...`);
         const scrapeResult = await this.fetchAtivo(cleanTicker, assetType);
         
         if (scrapeResult.results && scrapeResult.results.dividendos && scrapeResult.results.dividendos.length > 0) {
-          console.log(`[SCRAPER] Encontrados ${scrapeResult.results.dividendos.length} dividendos via Scraper para ${cleanTicker}`);
           
           return scrapeResult.results.dividendos.map((d: any) => {
             // Converter data brasileira DD/MM/YYYY para ISO
@@ -1703,7 +1722,6 @@ export class NexusEngine {
     const symbols = [isBrazilian ? `${cleanTicker}.SA` : cleanTicker, cleanTicker];
     for (const symbol of symbols) {
       try {
-        console.log(`[YAHOO] Requisitando dividendos para ${symbol}...`);
         const result = await yahooFinance.chart(symbol, {
           period1: '5y',
           interval: '1mo',
@@ -1822,7 +1840,7 @@ export class NexusEngine {
     const clean = canonicalizeTicker(ticker);
     for (const t of (type ? [type] : ['ACAO', 'FII', 'BDR', 'ETF'] as ExtendedAssetType[])) {
       const preset = ASSET_PRESETS[t];
-      const key    = `nexus:${preset.i10Base}/${clean}/|${preset.siBase}/${clean}/`;
+      const key    = `nexus:${preset.i10Base}/${clean}/`;
       this._cache.delete(key);
     }
   }
@@ -1847,7 +1865,6 @@ export class NexusEngine {
       rateLimiters:      Array.from(this._rateLimiters.keys()),
       circuitBreakers:   Object.keys(cbMetrics).length > 0 ? cbMetrics : {
         investidor10: { estado: 'FECHADO' as CBState, falhas: 0 },
-        statusinvest: { estado: 'FECHADO' as CBState, falhas: 0 },
       },
     };
   }

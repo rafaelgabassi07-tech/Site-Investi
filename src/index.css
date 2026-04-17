@@ -11,8 +11,8 @@
   --color-nexus-cyan: #06b6d4;
   --color-nexus-emerald: #10b981;
   
-  --text-xxs: 0.75rem; /* 12px originally 10px */
-  --text-tiny: 0.75rem; /* 12px originally 8px */
+  --text-xxs: 0.625rem; /* 10px */
+  --text-tiny: 0.6875rem; /* 11px */
 }
 
 @layer base {
@@ -34,7 +34,7 @@
     --border: rgba(255, 255, 255, 0.05);
     --input: #1e293b;
     --ring: #3b82f6;
-    --radius: 1.5rem;
+    --radius: 1rem;
   }
 }
 
@@ -56,19 +56,19 @@
 
 @layer components {
   .card {
-    @apply bg-slate-900/30 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden transition-all duration-700 hover:border-blue-500/20 hover:bg-slate-900/40;
+    @apply bg-slate-900/30 backdrop-blur-2xl border border-white/5 rounded-2xl md:rounded-[2rem] shadow-2xl overflow-hidden transition-all duration-700 hover:border-blue-500/20 hover:bg-slate-900/40;
   }
   
   .glass-panel {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem];
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl;
   }
 
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-[0.2em] text-[10px] py-4 px-8 rounded-2xl transition-all shadow-xl shadow-blue-500/10 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 ring-1 ring-blue-400/20;
+    @apply bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-[0.2em] text-[10px] py-2.5 md:py-3.5 px-5 md:px-7 rounded-lg md:rounded-xl transition-all shadow-xl shadow-blue-500/10 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 ring-1 ring-blue-400/20;
   }
 
   .btn-secondary {
-    @apply px-8 py-4 bg-white/5 border border-white/10 text-slate-200 font-bold uppercase tracking-[0.2em] text-[10px] rounded-2xl hover:bg-white/10 transition-all active:scale-95 hover:border-white/20;
+    @apply px-5 md:px-7 py-2.5 md:py-3.5 bg-white/5 border border-white/10 text-slate-200 font-bold uppercase tracking-[0.2em] text-[10px] rounded-lg md:rounded-xl hover:bg-white/10 transition-all active:scale-95 hover:border-white/20;
   }
 
   .heading-ultra {
@@ -94,15 +94,15 @@
 
   /* Typography Standardization */
   .text-display { @apply font-display tracking-tighter uppercase; }
-  .text-display-tiny { @apply font-display text-[10px] sm:text-xs md:text-sm tracking-widest uppercase font-black; }
-  .text-display-xs { @apply font-display text-xs sm:text-sm md:text-base tracking-tight uppercase font-black; }
-  .text-display-sm { @apply font-display text-lg sm:text-xl md:text-2xl tracking-tighter uppercase font-bold; }
-  .text-display-md { @apply font-display text-2xl sm:text-3xl md:text-4xl tracking-tighter uppercase font-bold; }
-  .text-display-lg { @apply font-display text-4xl sm:text-5xl md:text-6xl tracking-tighter uppercase font-bold; }
-  .text-display-xl { @apply font-display text-5xl sm:text-6xl md:text-7xl tracking-tighter uppercase font-bold; }
-  .text-display-2xl { @apply font-display text-6xl sm:text-7xl md:text-8xl tracking-tighter uppercase font-bold; }
+  .text-display-tiny { @apply font-display text-[9px] sm:text-[10px] md:text-xs tracking-widest uppercase font-black; }
+  .text-display-xs { @apply font-display text-[11px] sm:text-xs md:text-sm tracking-tight uppercase font-black; }
+  .text-display-sm { @apply font-display text-base sm:text-lg md:text-xl tracking-tighter uppercase font-bold; }
+  .text-display-md { @apply font-display text-xl sm:text-2xl md:text-3xl tracking-tighter uppercase font-bold; }
+  .text-display-lg { @apply font-display text-3xl sm:text-4xl md:text-5xl tracking-tighter uppercase font-bold; }
+  .text-display-xl { @apply font-display text-4xl sm:text-5xl md:text-6xl tracking-tighter uppercase font-bold; }
+  .text-display-2xl { @apply font-display text-5xl sm:text-6xl md:text-7xl tracking-tighter uppercase font-bold; }
   .text-mono { @apply font-mono tracking-tight; }
-  .text-label { @apply text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.2em] text-slate-500 italic; }
+  .text-label { @apply text-[9px] sm:text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 italic; }
 }
 
 .recharts-cartesian-grid-horizontal line,

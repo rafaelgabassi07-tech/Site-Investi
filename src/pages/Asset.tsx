@@ -225,7 +225,7 @@ export default function Asset() {
         </div>
       </div>
 
-      <div className="px-1 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="px-1 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-3">
         {/* Left Column: Price & Chart */}
         <div className="lg:col-span-2 space-y-6">
           <div className="relative border-b border-slate-800/50 pb-6">
@@ -245,15 +245,16 @@ export default function Asset() {
                 </div>
               </div>
 
-              <div className="flex items-center p-1 bg-white/5 border border-white/5 rounded-xl">
+              <div className="flex items-center p-1 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-xl relative overflow-hidden group">
+                <div className="absolute inset-0 bg-blue-600/5 blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity" />
                 {['1mo', '3mo', '6mo', '1y', '5y'].map((p) => (
                   <button
                     key={p}
                     onClick={() => setActivePeriod(p)}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all relative z-10 italic ${
                       activePeriod === p 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-slate-500 hover:text-slate-300'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-500/50' 
+                        : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
                     }`}
                   >
                     {p}
@@ -263,7 +264,7 @@ export default function Asset() {
             </div>
             
             {/* Chart */}
-            <div className="h-[250px] md:h-[300px] w-full -mx-4 md:mx-0">
+            <div className="h-[200px] md:h-[300px] w-full -mx-4 md:mx-0">
               {history.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -332,7 +333,7 @@ export default function Asset() {
           </div>
 
           {/* Indicators Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-white/5 pb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-b border-white/5 pb-6">
             {validIndicators.map((ind, idx) => (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -340,7 +341,7 @@ export default function Asset() {
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.03 }}
                 key={idx} 
-                className="p-4 bg-slate-900/10 border border-white/5 rounded-2xl transition-all duration-500 hover:bg-slate-900/40 group relative overflow-hidden hover:border-blue-500/20"
+                className="p-3 bg-slate-900/10 border border-white/5 rounded-xl transition-all duration-500 hover:bg-slate-900/40 group relative overflow-hidden hover:border-blue-500/20"
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/5 blur-[40px] -z-10 group-hover:bg-blue-600/10 transition-all duration-700" />
                 <div className="flex items-center gap-3 mb-3">

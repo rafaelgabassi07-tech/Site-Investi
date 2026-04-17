@@ -192,11 +192,11 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="relative max-w-2xl mx-auto px-4 md:px-0"
+            className="relative max-w-2xl mx-auto px-1 md:px-0"
           >
             <div className="absolute inset-0 bg-blue-500/20 blur-[100px] -z-10" />
-            <div className="relative flex items-center w-full bg-[#0f172a]/60 backdrop-blur-2xl border border-white/5 rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] focus-within:border-blue-500/30 transition-all p-1.5 overflow-hidden group">
-              <div className="pl-4 text-slate-600 transition-colors group-focus-within:text-blue-500">
+            <div className="relative flex flex-col md:flex-row items-center w-full bg-[#0f172a]/60 backdrop-blur-2xl border border-white/5 rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] focus-within:border-blue-500/30 transition-all p-1 md:p-1.5 overflow-hidden group gap-1.5">
+              <div className="hidden md:block pl-4 text-slate-600 transition-colors group-focus-within:text-blue-500">
                 <Search className="icon-md md:icon-lg" />
               </div>
               <input 
@@ -205,13 +205,13 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 min-w-0 bg-transparent border-none outline-none py-3 md:py-4 px-3 md:px-4 text-sm md:text-lg text-white placeholder:text-slate-700 font-bold tracking-tight"
+                className="flex-1 w-full md:w-auto min-w-0 bg-transparent border border-white/5 md:border-none rounded-lg md:rounded-none outline-none py-2 md:py-3 px-3 text-xs md:text-base text-white placeholder:text-slate-700 font-bold tracking-tight text-center md:text-left focus:border-blue-500/30 md:focus:border-none"
               />
               <button 
                 onClick={() => {
                   if (searchQuery) navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
                 }}
-                className="btn-primary"
+                className="btn-primary w-full md:w-auto mt-1 md:mt-0"
               >
                 Analisar
               </button>
@@ -335,7 +335,7 @@ export default function Home() {
 
       {/* Market Sentiment & Quick Stats */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group shadow-2xl">
+        <div className="lg:col-span-8 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden group shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] -z-10 group-hover:bg-blue-600/10 transition-all duration-1000" />
           
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
@@ -363,9 +363,9 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto">
-            <div className="relative flex flex-col items-center">
-              <div className="relative w-full max-w-[200px] aspect-[2/1]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 items-center max-w-4xl mx-auto">
+              <div className="relative flex flex-col items-center">
+                <div className="relative w-full max-w-[160px] aspect-[2/1]">
                 <svg className="w-full h-full" viewBox="0 0 100 50">
                   <path 
                     d="M 10 40 A 30 30 0 0 1 90 40" 
@@ -434,13 +434,13 @@ export default function Home() {
               </p>
               
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                  <p className="text-tiny text-slate-500 font-black uppercase tracking-widest mb-1">Ontem</p>
-                  <p className="text-sm font-bold text-slate-300">42 <span className="text-tiny font-bold opacity-60 uppercase">Medo</span></p>
+                <div className="p-2 bg-white/5 rounded-xl border border-white/5">
+                  <p className="text-xxs text-slate-500 font-black uppercase tracking-widest mb-0.5">Ontem</p>
+                  <p className="text-xs font-bold text-slate-300">42 <span className="text-xxs font-bold opacity-60 uppercase">Medo</span></p>
                 </div>
-                <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                  <p className="text-tiny text-slate-500 font-black uppercase tracking-widest mb-1">Semana Passada</p>
-                  <p className="text-sm font-bold text-slate-300">58 <span className="text-tiny font-bold opacity-60 uppercase">Neutro</span></p>
+                <div className="p-2 bg-white/5 rounded-xl border border-white/5">
+                  <p className="text-xxs text-slate-500 font-black uppercase tracking-widest mb-0.5">Semana Passada</p>
+                  <p className="text-xs font-bold text-slate-300">58 <span className="text-xxs font-bold opacity-60 uppercase">Neutro</span></p>
                 </div>
               </div>
             </div>
@@ -448,7 +448,7 @@ export default function Home() {
         </div>
 
         <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="flex-1 bg-blue-600/10 border border-blue-500/20 rounded-[2.5rem] p-8 relative overflow-hidden group">
+          <div className="flex-1 bg-blue-600/10 border border-blue-500/20 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500 text-blue-500">
               <Zap className="icon-3xl" />
             </div>
@@ -461,7 +461,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between group cursor-pointer hover:border-white/10 transition-all">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 flex items-center justify-between group cursor-pointer hover:border-white/10 transition-all">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors">
                 <Newspaper className="icon-lg" />
@@ -486,7 +486,8 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-white tracking-tight">Rankings de Ativos</h2>
           </div>
           
-          <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl">
+          <div className="flex items-center p-1 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-blue-600/5 blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity" />
             {[
               { id: 'ACAO', label: 'Ações', icon: TrendingUp },
               { id: 'FII', label: 'FIIs', icon: Building2 },
@@ -495,13 +496,13 @@ export default function Home() {
               <button
                 key={tab.id}
                 onClick={() => setActiveRankTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-[0.1em] transition-all relative z-10 italic ${
                   activeRankTab === tab.id 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-500/50' 
+                    : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
                 }`}
               >
-                <tab.icon size={16} />
+                <tab.icon size={14} />
                 {tab.label}
               </button>
             ))}

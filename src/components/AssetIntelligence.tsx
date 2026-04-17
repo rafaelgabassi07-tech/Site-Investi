@@ -70,7 +70,7 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
             Comparação com Índices
           </h3>
         </div>
-        <div className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl h-[400px]">
+        <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
@@ -117,17 +117,17 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
           </h3>
         </div>
         
-        <div className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl">
-          <p className="text-slate-400 text-sm mb-6 max-w-2xl">
+        <div className="p-4 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] md:rounded-2xl">
+          <p className="text-slate-400 text-xs md:text-sm mb-6 max-w-2xl px-2">
             Com base no histórico de proventos, o Radar identifica os meses com maior probabilidade de pagamentos no futuro.
           </p>
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-1.5 md:gap-3">
             {MONTHS.map((m, i) => {
               const isProbable = dividendMonths.includes(i);
               return (
                 <div 
                   key={m} 
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border ${
+                  className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-xl border ${
                     isProbable 
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
                     : 'bg-slate-800/30 border-white/5 text-slate-500'
@@ -173,7 +173,7 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
             <div className="w-1.5 h-5 bg-blue-500 rounded-full" />
             <h3 className="text-display-xs text-white uppercase italic">Receitas e Lucros (Anual)</h3>
           </div>
-          <div className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl h-[400px]">
+          <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={formattedFunds} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
@@ -200,8 +200,8 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
               Lucro x Cotação
             </h3>
           </div>
-          <div className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl h-[400px]">
-             <p className="text-slate-400 text-sm mb-6 max-w-2xl">
+          <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
+             <p className="text-slate-400 text-xs md:text-sm mb-6 max-w-2xl px-2">
                Análise das cotações (escala direita) comparado com o Lucro Líquido anual (escala esquerda).
              </p>
             <ResponsiveContainer width="100%" height="100%">
@@ -227,7 +227,7 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
             <div className="w-1.5 h-5 bg-purple-500 rounded-full" />
             <h3 className="text-display-xs text-white uppercase italic">Evolução do Patrimônio</h3>
           </div>
-          <div className="p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-2xl h-[400px]">
+          <div className="p-2 md:p-6 bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl h-[200px] md:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={formattedFunds} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <defs>

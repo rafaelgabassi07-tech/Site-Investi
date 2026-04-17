@@ -60,8 +60,8 @@ export default function Favorites() {
         icon={Star}
       />
 
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-4 flex items-center text-slate-500">
+      <div className="relative max-w-md group">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-500 transition-colors">
           <Search className="icon-sm" />
         </div>
         <input 
@@ -69,7 +69,7 @@ export default function Favorites() {
           placeholder="Filtrar favoritos..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm"
+          className="block w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent outline-none text-white font-bold placeholder:text-slate-500 transition-all text-sm hover:border-white/20"
         />
       </div>
 

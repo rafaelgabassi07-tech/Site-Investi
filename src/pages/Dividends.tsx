@@ -182,7 +182,7 @@ export default function Dividends() {
                 value={ticker}
                 onChange={(e) => setTicker(e.target.value.toUpperCase())}
                 required
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white font-bold"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent outline-none text-white font-bold placeholder:text-slate-500 transition-all text-sm hover:border-white/20"
               />
               <input 
                 type="number" 
@@ -191,14 +191,14 @@ export default function Dividends() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white font-bold"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent outline-none text-white font-bold placeholder:text-slate-500 transition-all text-sm hover:border-white/20"
               />
               <input 
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white font-bold [color-scheme:dark]"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-transparent outline-none text-white font-bold transition-all text-sm hover:border-white/20 [color-scheme:dark]"
               />
               <button type="submit" className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">
                 Salvar Provento

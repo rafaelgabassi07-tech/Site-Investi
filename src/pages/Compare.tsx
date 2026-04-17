@@ -87,7 +87,7 @@ export default function Compare() {
             value={ticker1}
             onChange={(e) => setTicker1(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && fetchAsset(ticker1, setAsset1, setLoading1)}
-            className="w-full bg-white/5 border border-white/5 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all uppercase font-bold tracking-tight shadow-sm"
+            className="w-full bg-white/5 border border-white/5 rounded-xl px-5 py-3 md:py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all uppercase font-bold tracking-tight shadow-sm"
           />
           <button 
             onClick={() => fetchAsset(ticker1, setAsset1, setLoading1)}
@@ -105,7 +105,7 @@ export default function Compare() {
             value={ticker2}
             onChange={(e) => setTicker2(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && fetchAsset(ticker2, setAsset2, setLoading2)}
-            className="w-full bg-white/5 border border-white/5 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all uppercase font-bold tracking-tight shadow-sm"
+            className="w-full bg-white/5 border border-white/5 rounded-xl px-5 py-3 md:py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all uppercase font-bold tracking-tight shadow-sm"
           />
           <button 
             onClick={() => fetchAsset(ticker2, setAsset2, setLoading2)}

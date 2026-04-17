@@ -160,8 +160,8 @@ export default function Layout() {
       <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
         scrolled ? 'bg-[#020617] border-b border-white/10 shadow-2xl' : 'bg-[#020617]'
       }`}>
-        <div className="py-3">
-          <div className="max-w-7xl mx-auto px-1 sm:px-2 md:px-3">
+        <div className="py-2.5 md:py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
               {/* Logo Professional Style */}
               <Link to="/" className="flex items-center gap-3 group">
@@ -328,7 +328,7 @@ export default function Layout() {
 
       {/* Main Content */}
       <main className="flex-1 pt-28 md:pt-32 pb-24 md:pb-16">
-        <div className="max-w-7xl mx-auto px-1 sm:px-2 md:px-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname.startsWith('/portfolio') ? 'portfolio-section' : location.pathname}
@@ -375,10 +375,10 @@ export default function Layout() {
       </div>
 
       {/* Footer Tecnológico */}
-      <footer className="bg-[#020617] border-t border-white/5 py-12 relative overflow-hidden">
+      <footer className="bg-[#020617] border-t border-white/5 py-12 md:py-16 relative overflow-hidden">
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-blue-600/5 blur-[100px] -z-10 rounded-full" />
-        <div className="max-w-7xl mx-auto px-1 sm:px-2 md:px-3">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
             <div className="flex flex-col items-center md:items-start gap-4">
               <Link to="/" className="flex items-center gap-3 group">
                 <Logo size={40} showText />

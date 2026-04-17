@@ -72,19 +72,19 @@ export default function Ranking() {
 
               <div className="flex flex-col md:flex-row items-center gap-4">
                 <div className="relative w-full md:w-64 group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="icon-xs text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Search className="icon-sm text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                   </div>
                   <input
                     type="text"
                     placeholder="Filtrar rankings..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-tiny font-bold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all uppercase tracking-widest"
+                    className="block w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all hover:border-white/20"
                   />
                 </div>
 
-                  <div className="flex p-1.5 bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-2xl shadow-2xl relative overflow-hidden group">
+                  <div className="flex p-1 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl relative overflow-hidden group">
                     <div className="absolute inset-0 bg-blue-600/5 blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity" />
                     {[
                       { label: 'Ações', value: 'ACAO' },
@@ -95,10 +95,10 @@ export default function Ranking() {
                       <button 
                         key={type.label} 
                         onClick={() => setSelectedType(type.value)}
-                        className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10 italic ${
+                        className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10 italic ${
                           selectedType === type.value 
-                            ? 'bg-blue-600 text-white shadow-2xl shadow-blue-500/40 ring-1 ring-blue-400/20' 
-                            : 'text-slate-600 hover:text-slate-300'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-500/50' 
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
                         }`}
                       >
                         {type.label}
@@ -108,7 +108,7 @@ export default function Ranking() {
             </div>
           </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               {filteredCategories.map((cat, idx) => (
                 <motion.div
                   key={idx}
@@ -116,23 +116,23 @@ export default function Ranking() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.03 }}
                   onClick={() => handleCategoryClick(cat.title)}
-                  className="group relative p-8 bg-slate-900/20 border border-white/5 rounded-[2.5rem] flex flex-col gap-6 transition-all duration-700 cursor-pointer hover:bg-slate-900/40 hover:border-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden active:scale-[0.98]"
+                  className="group relative p-3 md:p-5 bg-slate-900/20 border border-white/5 rounded-xl md:rounded-2xl flex flex-col gap-3 transition-all duration-500 cursor-pointer hover:bg-slate-900/40 hover:border-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden active:scale-[0.98]"
                 >
-                  <div className={`absolute top-0 right-0 w-40 h-40 ${cat.bg} blur-[60px] -z-10 ${cat.glow} transition-all duration-1000 group-hover:scale-150`} />
+                  <div className={`absolute top-0 right-0 w-24 h-24 ${cat.bg} blur-[40px] -z-10 ${cat.glow} transition-all duration-1000 group-hover:scale-150`} />
                   
-                  <div className={`w-16 h-16 rounded-2xl ${cat.bg} flex items-center justify-center border ${cat.border} group-hover:scale-110 transition-transform duration-700 shadow-2xl relative`}>
-                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                    <cat.icon className={`w-7 h-7 ${cat.text}`} />
+                  <div className={`w-10 h-10 rounded-lg ${cat.bg} flex items-center justify-center border ${cat.border} group-hover:scale-105 transition-transform duration-500 shadow-xl relative shrink-0`}>
+                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
+                    <cat.icon className={`w-5 h-5 ${cat.text}`} />
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 className="text-display-tiny text-white mb-3 group-hover:text-blue-400 transition-colors uppercase italic tracking-[0.15em] leading-tight">{cat.title}</h3>
-                    <p className="text-[10px] text-slate-500 font-black leading-relaxed uppercase tracking-[0.2em] italic opacity-80">{cat.description}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[10px] md:text-sm text-white mb-1 group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-tight font-black truncate">{cat.title}</h3>
+                    <p className="text-[8px] md:text-[9px] text-slate-500 font-black leading-tight uppercase tracking-widest italic opacity-70 group-hover:opacity-100 transition-opacity line-clamp-2">{cat.description}</p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-6 border-t border-white/5 group-hover:border-blue-500/10 transition-colors">
-                    <span className="text-[9px] font-black text-slate-700 uppercase italic tracking-widest group-hover:text-slate-400">ANALISAR RANKING</span>
-                    <ArrowUpRight className="w-4 h-4 text-slate-800 group-hover:text-blue-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-500" />
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5 group-hover:border-blue-500/10 transition-colors">
+                    <span className="text-[8px] font-black text-slate-700 uppercase italic tracking-widest group-hover:text-slate-400">ANALISAR</span>
+                    <ArrowUpRight className="w-3 h-3 text-slate-800 group-hover:text-blue-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
                   </div>
                 </motion.div>
               ))}
@@ -147,7 +147,7 @@ export default function Ranking() {
             className="space-y-3"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 md:gap-6">
                 <button 
                   onClick={() => {
                     setSelectedCategory(null);
@@ -168,15 +168,15 @@ export default function Ranking() {
 
               <div className="flex flex-col md:flex-row items-center gap-4">
                 <div className="relative w-full md:w-64 group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="icon-xs text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Search className="icon-sm text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                   </div>
                   <input
                     type="text"
                     placeholder="Buscar no ranking..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-tiny font-bold text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all uppercase tracking-widest"
+                    className="block w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all hover:border-white/20"
                   />
                 </div>
 
@@ -196,51 +196,47 @@ export default function Ranking() {
                 <p className="text-label text-slate-500 uppercase tracking-[0.2em] animate-pulse">Calculando Ranking...</p>
               </div>
             ) : (
-              <div className="overflow-hidden bg-slate-900/30 backdrop-blur-3xl border border-white/5 rounded-[3rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]">
-                <div className="grid grid-cols-1 divide-y divide-white/5">
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 md:gap-4">
                   {filteredRankingData.map((item, idx) => (
                     <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: idx * 0.05 }}
                       key={idx}
                     >
                       <Link 
                         to={`/asset/${item.ticker}`}
-                        className="p-8 flex items-center justify-between hover:bg-white/[0.04] transition-all group relative overflow-hidden"
+                        className="p-3 md:p-4 bg-slate-900/30 backdrop-blur-2xl border border-white/5 rounded-2xl flex items-center justify-between group relative overflow-hidden hover:bg-slate-900/40 hover:border-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/5 transition-all h-full"
                       >
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-blue-600 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]" />
-                        <div className="absolute inset-0 bg-blue-600/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 shadow-[0_0_15px_rgba(59,130,246,0.6)]" />
                         
-                        <div className="flex items-center gap-12 relative z-10">
-                          <div className="flex flex-col items-center justify-center w-12">
-                            <span className={`text-display-tiny ${idx < 3 ? 'text-blue-500 animate-pulse' : 'text-slate-800'} group-hover:text-blue-400 transition-colors italic tracking-widest text-sm font-black`}>
+                        <div className="flex items-center gap-3 md:gap-4 relative z-10 flex-1 min-w-0">
+                          <div className="flex items-center justify-center w-5 shrink-0">
+                            <span className={`text-[9px] font-black italic tracking-widest ${idx < 3 ? 'text-blue-500' : 'text-slate-600'} group-hover:text-blue-400 transition-colors`}>
                               {(idx + 1).toString().padStart(2, '0')}
                             </span>
                           </div>
                           
-                          <div className="flex items-center gap-8">
-                            <div className="w-16 h-16 rounded-[1.25rem] bg-white flex items-center justify-center p-3 shadow-2xl border border-white/10 group-hover:scale-110 transition-transform duration-700 shrink-0 relative">
-                              <div className="absolute inset-0 bg-blue-600/5 rounded-[1.25rem] opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center p-1.5 shadow-xl border border-white/10 group-hover:scale-105 transition-transform duration-500 shrink-0 relative">
                               <AssetIcon assetType={selectedType as any} ticker={item.ticker} className="w-full h-full relative z-10" />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-4">
-                                <span className="text-display-sm text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-none">{item.ticker}</span>
-                                {idx === 0 && (
-                                  <div className="bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20 shadow-lg shadow-amber-500/5">
-                                    <Trophy className="w-4 h-4 text-amber-500" />
-                                  </div>
-                                )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-display-tiny text-xs text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-none truncate">{item.ticker}</span>
+                                {idx === 0 && <Trophy className="w-2.5 h-2.5 text-amber-500 shrink-0" />}
                               </div>
-                              <div className="text-[10px] font-black text-slate-600 mt-2 uppercase tracking-[0.25em] italic opacity-60 group-hover:opacity-100 transition-all">{item.name}</div>
+                              <div className="text-[8px] font-black text-slate-500 mt-0.5 uppercase tracking-widest italic opacity-60 group-hover:opacity-100 transition-all truncate">{item.name}</div>
                             </div>
                           </div>
                         </div>
 
-                        <div className="text-right relative z-10">
-                          <div className="text-display-sm text-white uppercase italic tracking-tighter mb-2 group-hover:text-blue-400 transition-colors">{item.value}</div>
-                          <div className="text-[10px] font-black text-slate-700 uppercase tracking-[0.3em] opacity-60 italic group-hover:text-slate-400 group-hover:opacity-100 transition-all">{item.subValue}</div>
+                        <div className="text-right relative z-10 ml-2 shrink-0">
+                          <div className="flex flex-col items-end">
+                            <div className="text-display-tiny text-xs text-white uppercase italic tracking-tighter group-hover:text-blue-400 transition-colors">{item.value}</div>
+                            <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60 italic group-hover:text-slate-400 group-hover:opacity-100 transition-all">{item.subValue}</div>
+                          </div>
                         </div>
                       </Link>
                     </motion.div>

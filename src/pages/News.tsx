@@ -69,7 +69,7 @@ export default function News() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-8 md:p-12 bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] flex flex-col md:flex-row items-center gap-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] relative overflow-hidden group mb-8"
+          className="p-5 md:p-12 bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] md:rounded-[3rem] flex flex-col md:flex-row items-center gap-6 md:gap-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] relative overflow-hidden group mb-8"
         >
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/[0.03] blur-[120px] -z-10 group-hover:scale-125 transition-transform duration-1000" />
           <div className="w-20 h-20 md:w-28 md:h-28 rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shrink-0 shadow-[0_20px_50px_rgba(37,99,235,0.4)] border border-blue-400/30 group-hover:scale-105 transition-transform duration-700">
@@ -98,18 +98,18 @@ export default function News() {
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-4 overflow-x-auto pb-10 pt-4 no-scrollbar">
-        <div className="flex items-center gap-4 px-8 py-4 bg-slate-900/60 backdrop-blur-2xl rounded-3xl border border-white/5 text-slate-600 shrink-0 shadow-2xl italic group">
+      <div className="flex items-center gap-3 overflow-x-auto pb-10 pt-4 no-scrollbar snap-x snap-mandatory px-4 md:px-0 -mx-4 md:mx-0">
+        <div className="flex items-center gap-3 px-6 py-3 bg-slate-900/60 backdrop-blur-2xl rounded-xl border border-white/10 text-slate-600 shrink-0 shadow-2xl italic group snap-start">
           <Filter className="w-4 h-4 group-hover:text-blue-500 transition-colors" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em]">Filtros</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Filtros</span>
         </div>
         {THEMES.map(theme => (
           <button
             key={theme}
             onClick={() => setActiveTheme(theme)}
-            className={`px-10 py-4 rounded-3xl text-[10px] font-black uppercase tracking-[0.3em] whitespace-nowrap transition-all duration-500 border italic ${
+            className={`snap-start px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-300 border italic ${
               activeTheme === theme 
-                ? 'bg-blue-600 text-white shadow-[0_15px_30px_rgba(37,99,235,0.3)] border-blue-400/30' 
+                ? 'bg-blue-600 text-white shadow-[0_8px_16px_rgba(37,99,235,0.3)] border-blue-500/50' 
                 : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-slate-300 hover:border-white/10'
             }`}
           >
@@ -135,7 +135,7 @@ export default function News() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
-              className="bg-slate-900/20 border border-white/5 rounded-[3rem] group hover:border-blue-500/30 transition-all duration-700 flex flex-col relative overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] hover:shadow-blue-500/10"
+              className="bg-slate-900/20 border border-white/5 rounded-[2.5rem] md:rounded-[3rem] group hover:border-blue-500/30 transition-all duration-700 flex flex-col relative overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] hover:shadow-blue-500/10"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10 group-hover:bg-blue-600/10 transition-all duration-1000" />
               
@@ -166,7 +166,7 @@ export default function News() {
                 </div>
               )}
               
-              <div className="p-10 flex-1 flex flex-col pt-6">
+              <div className="p-5 md:p-10 flex-1 flex flex-col pt-6 md:pt-6">
                 <div className="flex items-center gap-4 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-8 italic">
                   <Clock className="text-blue-500 w-4 h-4" />
                   {formatDistanceToNow(displayDate, { addSuffix: true, locale: ptBR })}

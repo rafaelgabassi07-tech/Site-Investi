@@ -44,16 +44,20 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
       
       let message = `HTTP error! status: ${response.status}`;
       try {
-        const errorData = await response.json();
-        message = errorData.message || errorData.error || message;
-      } catch (e) {
-        // If it's not JSON, try to get text
-        const text = await response.text().catch(() => '');
-        if (text.includes('<!doctype') || text.includes('<html')) {
-          message = `Server returned HTML instead of JSON (Status ${response.status}). This usually means the API route was not found or the server crashed.`;
-        } else if (text) {
-          message = `Server error: ${text.slice(0, 100)}`;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          message = errorData.message || errorData.error || message;
+        } else {
+          const text = await response.text().catch(() => '');
+          if (text.includes('<!doctype') || text.includes('<html')) {
+            message = `Server returned an HTML page (Status ${response.status}) instead of JSON. This often happens on timeouts (504) or route collisions.`;
+          } else if (text) {
+            message = `Server error: ${text.slice(0, 100)}`;
+          }
         }
+      } catch (e) {
+        // Fallback message already set
       }
       throw new Error(message);
     }

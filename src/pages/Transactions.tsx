@@ -31,7 +31,6 @@ export default function Transactions() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('handleSubmit called');
     e.preventDefault();
     
     setLoading(true);
@@ -166,15 +165,12 @@ export default function Transactions() {
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('handleImport called');
     const file = e.target.files?.[0];
     if (!file) return;
-    console.log('File selected:', file.name);
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
-        console.log('FileReader loaded');
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
         if (!wb.SheetNames || wb.SheetNames.length === 0) throw new Error('Arquivo Excel sem planilhas.');
@@ -182,7 +178,6 @@ export default function Transactions() {
         const ws = wb.Sheets[wsname];
         if (!ws) throw new Error('Não foi possível ler a planilha.');
         const data = XLSX.utils.sheet_to_json(ws) as any[];
-        console.log('Data parsed:', data);
 
         const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
         const newTxs: any[] = [];
@@ -224,7 +219,6 @@ export default function Transactions() {
         };
 
         for (const row of data) {
-          console.log('Processing row:', row);
           
           // Mapeamento robusto para B3 e outros formatos (Normalização de chaves para facilitar busca)
           const normalizedRow: Record<string, string | number> = {};

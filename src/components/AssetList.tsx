@@ -47,7 +47,7 @@ export function AssetList() {
 
           return (
             <div key={type} className="space-y-4">
-              <div className="flex items-center justify-between px-6 pt-6 border-b border-white/5 pb-4">
+              <div className="flex items-center justify-between px-1 md:px-6 pt-6 border-b border-white/5 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
                   <h3 className="text-display-xs text-white uppercase italic tracking-tighter">{type}</h3>
@@ -113,7 +113,7 @@ export function AssetList() {
                 </div>
 
                 {/* Mobile List (Condensed) */}
-                <div className="md:hidden space-y-3 px-2">
+                <div className="md:hidden space-y-3 px-1 lg:px-2">
                   {items.map((item) => {
                     const profit = item.profit || 0;
                     const isPositive = profit >= 0;
