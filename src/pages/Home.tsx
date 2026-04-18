@@ -610,78 +610,70 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-xl bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-8 md:p-12 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
+              className="relative w-full max-w-xl bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[3rem] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
             >
-              <button 
-                onClick={() => setShowSentimentInfo(false)}
-                className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-all border border-white/10"
-              >
-                <X size={20} />
-              </button>
-
-              <div className="flex items-center gap-6 mb-10">
-                <div className="w-16 h-16 rounded-[1.5rem] bg-blue-600/10 flex items-center justify-center border border-blue-500/20 shadow-lg shadow-blue-500/5">
-                  <Info size={32} className="text-blue-500" />
+              <div className="p-8 md:p-12 border-b border-white/5">
+                <div className="flex items-center gap-6 mb-4">
+                  <div className="w-16 h-16 rounded-[1.5rem] bg-blue-600/10 flex items-center justify-center border border-blue-500/20 shadow-lg shadow-blue-500/5">
+                    <Zap size={32} className="text-blue-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-display font-bold text-white tracking-tighter uppercase">Nexus Sentiment</h3>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Metodologia de Cálculo</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-display font-bold text-white tracking-tighter uppercase">Nexus Sentiment</h3>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Metodologia de Cálculo</p>
-                </div>
+                <p className="text-slate-400 text-sm leading-relaxed font-medium">
+                  Nosso modelo de sentimento analisa as principais manchetes do mercado, indicadores técnicos e fluxo institucional para prever a direção do mercado nas próximas 24-48 horas.
+                </p>
               </div>
 
-              <div className="space-y-8">
-                <p className="text-slate-400 text-sm leading-relaxed font-medium">
-                  Nosso índice de sentimento é uma métrica proprietária que analisa o comportamento do mercado em tempo real através de 4 pilares fundamentais, ponderados por relevância:
-                </p>
-
-                <div className="grid gap-4">
+              <div className="p-8 md:p-12 space-y-8 overflow-y-auto no-scrollbar flex-1">
+                <div className="grid gap-6">
                   {[
                     { 
                       title: 'Momentum do Mercado (60%)', 
                       desc: 'Desempenho relativo do Ibovespa e S&P 500. Tendências de alta sinalizam apetite por risco elevado.',
                       icon: TrendingUp,
-                      color: 'text-emerald-400',
-                      bgColor: 'bg-emerald-500/5'
+                      color: 'text-emerald-400'
                     },
                     { 
                       title: 'Safe Haven Demand (20%)', 
-                      desc: 'Fluxo de capital para o Dólar. Picos de valorização indicam busca por proteção e aversão ao risco.',
+                      desc: 'Fluxo para o Dólar. Valorizações indicam busca por proteção e aversão ao risco.',
                       icon: Shield,
-                      color: 'text-blue-400',
-                      bgColor: 'bg-blue-500/5'
+                      color: 'text-blue-400'
                     },
                     { 
                       title: 'Apetite por Risco (10%)', 
-                      desc: 'Volatilidade e preço do Bitcoin. Ativos digitais servem como termômetro de liquidez global.',
+                      desc: 'Volatilidade e preço do Bitcoin. Termômetro de liquidez global.',
                       icon: Zap,
-                      color: 'text-amber-400',
-                      bgColor: 'bg-amber-500/5'
+                      color: 'text-amber-400'
                     },
                     { 
                       title: 'Estabilidade Real (10%)', 
-                      desc: 'Comportamento do IFIX. Reflete a percepção de juros e estabilidade do mercado imobiliário interno.',
+                      desc: 'Comportamento do IFIX. Reflete a percepção de juros e estabilidade imobiliária.',
                       icon: Building2,
-                      color: 'text-purple-400',
-                      bgColor: 'bg-purple-500/5'
+                      color: 'text-purple-400'
                     }
                   ].map((item, i) => (
-                    <div key={i} className={`flex gap-5 p-6 ${item.bgColor} border border-white/5 rounded-[2rem] hover:border-white/10 transition-all group`}>
-                      <div className={`w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center ${item.color} group-hover:scale-110 transition-transform`}>
-                        <item.icon size={22} />
+                    <div key={i} className="flex gap-4">
+                      <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${item.color} shrink-0`}>
+                        <item.icon size={16} />
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-sm font-bold text-white mb-1 tracking-tight">{item.title}</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed font-medium">{item.desc}</p>
+                      <div>
+                        <div className="text-[11px] font-black text-slate-300 uppercase tracking-tight mb-1">{item.title}</div>
+                        <div className="text-xs text-slate-500 leading-relaxed font-medium">{item.desc}</div>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
 
+              <div className="p-8 bg-white/[0.02] border-t border-white/5 flex justify-end">
                 <button 
                   onClick={() => setShowSentimentInfo(false)}
-                  className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[2rem] font-bold transition-all shadow-xl shadow-blue-600/20 uppercase tracking-widest text-xs"
+                  className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-600/20"
                 >
-                  Entendi, Nexus
+                  Entendido
                 </button>
               </div>
             </motion.div>
