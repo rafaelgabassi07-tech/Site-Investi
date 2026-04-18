@@ -552,6 +552,7 @@ export const B3Schema = z.object({
   marketCap:     z.union([z.number(), z.string()]).optional(),
   about:         z.string().optional(),
   sector:        z.string().optional(),
+  segment:       z.string().optional(),
   subSector:     z.string().optional(),
   liquidezMediaDiaria: z.union([z.number(), z.string()]).optional(),
   segmentoListagem: z.string().optional(),
@@ -586,6 +587,7 @@ export const FIISchema = z.object({
   marketCap:         z.union([z.number(), z.string()]).optional(),
   about:             z.string().optional(),
   sector:            z.string().optional(),
+  segment:           z.string().optional(),
   subSector:         z.string().optional(),
   tipoGestao:        z.string().optional(),
   taxaAdmin:         z.string().optional(),
@@ -660,7 +662,7 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
     { name: 'ebitda',        anchors: ['EBITDA'],                                       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
     { name: 'lucroLiquido',  anchors: ['Lucro Líquido', 'Lucro Liquido'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
     { name: 'sector',        anchors: ['Setor</span>', 'SETOR</span>'],                           extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'subSector',     anchors: ['Subsetor</span>', 'Segmento</span>', 'SEGMENTO</span>'],       extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
+    { name: 'segment',       anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Subsetor</span>', 'SUBSETOR</span>'],       extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',         anchors: ['Sobre a Empresa', 'Descrição'],                 extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
@@ -686,6 +688,7 @@ export const fiiTemplate: ExtractorTemplate<FIIData> = {
     { name: 'tipoGestao',        anchors: ['Tipo de Gestão'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa de Admin.'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'sector',            anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Setor</span>', 'SETOR</span>'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
+    { name: 'segment',           anchors: ['Subsetor</span>', 'SUBSETOR</span>', 'Tipo Anatel', 'TIPO ANATEL'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',             anchors: ['Sobre o Fundo', 'Descrição'],           extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
   ],
 };
@@ -1593,6 +1596,7 @@ export class NexusEngine {
         fill('dividaLiquidaEbitda', fund.debtToEquity != null ? fund.debtToEquity.toFixed(2) : undefined);
         fill('about',          fund.about);
         fill('sector',         fund.sector);
+        fill('segment',        fund.subSector);
         fill('subSector',      fund.subSector);
         fill('enterpriseValue', fund.enterpriseValue);
         fill('forwardPE',      fund.forwardPE);

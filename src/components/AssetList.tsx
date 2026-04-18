@@ -124,8 +124,8 @@ export function AssetList() {
                   </div>
                 </div>
 
-                {/* Mobile List (Condensed) */}
-                <div className="md:hidden space-y-3">
+                {/* Mobile List (Ultra Condensed) */}
+                <div className="md:hidden space-y-2">
                   {items.map((item) => {
                     const profit = item.profit || 0;
                     const isPositive = profit >= 0;
@@ -136,39 +136,24 @@ export function AssetList() {
                       <div
                         key={item.ticker}
                         onClick={() => handleFetchDetails(item.ticker, item.assetType)}
-                        className="p-4 bg-white/5 border border-white/5 rounded-2xl active:scale-[0.98] transition-all"
+                        className="p-3 bg-white/5 border border-white/5 rounded-2xl active:scale-[0.98] transition-all flex items-center justify-between gap-3"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
-                            <div>
-                              <div className="text-display-tiny text-white uppercase italic">{item.ticker}</div>
-                              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                                {item.assetType} • {allocation.toFixed(1)}%
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-display-tiny text-white uppercase italic">
-                              R$ {currentVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                            <div className={`text-[9px] font-black flex items-center justify-end gap-1 uppercase tracking-widest ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
-                              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                              {isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%
+                        <div className="flex items-center gap-3 min-w-0">
+                          <AssetIcon assetType={item.assetType} ticker={item.ticker} className="w-8 h-8 rounded-lg bg-white p-1 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-[13px] font-display font-black text-white italic truncate">{item.ticker}</div>
+                            <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest truncate">
+                              {allocation.toFixed(1)}% <span className="opacity-50">DA CARTEIRA</span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                          <div>
-                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-0.5">Qtd / Médio</div>
-                            <div className="text-[10px] font-bold text-slate-400">{item.totalQuantity} UND • R$ {item.averagePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[12px] font-display font-black text-white italic">
+                            R$ {currentVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </div>
-                          <div className="text-right">
-                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-0.5">Lucro/Prejuízo</div>
-                            <div className={`text-[10px] font-bold ${isPositive ? 'text-emerald-500/80' : 'text-red-400/80'}`}>
-                              R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
+                          <div className={`text-[9px] font-black flex items-center justify-end gap-1 uppercase tracking-widest ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
+                            {isPositive ? '+' : '-'}{Math.abs(item.profitPercentage || 0).toFixed(2)}%
                           </div>
                         </div>
                       </div>

@@ -108,13 +108,33 @@ export default function Portfolio() {
   }, [fiisPortfolio]);
 
   // Evolução de Patrimônio
+  const [evolutionRange, setEvolutionRange] = useState('ALL');
+
   const portfolioEvolution = useMemo(() => {
     if (!quotaHistory || quotaHistory.length < 2) return [];
-    return quotaHistory.map(q => ({
+    
+    let filtered = [...quotaHistory];
+    const now = new Date();
+    
+    if (evolutionRange === '1M') {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(now.getMonth() - 1);
+      filtered = filtered.filter(q => new Date(q.date) >= oneMonthAgo);
+    } else if (evolutionRange === '6M') {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(now.getMonth() - 6);
+      filtered = filtered.filter(q => new Date(q.date) >= sixMonthsAgo);
+    } else if (evolutionRange === '1Y') {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(now.getFullYear() - 1);
+      filtered = filtered.filter(q => new Date(q.date) >= oneYearAgo);
+    }
+
+    return filtered.map(q => ({
       date: new Date(q.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
       value: q.totalPatrimony
     }));
-  }, [quotaHistory]);
+  }, [quotaHistory, evolutionRange]);
 
   if (loading) {
     return (
@@ -161,26 +181,33 @@ export default function Portfolio() {
           
           {/* Evolução de Patrimônio */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-1 md:col-span-2 lg:col-span-3 py-6">
-            <div className="flex items-center gap-3 mb-6">
-              <TrendingUp className="text-blue-500 icon-md" />
-              <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Evolução de Patrimônio</h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="text-blue-500 icon-md" />
+                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Evolução de Patrimônio</h3>
+              </div>
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                {['1M', '6M', '1Y', 'ALL'].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setEvolutionRange(r)}
+                    className={`px-3 py-1 text-[10px] font-black rounded-lg transition-all ${evolutionRange === r ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="h-[300px] w-full">
               {portfolioEvolution.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={portfolioEvolution}>
-                    <defs>
-                      <linearGradient id="colorPatrimonio" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
+                  <BarChart data={portfolioEvolution}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                     <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} dy={10} />
                     <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${(v/1000).toFixed(0)}k`} />
                     <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                    <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fill="url(#colorPatrimonio)" />
-                  </AreaChart>
+                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center text-slate-500 uppercase tracking-widest text-[10px] font-black border border-white/5 rounded-2xl">
@@ -285,69 +312,66 @@ export default function Portfolio() {
 
           {/* Acoes por Setor */}
           {acoesPortfolio.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="col-span-1 md:col-span-2 lg:col-span-3 py-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="py-6 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <BarChart3 className="text-cyan-500 icon-md" />
-                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Ações por Setor</h3>
+                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Por Setor</h3>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={acoesBySector} layout="vertical" margin={{ top: 0, right: 0, left: 40, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} width={120} tickFormatter={(val) => (val && typeof val === 'string' && val.length > 15) ? val.substring(0, 15) + '...' : val} />
-                      <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                      <Bar dataKey="value" fill="#06b6d4" radius={[0, 4, 4, 0]}>
-                        {acoesBySector.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex flex-col justify-center space-y-4">
-                  {acoesBySector.map((item, idx) => {
-                    const totalAcoes = acoesPortfolio.reduce((acc, a) => acc + (a.currentValue || a.totalInvested), 0);
-                    return (
-                      <div key={idx} className="flex justify-between items-center text-sm border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 rounded-md" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                          <span className="text-slate-300 font-bold uppercase tracking-wider text-xs">{item.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white font-black">{((item.value / totalAcoes) * 100).toFixed(1)}%</p>
-                          <p className="text-[10px] text-slate-500">R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="h-[200px] w-full mb-6 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={acoesBySector} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {acoesBySector.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3 mt-auto overflow-y-auto max-h-[150px] pr-2 custom-scrollbar">
+                {acoesBySector.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                      <span className="text-slate-400 font-bold uppercase tracking-widest">{item.name}</span>
+                    </div>
+                    <span className="text-white font-black">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
 
           {/* Acoes por Segmento */}
           {acoesPortfolio.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="col-span-1 md:col-span-2 lg:col-span-3 py-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="py-6 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <Activity className="text-blue-500 icon-md" />
-                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Ações por Segmento (Top 10)</h3>
+                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Por Segmento</h3>
               </div>
-              <div className="h-[250px] w-full">
+              <div className="h-[200px] w-full mb-6 relative">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={acoesBySegment} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => (val && typeof val === 'string' && val.length > 10) ? val.substring(0, 10) + '...' : val} angle={-45} textAnchor="end" dy={15} />
-                    <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${(v/1000).toFixed(0)}k`} />
-                    <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                  <PieChart>
+                    <Pie data={acoesBySegment} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
                       {acoesBySegment.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[(index + 5) % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={COLORS[(index + 4) % COLORS.length]} />
                       ))}
-                    </Bar>
-                  </BarChart>
+                    </Pie>
+                    <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
+                  </PieChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="space-y-3 mt-auto overflow-y-auto max-h-[150px] pr-2 custom-scrollbar">
+                {acoesBySegment.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[(idx + 4) % COLORS.length] }} />
+                      <span className="text-slate-400 font-bold uppercase tracking-widest">{item.name}</span>
+                    </div>
+                    <span className="text-white font-black">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
