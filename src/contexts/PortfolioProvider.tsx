@@ -166,47 +166,31 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   }, [loading, portfolio.length, syncAllDividends]);
 
   const fetchCurrentPrices = useCallback(async (items: PortfolioItem[]) => {
+    if (items.length === 0) return;
+    
     try {
-      const updated = await Promise.all(items.map(async item => {
-        try {
-          const data = await financeService.getAssetDetails(item.ticker, item.assetType);
-          
-          const results = data.results || {};
-          let currentPrice = parseFinanceValue(results.precoAtual);
-          
-          if (currentPrice === 0) {
-            const val = results['Valor de Mercado'] || results['Preço'] || results['Cotação'];
-            if (val) currentPrice = parseFinanceValue(val);
-          }
+      const tickers = items.map(i => i.ticker);
+      const batchResults = await financeService.getQuotesBatch(tickers);
+      
+      const updated = items.map(item => {
+        const batchData = batchResults.find(b => b.ticker === item.ticker);
+        let currentPrice = batchData?.price || 0;
+        
+        if (currentPrice === 0) currentPrice = item.averagePrice;
 
-          if (currentPrice === 0) currentPrice = item.averagePrice;
+        const currentValue = currentPrice * item.totalQuantity;
+        const profit = currentValue - item.totalInvested;
+        const profitPercentage = item.totalInvested > 0 ? (profit / item.totalInvested) * 100 : 0;
 
-          const currentValue = currentPrice * item.totalQuantity;
-          const profit = currentValue - item.totalInvested;
-          const profitPercentage = (profit / item.totalInvested) * 100;
-
-          // Extrair metadados para gráficos de composição
-          const sector = results['Setor'] || undefined;
-          const segment = results['Segmento'] || results['Segmento ANBIMA'] || undefined;
-          const subSector = results['Subsetor'] || undefined;
-
-          // Se for FII e não tiver segmento, tenta inferir pelo tipo
-          const finalSegment = segment || (item.assetType === 'FII' ? (results['Tipo'] || 'FII - Outros') : undefined);
-
-          return { 
-            ...item, 
-            currentPrice, 
-            currentValue, 
-            profit, 
-            profitPercentage,
-            sector,
-            segment: finalSegment,
-            subSector
-          };
-        } catch {
-          return { ...item, currentPrice: item.averagePrice, currentValue: item.totalInvested, profit: 0, profitPercentage: 0 };
-        }
-      }));
+        return { 
+          ...item, 
+          currentPrice, 
+          currentValue, 
+          profit, 
+          profitPercentage
+        };
+      });
+      
       setPortfolio(updated);
       
       // Update the final data point in quotaHistory to reflect current true prices
@@ -220,6 +204,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
           newTotalPatrimony += (item.currentValue || item.totalInvested);
         });
         
+        // Calculate new quota value based on the total patrimony change
+        // We assume we know the amount of quotas from the provider's logic
+        // The lastIdx point should have the same totalQuotas count as it's the most recent state
+        // To do this right, we'd need to track quotas. 
+        // For simplicity and correctness in a P/L vs TWR context, let's just update the patrimony.
+        // If we want a perfect TWR, we need to pass the quota count out of calculateAdvancedPortfolio.
+        
         newHistory[lastIdx] = {
           ...newHistory[lastIdx],
           totalPatrimony: newTotalPatrimony
@@ -228,7 +219,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         return newHistory;
       });
     } catch (err) {
-      console.error('Failed to fetch current prices', err);
+      console.error('Failed to fetch current prices via batch', err);
     }
   }, []);
 
@@ -239,7 +230,11 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     setQuotaHistory(quotaHistory);
     setPortfolio(currentPositions);
     setLoading(false);
-    fetchCurrentPrices(currentPositions);
+    
+    // Only fetch prices if there are positions
+    if (currentPositions.length > 0) {
+      fetchCurrentPrices(currentPositions);
+    }
   }, [fetchCurrentPrices]);
 
   const fetchTransactions = useCallback(async () => {
@@ -260,44 +255,45 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // Parallelize Supabase calls
+      const [txResult, eventResult] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: true }),
+        supabase
+          .from('corporate_events')
+          .select('*')
+      ]);
+
+      if (txResult.error) throw txResult.error;
+
+      const mappedTxs: Transaction[] = (txResult.data || []).map(tx => ({
+        id: tx.id,
+        ticker: tx.ticker,
+        type: tx.type as 'BUY' | 'SELL',
+        assetType: tx.asset_type,
+        quantity: Number(tx.quantity),
+        price: Number(tx.price),
+        date: tx.date,
+        broker: tx.broker,
+        user_id: tx.user_id
+      }));
+
+      processTransactions(mappedTxs, eventResult.data || []);
+      loadDividendsFromCloud();
+    } catch (error) {
+      console.error('Error in fetchTransactions:', error);
       setLoading(false);
-      return;
     }
-
-    // Fetch transactions
-    const { data: txData, error: txError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: true });
-
-    // Fetch corporate events (Splits/Inplits)
-    const { data: eventData } = await supabase
-      .from('corporate_events')
-      .select('*');
-
-    if (txError) {
-      console.error('Error fetching transactions:', txError);
-      setLoading(false);
-      return;
-    }
-
-    const mappedTxs: Transaction[] = (txData || []).map(tx => ({
-      id: tx.id,
-      ticker: tx.ticker,
-      type: tx.type as 'BUY' | 'SELL',
-      assetType: tx.asset_type,
-      quantity: Number(tx.quantity),
-      price: Number(tx.price),
-      date: tx.date,
-      broker: tx.broker,
-      user_id: tx.user_id
-    }));
-
-    processTransactions(mappedTxs, eventData || []);
-    loadDividendsFromCloud();
   }, [processTransactions, loadDividendsFromCloud]);
 
   useEffect(() => {
@@ -352,19 +348,32 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchTransactions, processTransactions, loadDividendsFromCloud]);
 
+  const contextValue = React.useMemo(() => ({ 
+    transactions, 
+    portfolio, 
+    dividends,
+    taxLedger, 
+    quotaHistory, 
+    loading,
+    syncingDividends,
+    refresh: fetchTransactions,
+    fetchDividends: loadDividendsFromCloud,
+    syncAllDividends
+  }), [
+    transactions, 
+    portfolio, 
+    dividends, 
+    taxLedger, 
+    quotaHistory, 
+    loading, 
+    syncingDividends, 
+    fetchTransactions, 
+    loadDividendsFromCloud, 
+    syncAllDividends
+  ]);
+
   return (
-    <PortfolioContext.Provider value={{ 
-      transactions, 
-      portfolio, 
-      dividends,
-      taxLedger, 
-      quotaHistory, 
-      loading,
-      syncingDividends,
-      refresh: fetchTransactions,
-      fetchDividends: loadDividendsFromCloud,
-      syncAllDividends
-    }}>
+    <PortfolioContext.Provider value={contextValue}>
       {children}
     </PortfolioContext.Provider>
   );

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { PageHeader } from '../components/ui/PageHeader';
-import { Calculator, ShieldCheck, AlertTriangle, Info, FileText, TrendingDown } from 'lucide-react';
+import { Calculator, ShieldCheck, AlertTriangle, Info, FileText, TrendingDown, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Taxes() {
@@ -178,6 +178,66 @@ export default function Taxes() {
             <div className="mt-6 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-4">
               <AlertTriangle className="text-red-400 shrink-0 mt-0.5 icon-sm" />
               <p className="text-tiny font-bold text-red-400/80 uppercase tracking-widest leading-relaxed">Você ultrapassou o limite de R$ 20.000 em vendas de ações. O imposto acima já considera a alíquota de 15% sobre o lucro líquido.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Histórico Fiscal */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-6 px-1 md:px-4">
+          <div className="w-2 h-10 bg-indigo-600 rounded-full" />
+          <h2 className="text-display-sm text-white uppercase italic tracking-tighter">Histórico Fiscal</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Object.entries(taxLedger)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .filter(([key]) => key !== currentMonthKey)
+            .map(([month, data]) => {
+              const [year, m] = month.split('-');
+              const monthName = monthNames[parseInt(m) - 1];
+              const totalDue = data.taxDueAcoes + data.taxDueFIIs;
+
+              return (
+                <div key={month} className="bg-white/5 border border-white/5 rounded-[2rem] p-6 hover:bg-white/10 transition-all border-b-4 border-b-indigo-500/30">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="text-label text-white uppercase italic">{monthName}</h4>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{year}</p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${data.isExemptAcoes ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/10' : 'bg-red-500/10 text-red-400 border-red-500/10'}`}>
+                      {data.isExemptAcoes ? 'Isento' : 'Tributável'}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pb-4 border-b border-white/5 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Vendas Ações</span>
+                      <span className="text-tiny font-black text-white">{data.salesAcoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Lucro Total</span>
+                      <span className={`text-tiny font-black ${(data.profitAcoes + data.profitFIIs) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {(data.profitAcoes + data.profitFIIs).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-tiny font-black text-white uppercase italic">DARF Devida</span>
+                    <span className={`text-label font-black ${totalDue > 0 ? 'text-blue-400' : 'text-slate-600'}`}>
+                      {totalDue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          
+          {Object.keys(taxLedger).filter(k => k !== currentMonthKey).length === 0 && (
+            <div className="col-span-full py-12 text-center bg-white/5 border border-dashed border-white/10 rounded-[2rem]">
+              <TrendingDown className="mx-auto mb-4 text-slate-700 w-12 h-12" />
+              <p className="text-label text-slate-500 uppercase italic">Nenhum histórico fiscal registrado até o momento.</p>
             </div>
           )}
         </div>

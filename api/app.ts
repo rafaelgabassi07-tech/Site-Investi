@@ -138,6 +138,39 @@ export async function createServer() {
       }
     });
 
+    app.get("/api/quotes/batch", async (req, res) => {
+      const { tickers } = req.query;
+      if (!tickers || typeof tickers !== 'string') {
+        return res.status(400).json({ error: "Tickers parameter is required as a comma-separated list." });
+      }
+
+      const tickerList = tickers.split(',').map(t => t.trim().toUpperCase()).filter(t => t.length > 0);
+      
+      try {
+        // Limitation: Resolve asset types for batch. For now, assume most are ACAO/FII
+        const results = await Promise.all(tickerList.map(async (ticker) => {
+          try {
+            const data = await NexusEngine.fetchAtivo(ticker, inferAssetType(ticker));
+            return {
+              ticker,
+              price: data.results?.precoAtual || 0,
+              change: data.results?.variacaoDay || '0.00%',
+              name: data.results?.nome || '',
+              type: data.assetType
+            };
+          } catch (e) {
+            console.error(`[API] Batch quote error for ${ticker}:`, e);
+            return { ticker, price: 0, change: '0.00%', error: true };
+          }
+        }));
+
+        res.json(results);
+      } catch (error) {
+        console.error(`[API] Critical error in /api/quotes/batch:`, error);
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
     app.get("/api/history/:ticker", async (req, res) => {
       const { ticker } = req.params;
       const { period } = req.query;

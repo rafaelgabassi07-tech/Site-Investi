@@ -89,82 +89,134 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
   }
 }
 
+const cache: Record<string, { data: any, timestamp: number }> = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function fetchWithCache(key: string, fetcher: () => Promise<any>): Promise<any> {
+  const now = Date.now();
+  if (cache[key] && (now - cache[key].timestamp < CACHE_TTL)) {
+    return cache[key].data;
+  }
+  const data = await fetcher();
+  cache[key] = { data, timestamp: now };
+  return data;
+}
+
 export const financeService = {
   async getAssetDetails(ticker: string, assetType?: string): Promise<AssetDetails> {
     const encodedTicker = encodeURIComponent(ticker);
     const url = assetType ? `/api/asset/${encodedTicker}?type=${encodeURIComponent(assetType)}` : `/api/asset/${encodedTicker}`;
-    const res = await fetchWithRetry(url);
-    return res.json();
+    return fetchWithCache(`details-${ticker}-${assetType}`, async () => {
+      const res = await fetchWithRetry(url);
+      return res.json();
+    });
   },
 
   async getAssetHistory(ticker: string, period: string = '1y'): Promise<HistoryPoint[]> {
-    const res = await fetchWithRetry(`/api/history/${encodeURIComponent(ticker)}?period=${encodeURIComponent(period)}`);
-    return res.json();
+    return fetchWithCache(`history-${ticker}-${period}`, async () => {
+      const res = await fetchWithRetry(`/api/history/${encodeURIComponent(ticker)}?period=${encodeURIComponent(period)}`);
+      return res.json();
+    });
   },
 
   async getAssetDividends(ticker: string): Promise<any[]> {
-    const res = await fetchWithRetry(`/api/dividends/${encodeURIComponent(ticker)}`);
-    return res.json();
+    return fetchWithCache(`dividends-${ticker}`, async () => {
+      const res = await fetchWithRetry(`/api/dividends/${encodeURIComponent(ticker)}`);
+      return res.json();
+    });
   },
 
   async getHistoricalFundamentals(ticker: string): Promise<any[]> {
-    const res = await fetchWithRetry(`/api/historical-fundamentals/${encodeURIComponent(ticker)}`);
-    return res.json();
+    return fetchWithCache(`fundamentals-${ticker}`, async () => {
+      const res = await fetchWithRetry(`/api/historical-fundamentals/${encodeURIComponent(ticker)}`);
+      return res.json();
+    });
   },
 
   async getNews(ticker?: string): Promise<NewsItem[]> {
     const url = ticker ? `/api/news?ticker=${encodeURIComponent(ticker)}` : '/api/news';
-    const res = await fetchWithRetry(url);
-    return res.json();
+    return fetchWithCache(`news-${ticker || 'global'}`, async () => {
+      const res = await fetchWithRetry(url);
+      return res.json();
+    });
   },
 
   async analyzeNews(news: NewsItem[], ticker?: string): Promise<any> {
-    try {
-      const topNews = news.slice(0, 5).map((n: any) => n.title).join("\n");
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      
-      const prompt = `Analise o sentimento das seguintes notícias financeiras sobre ${ticker || 'o mercado brasileiro'}. 
-      Responda APENAS um JSON no formato: {"sentiment": "Bullish" | "Bearish" | "Neutral", "score": 0-100, "summary": "breve resumo de 1 frase"}.
-      Notícias:
-      ${topNews}`;
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: prompt,
-      });
+    const newsHash = news.slice(0, 3).map(n => n.title).join('|');
+    return fetchWithCache(`analyze-${ticker}-${newsHash}`, async () => {
+      try {
+        const topNews = news.slice(0, 5).map((n: any) => n.title).join("\n");
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+        
+        const prompt = `Analise o sentimento das seguintes notícias financeiras sobre ${ticker || 'o mercado brasileiro'}. 
+        Responda APENAS um JSON no formato: {"sentiment": "Bullish" | "Bearish" | "Neutral", "score": 0-100, "summary": "breve resumo de 1 frase"}.
+        Notícias:
+        ${topNews}`;
+        
+        const response = await ai.models.generateContent({
+          model: "gemini-1.5-flash",
+          contents: prompt,
+        });
 
-      const text = response.text || '';
-      const jsonMatch = text.match(/\{.*\}/s);
-      return jsonMatch ? JSON.parse(jsonMatch[0]) : { sentiment: "Neutral", score: 50, summary: "Análise indisponível" };
-    } catch (error) {
-      console.error("News analysis failed:", error);
-      return { sentiment: "Neutral", score: 50, summary: "Análise indisponível no momento" };
-    }
+        const text = response.text || '';
+        const jsonMatch = text.match(/\{.*\}/s);
+        return jsonMatch ? JSON.parse(jsonMatch[0]) : { sentiment: "Neutral", score: 50, summary: "Análise indisponível" };
+      } catch (error) {
+        console.error("News analysis failed:", error);
+        return { sentiment: "Neutral", score: 50, summary: "Análise indisponível no momento" };
+      }
+    });
   },
 
   async getRanking(category: string, type: string = 'ACAO'): Promise<any[]> {
-    const res = await fetchWithRetry(`/api/ranking?category=${encodeURIComponent(category)}&type=${type}`);
-    return res.json();
+    return fetchWithCache(`ranking-${category}-${type}`, async () => {
+      const res = await fetchWithRetry(`/api/ranking?category=${encodeURIComponent(category)}&type=${type}`);
+      return res.json();
+    });
   },
 
   async getPeers(ticker: string, type: string = 'ACAO'): Promise<any[]> {
-    const res = await fetchWithRetry(`/api/peers/${encodeURIComponent(ticker)}?type=${encodeURIComponent(type)}`);
-    return res.json();
+    return fetchWithCache(`peers-${ticker}-${type}`, async () => {
+      const res = await fetchWithRetry(`/api/peers/${encodeURIComponent(ticker)}?type=${encodeURIComponent(type)}`);
+      return res.json();
+    });
   },
 
   async getScreener(filters: any, type: string = 'ACAO'): Promise<any[]> {
     const params = new URLSearchParams({ type, ...filters });
-    const res = await fetchWithRetry(`/api/screener?${params.toString()}`);
-    return res.json();
+    return fetchWithCache(`screener-${params.toString()}`, async () => {
+      const res = await fetchWithRetry(`/api/screener?${params.toString()}`);
+      return res.json();
+    });
   },
 
   async search(query: string): Promise<any[]> {
-    const res = await fetchWithRetry(`/api/search?q=${encodeURIComponent(query)}`);
-    return res.json();
+    return fetchWithCache(`search-${query}`, async () => {
+      const res = await fetchWithRetry(`/api/search?q=${encodeURIComponent(query)}`);
+      return res.json();
+    });
   },
 
   async getMarketStats(): Promise<any[]> {
-    const res = await fetchWithRetry('/api/market-stats');
-    return res.json();
+    return fetchWithCache('market-stats', async () => {
+      const res = await fetchWithRetry('/api/market-stats');
+      return res.json();
+    });
+  },
+  
+  async getQuotesBatch(tickers: string[]): Promise<any[]> {
+    if (tickers.length === 0) return [];
+    // For batch quotes, we might not want to cache globally for long as prices change frequently
+    // But we can cache for 1 minute
+    const key = `batch-${tickers.sort().join(',')}`;
+    const now = Date.now();
+    if (cache[key] && (now - cache[key].timestamp < 60 * 1000)) {
+      return cache[key].data;
+    }
+    
+    const res = await fetchWithRetry(`/api/quotes/batch?tickers=${encodeURIComponent(tickers.join(','))}`);
+    const data = await res.json();
+    cache[key] = { data, timestamp: now };
+    return data;
   }
 };

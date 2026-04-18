@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAx
 import { TrendingUp, TrendingDown, DollarSign, PieChart as PieIcon, Calendar, BarChart3, ArrowUpRight, ArrowDownRight, Target, Briefcase, Layers } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { financeService } from '../services/financeService';
+import { getHistoricalQuantity } from '../lib/portfolioCalc';
 
 export function PortfolioSummary() {
   const { portfolio, quotaHistory, transactions, dividends } = usePortfolio();
@@ -13,14 +14,13 @@ export function PortfolioSummary() {
   const totalProfit = currentTotalValue - totalInvested;
   const totalProfitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
-  // Calculate monthly dividends
+  // Calculate monthly dividends using historical quantity for accuracy
   const monthlyDividends = (() => {
     const months: Record<string, number> = {};
     dividends?.forEach(d => {
       const date = new Date(d.date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const asset = portfolio.find(p => p.ticker === d.ticker);
-      const qty = asset ? asset.totalQuantity : 0;
+      const qty = getHistoricalQuantity(d.ticker, d.date, portfolio);
       months[key] = (months[key] || 0) + ((d.amount || 0) * qty);
     });
     return Object.entries(months)
@@ -30,8 +30,7 @@ export function PortfolioSummary() {
   })();
 
   const totalDividends = (dividends || []).reduce((acc, curr) => {
-    const asset = portfolio.find(p => p.ticker === curr.ticker);
-    const qty = asset ? asset.totalQuantity : 0;
+    const qty = getHistoricalQuantity(curr.ticker, curr.date, portfolio);
     return acc + ((curr.amount || 0) * qty);
   }, 0);
   const dividendYield = currentTotalValue > 0 ? (totalDividends / currentTotalValue) * 100 : 0;

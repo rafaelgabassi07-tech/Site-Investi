@@ -107,7 +107,7 @@ export default function Profitability() {
       { label: 'vs. IBOVESPA', value: `${alpha >= 0 ? '+' : ''}${alpha.toFixed(2)}%`, icon: Activity, color: alpha >= 0 ? 'purple' : 'red' },
       { label: 'Melhor Mês', value: `${bestMonth >= 0 ? '+' : ''}${bestMonth.toFixed(2)}%`, icon: ArrowUpRight, color: 'emerald' },
     ];
-  }, [performanceData]);
+  }, [performanceData, portfolio]);
 
   const allocationByClass = useMemo(() => {
     const map = portfolio.reduce((acc, item) => {

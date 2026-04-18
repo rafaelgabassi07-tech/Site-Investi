@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Calendar, DollarSign, ArrowUpRight, Loader2, TrendingUp, PieChart, BarChart3, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,6 +7,7 @@ import { usePortfolio } from '../hooks/usePortfolio';
 import { supabase } from '../lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { PortfolioNav } from '../components/PortfolioNav';
+import { getHistoricalQuantity } from '../lib/portfolioCalc';
 
 export default function Dividends() {
   const { portfolio, transactions, loading: contextLoading, dividends, fetchDividends, syncingDividends } = usePortfolio();
@@ -73,18 +74,6 @@ export default function Dividends() {
     }
   };
 
-  // Helper function to get the quantity of an asset at a specific date
-  const getQuantityAtDate = useCallback((ticker: string, date: Date) => {
-    if (!transactions) return 0;
-    return transactions
-      .filter(t => t.ticker === ticker && new Date(t.date) <= date)
-      .reduce((acc, t) => {
-        if (t.type === 'BUY') return acc + t.quantity;
-        if (t.type === 'SELL') return acc - t.quantity;
-        return acc;
-      }, 0);
-  }, [transactions]);
-
   // Processed dividends includes the calculated total based on historical quantity
   const processedDividends = useMemo(() => {
     return dividends.map(div => {
@@ -92,7 +81,7 @@ export default function Dividends() {
       const dataCom = new Date(div.date); 
       const paymentDate = div.paymentDate ? new Date(div.paymentDate) : dataCom;
       
-      const qtyAtDate = getQuantityAtDate(div.ticker, dataCom);
+      const qtyAtDate = getHistoricalQuantity(div.ticker, div.date, portfolio);
       const isFuture = paymentDate > new Date() || div.is_future;
       const amount = Number(div.amount) || 0;
 
@@ -104,7 +93,7 @@ export default function Dividends() {
         totalAmount: amount * Math.max(0, qtyAtDate)
       };
     }).filter(div => div.quantityAtDate > 0); // Only keep dividends where user had an active position
-  }, [dividends, getQuantityAtDate]);
+  }, [dividends, portfolio]);
 
   const monthlyHistory = useMemo(() => {
     const history: Record<string, number> = {};
@@ -165,7 +154,7 @@ export default function Dividends() {
       yieldOnCost,
       annualDividends
     };
-  }, [monthlyHistory, processedDividends, portfolio]);
+  }, [processedDividends, portfolio]);
 
   const filteredDividends = processedDividends.filter(d => {
     if (filter === 'Todos') return true;

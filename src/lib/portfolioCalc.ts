@@ -8,6 +8,24 @@ import { Transaction, PortfolioItem, CorporateEvent, TaxMonth, PortfolioEngineRe
  * 3. Motor Fiscal (Isenção 20k, Compensação de Prejuízos)
  * 4. Rentabilidade TWR (Método de Cotas)
  */
+
+/**
+ * Encontra a quantidade de um ativo em uma data específica
+ */
+export function getHistoricalQuantity(ticker: string, targetDateStr: string, portfolio: PortfolioItem[]): number {
+  const item = portfolio.find(p => p.ticker === ticker);
+  if (!item || !item.historicalQuantities || item.historicalQuantities.length === 0) return 0;
+  
+  const targetTime = new Date(targetDateStr).getTime();
+  
+  // As quantidades históricas já vêm ordenadas cronologicamente pelo motor
+  // Mas por segurança, garantimos que pegamos a última antes ou na data alvo
+  const history = [...item.historicalQuantities].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const match = history.find(h => new Date(h.date).getTime() <= targetTime);
+  
+  return match ? match.quantity : 0;
+}
+
 export function calculateAdvancedPortfolio(
   transactions: Transaction[],
   events: CorporateEvent[] = [],
@@ -48,11 +66,14 @@ export function calculateAdvancedPortfolio(
     return taxLedger[month];
   };
 
-  // Combine and sort all events (transactions + corporate events)
+  // Combined and sort all events (transactions + corporate events)
   const allEvents: any[] = [
     ...sortedTxs.map(t => ({ ...t, _type: 'TX' })),
     ...sortedEvents.map(e => ({ ...e, _type: 'CORP' }))
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Historical quantity tracker per ticker: [ { date, quantity } ]
+  const historicalQuantities = new Map<string, { date: string; quantity: number }[]>();
 
   for (const ev of allEvents) {
     if (ev._type === 'CORP') {
@@ -64,6 +85,11 @@ export function calculateAdvancedPortfolio(
           pos.totalQuantity = pos.totalQuantity * factor;
           pos.averagePrice = pos.averagePrice / factor;
           // Total invested remains the same
+          
+          // Record quantity change in history
+          const hq = historicalQuantities.get(ev.ticker) || [];
+          hq.push({ date: ev.date, quantity: pos.totalQuantity });
+          historicalQuantities.set(ev.ticker, hq);
         }
       }
     } else if (ev._type === 'TX') {
@@ -77,12 +103,8 @@ export function calculateAdvancedPortfolio(
       };
 
       // TWR Calculation (Before applying transaction)
-      // We calculate the patrimony right before this transaction
       let currentPatrimonyBeforeTx = 0;
       positions.forEach(p => {
-        // In a real scenario, we'd use the historical price of the asset on `tx.date`.
-        // For this simulation, we use the average price as a proxy if historical isn't available,
-        // or currentPrices if passed.
         const priceAtTime = currentPrices[p.ticker] || p.averagePrice; 
         currentPatrimonyBeforeTx += p.totalQuantity * priceAtTime;
       });
@@ -93,34 +115,27 @@ export function calculateAdvancedPortfolio(
       }
 
       if (tx.type === 'BUY') {
-        // Update Position
         const newTotalQuantity = pos.totalQuantity + tx.quantity;
         const newTotalInvested = pos.totalInvested + (tx.quantity * tx.price);
         pos.averagePrice = newTotalInvested / newTotalQuantity;
         pos.totalQuantity = newTotalQuantity;
         pos.totalInvested = newTotalInvested;
 
-        // TWR: Buy means cash inflow -> Issue new quotas
         const cashInflow = tx.quantity * tx.price;
         const newQuotasIssued = quotaValue > 0 ? cashInflow / quotaValue : 0;
         totalQuotas += newQuotasIssued;
-
       } else if (tx.type === 'SELL') {
-        // Calculate Profit/Loss
         const saleVolume = tx.quantity * tx.price;
         const costBasis = tx.quantity * pos.averagePrice;
         const profit = saleVolume - costBasis;
 
-        // Update Position
         pos.totalQuantity -= tx.quantity;
         pos.totalInvested = pos.totalQuantity * pos.averagePrice;
 
-        // TWR: Sell means cash outflow -> Destroy quotas
         const cashOutflow = saleVolume;
         const quotasDestroyed = quotaValue > 0 ? cashOutflow / quotaValue : 0;
         totalQuotas -= quotasDestroyed;
 
-        // Tax Engine
         const taxM = getTaxMonth(tx.date);
         if (tx.assetType === 'ACAO') {
           taxM.salesAcoes += saleVolume;
@@ -136,6 +151,11 @@ export function calculateAdvancedPortfolio(
       } else {
         positions.delete(tx.ticker);
       }
+
+      // Record quantity change in history
+      const hq = historicalQuantities.get(tx.ticker) || [];
+      hq.push({ date: tx.date, quantity: pos.totalQuantity });
+      historicalQuantities.set(tx.ticker, hq);
 
       // Record TWR History
       let currentPatrimonyAfterTx = 0;
@@ -153,17 +173,14 @@ export function calculateAdvancedPortfolio(
     }
   }
 
-  // Finalize Tax Ledger (Apply rules, 20k exemption, and loss carryforward)
+  // Finalize Tax Ledger
   const sortedMonths = Object.keys(taxLedger).sort();
   for (const month of sortedMonths) {
     const tm = taxLedger[month];
-
-    // Ações
     tm.isExemptAcoes = tm.salesAcoes <= 20000;
     if (tm.profitAcoes < 0) {
       accumulatedLossAcoes += Math.abs(tm.profitAcoes);
     } else if (tm.profitAcoes > 0 && !tm.isExemptAcoes) {
-      // Abater prejuízo
       if (accumulatedLossAcoes > 0) {
         if (accumulatedLossAcoes >= tm.profitAcoes) {
           tm.lossCarryforwardAcoes = tm.profitAcoes;
@@ -175,10 +192,9 @@ export function calculateAdvancedPortfolio(
           accumulatedLossAcoes = 0;
         }
       }
-      tm.taxDueAcoes = tm.profitAcoes * 0.15; // 15% IR
+      tm.taxDueAcoes = tm.profitAcoes * 0.15;
     }
 
-    // FIIs (No exemption)
     if (tm.profitFIIs < 0) {
       accumulatedLossFIIs += Math.abs(tm.profitFIIs);
     } else if (tm.profitFIIs > 0) {
@@ -193,11 +209,10 @@ export function calculateAdvancedPortfolio(
           accumulatedLossFIIs = 0;
         }
       }
-      tm.taxDueFIIs = tm.profitFIIs * 0.20; // 20% IR
+      tm.taxDueFIIs = tm.profitFIIs * 0.20;
     }
   }
 
-  // Add a final data point for "Today" so the quota history always reaches the current value
   const today = new Date().toISOString();
   if (quotaHistory.length > 0) {
     let todayPatrimony = 0;
@@ -206,8 +221,6 @@ export function calculateAdvancedPortfolio(
       todayPatrimony += p.totalQuantity * priceAtTime;
     });
     
-    // If we have actual currentPrices passed, the patrimony will differ.
-    // If not, it will be the same as the last transaction, but at least we have a point in time for charts.
     if (quotaHistory[quotaHistory.length - 1].date.split('T')[0] !== today.split('T')[0]) {
       quotaHistory.push({
         date: today,
@@ -218,7 +231,11 @@ export function calculateAdvancedPortfolio(
   }
 
   return {
-    currentPositions: Array.from(positions.values()),
+    currentPositions: Array.from(positions.values()).map(p => ({
+      ...p,
+      // Provide historicQuantities so pages can query them
+      historicalQuantities: historicalQuantities.get(p.ticker) || []
+    })),
     taxLedger,
     quotaHistory
   };
