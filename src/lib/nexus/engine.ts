@@ -465,22 +465,22 @@ export function universalLexer<T = any>(
     const rowRegex = /<tr[^>]*>\s*<td[^>]*>([\d\/]+)<\/td>\s*<td[^>]*>([\w\d\/.-]*|-)<\/td>\s*<td[^>]*>([R$\s\d,.]+)<\/td>\s*<td[^>]*>([^<]+)<\/td>\s*<\/tr>/gi;
     const matches = [...html.matchAll(rowRegex)];
     if (matches.length > 0) {
-      results.dividendos = matches.slice(0, 50).map(m => ({
-        dataCom: m[1].trim(),
-        pagamento: m[2].trim(),
-        valor: m[3].trim(),
-        tipo: m[4].trim()
+      results.dividendos = matches.slice(0, 50).map(match => ({
+        dataCom: match[1].trim(),
+        pagamento: match[2].trim(),
+        valor: match[3].trim(),
+        tipo: match[4].trim()
       }));
     } else {
       // Investidor10 format: Tipo | Data Com | Pagamento | Valor
       const altRowRegex = /<tr[^>]*>\s*<td[^>]*>([\w\s.]+)<\/td>\s*<td[^>]*>([\d\/]+)<\/td>\s*<td[^>]*>([\w\d\/.-]*|-)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/gi;
       const altMatches = [...html.matchAll(altRowRegex)];
       if (altMatches.length > 0) {
-        results.dividendos = altMatches.slice(0, 50).map(m => ({
-          tipo: m[1].trim(),
-          dataCom: m[2].trim(),
-          pagamento: m[3].trim(),
-          valor: m[4].replace(/\\n/g, '').replace(/\s+/g, '').trim()
+        results.dividendos = altMatches.slice(0, 50).map(match => ({
+          tipo: match[1].trim(),
+          dataCom: match[2].trim(),
+          pagamento: match[3].trim(),
+          valor: match[4].replace(/\\n/g, '').replace(/\s+/g, '').trim()
         }));
       }
     }
