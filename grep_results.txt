@@ -1,0 +1,19 @@
+src/pages/AssetAnalysis.tsx:    if (liqStr.toLowerCase().includes('m')) liq = parseFloat(liqStr.replace(/[^\d,.-]/g, '').replace(',', '.')) * 1000000;
+src/pages/Taxes.tsx:              const [year, m] = month.split('-');
+src/pages/Taxes.tsx:              const monthName = monthNames[parseInt(m) - 1];
+src/components/ErrorBoundary.tsx:        <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-[#020617] border border-red-500/20 rounded-[2.5rem] m-4 shadow-2xl">
+src/components/AssetIntelligence.tsx:            {MONTHS.map((m, i) => {
+src/components/AssetIntelligence.tsx:                  key={m} 
+src/components/AssetIntelligence.tsx:                  <span className={`font-black text-sm uppercase tracking-[0.2em] italic ${isProbable ? 'text-emerald-500' : 'text-slate-600'}`}>{m}</span>
+src/lib/nexus/engine.ts:      results.dividendos = matches.slice(0, 50).map(m => ({
+src/lib/nexus/engine.ts:        dataCom: m[1].trim(),
+src/lib/nexus/engine.ts:        pagamento: m[2].trim(),
+src/lib/nexus/engine.ts:        valor: m[3].trim(),
+src/lib/nexus/engine.ts:        tipo: m[4].trim()
+src/lib/nexus/engine.ts:        results.dividendos = altMatches.slice(0, 50).map(m => ({
+src/lib/nexus/engine.ts:          tipo: m[1].trim(),
+src/lib/nexus/engine.ts:          dataCom: m[2].trim(),
+src/lib/nexus/engine.ts:          pagamento: m[3].trim(),
+src/lib/nexus/engine.ts:          valor: m[4].replace(/\\n/g, '').replace(/\s+/g, '').trim()
+src/lib/nexus/engine.ts:            .map(m => m[1]?.trim())
+src/lib/nexus/engine.ts:      const MAX_ANCHOR   = source.template.rules.reduce((max, r) => r.anchors.reduce((m, a) => Math.max(m, a.length), max), 0);

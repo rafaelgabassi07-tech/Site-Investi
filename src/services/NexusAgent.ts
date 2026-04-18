@@ -21,7 +21,18 @@ type StatusCallback = (status: AgentStatus) => void;
 class NexusDividendAgent {
   private status: AgentStatus = { state: 'idle', currentTask: '', progress: 0 };
   private callbacks: StatusCallback[] = [];
-  private ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  private aiInstance: GoogleGenAI | null = null;
+
+  private getAi() {
+    if (!this.aiInstance) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("GEMINI_API_KEY is not configured");
+      }
+      this.aiInstance = new GoogleGenAI({ apiKey });
+    }
+    return this.aiInstance;
+  }
 
   subscribe(callback: StatusCallback) {
     this.callbacks.push(callback);
@@ -122,7 +133,8 @@ class NexusDividendAgent {
       Qual é o provável próximo mês de pagamento? Existe algum padrão de crescimento? 
       Responda em PORTUGUÊS um JSON curto: {"message": "string de 1 frase", "nextMonth": string, "pattern": "string"}.`;
 
-      const response = await this.ai.models.generateContent({
+      const ai = this.getAi();
+      const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {

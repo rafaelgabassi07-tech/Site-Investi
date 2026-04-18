@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Newspaper, Clock, Globe, Zap, ArrowUpRight, Filter } from 'lucide-react';
+import { Newspaper, Clock, Globe, Zap, ArrowUpRight, Filter, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'motion/react';

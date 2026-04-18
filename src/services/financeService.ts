@@ -146,7 +146,10 @@ export const financeService = {
     return fetchWithCache(`analyze-${ticker}-${newsHash}`, async () => {
       try {
         const topNews = news.slice(0, 5).map((n: any) => n.title).join("\n");
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+        
+        const ai = new GoogleGenAI({ apiKey });
         
         const prompt = `Analise o sentimento das seguintes notícias financeiras sobre ${ticker || 'o mercado brasileiro'}. 
         Responda APENAS um JSON no formato: {"sentiment": "Bullish" | "Bearish" | "Neutral", "score": 0-100, "summary": "breve resumo de 1 frase"}.

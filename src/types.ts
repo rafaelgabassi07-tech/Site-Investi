@@ -23,6 +23,20 @@ export interface PortfolioItem {
   sector?: string;
   segment?: string;
   subSector?: string;
+  historicalQuantities?: { date: string; quantity: number }[];
+}
+
+export interface Dividend {
+  id: string;
+  ticker: string;
+  type: string;
+  amount: number;
+  date: string;
+  paymentDate?: string;
+  is_future?: boolean;
+  user_id?: string;
+  totalAmount?: number;
+  quantityAtDate?: number;
 }
 
 export interface CorporateEvent {

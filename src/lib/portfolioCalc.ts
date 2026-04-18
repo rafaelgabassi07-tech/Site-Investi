@@ -32,9 +32,14 @@ export function calculateAdvancedPortfolio(
   currentPrices: Record<string, number> = {}
 ): PortfolioEngineResult {
   
-  // 1. Sort everything chronologically
-  const sortedTxs = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // 1. Sort everything chronologically, filtering out invalid dates
+  const sortedTxs = [...transactions]
+    .filter(t => t.date && !isNaN(new Date(t.date).getTime()))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+  const sortedEvents = [...events]
+    .filter(e => e.date && !isNaN(new Date(e.date).getTime()))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // State
   const positions = new Map<string, PortfolioItem>();
@@ -70,7 +75,16 @@ export function calculateAdvancedPortfolio(
   const allEvents: any[] = [
     ...sortedTxs.map(t => ({ ...t, _type: 'TX' })),
     ...sortedEvents.map(e => ({ ...e, _type: 'CORP' }))
-  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  ].sort((a, b) => {
+    const timeA = new Date(a.date).getTime();
+    const timeB = new Date(b.date).getTime();
+    if (timeA === timeB) {
+      // Prioritize CORP events on the same day if they are splits
+      if (a._type === 'CORP' && b._type === 'TX') return -1;
+      if (a._type === 'TX' && b._type === 'CORP') return 1;
+    }
+    return timeA - timeB;
+  });
 
   // Historical quantity tracker per ticker: [ { date, quantity } ]
   const historicalQuantities = new Map<string, { date: string; quantity: number }[]>();
