@@ -137,14 +137,14 @@ export function AssetIntelligence({ ticker, assetDetails }: AssetIntelligencePro
             Mapeamento dos meses com maior probabilidade histórica de pagamentos baseados nos ciclos de proventos do ativo.
           </p>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 border-t border-white/5">
-            {MONTHS.map((m, i) => {
+            {MONTHS.map((monthName, i) => {
               const isProbable = dividendMonths.includes(i);
               return (
                 <div 
-                  key={m} 
+                  key={monthName} 
                   className={`flex flex-col items-center justify-center py-8 group relative overflow-hidden transition-colors border-b border-white/5 hover:bg-white/[0.01] ${i % 3 < 2 ? 'border-r md:border-r' : 'md:border-r'} ${i % 6 === 5 ? 'lg:border-r-0' : ''}`}
                 >
-                  <span className={`font-black text-sm uppercase tracking-[0.2em] italic ${isProbable ? 'text-emerald-500' : 'text-slate-600'}`}>{m}</span>
+                  <span className={`font-black text-sm uppercase tracking-[0.2em] italic ${isProbable ? 'text-emerald-500' : 'text-slate-600'}`}>{monthName}</span>
                   {isProbable && (
                     <motion.span 
                       initial={{ opacity: 0, scale: 0.8 }}

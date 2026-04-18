@@ -505,7 +505,7 @@ export function universalLexer<T = any>(
         const matches = [...chunk.matchAll(gRegex)];
         if (matches.length > 0) {
           results[rule.name] = matches
-            .map(m => m[1]?.trim())
+            .map(match => match[1]?.trim())
             .filter((val): val is string => !!val && !VALORES_INVALIDOS.has(val))
             .map(val => rule.formatter ? rule.formatter(val) : val);
           break;
