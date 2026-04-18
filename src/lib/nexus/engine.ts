@@ -7,8 +7,6 @@ const yahooFinance = new (yahooFinanceRaw as any)({
   validation: {
     logErrors: false,
     logOptionsErrors: false,
-    allowAdditionalProps: true,
-    strict: false,
   }
 });
 
