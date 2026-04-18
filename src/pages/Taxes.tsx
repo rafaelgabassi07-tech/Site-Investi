@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Calculator, ShieldCheck, AlertTriangle, Info, FileText, TrendingDown, Loader2 } from 'lucide-react';
+import { NexusAgentUI } from '../components/NexusAgentUI';
 import { motion } from 'motion/react';
 
 export default function Taxes() {
@@ -40,6 +41,8 @@ export default function Taxes() {
         description={<>Controle de isenção e apuração exata de impostos para <span className="text-blue-500 font-bold">{monthNames[currentDate.getMonth()]} de {currentDate.getFullYear()}</span>.</>}
         icon={Calculator}
       />
+
+      <NexusAgentUI />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Isentômetro de Ações */}

@@ -1,5 +1,6 @@
 import { PageHeader } from '../components/ui/PageHeader';
 import { TrendingUp, Calendar, ArrowUpRight, ArrowDownRight, BarChart3, PieChart, Activity, Loader2 } from 'lucide-react';
+import { NexusAgentUI } from '../components/NexusAgentUI';
 import { motion } from 'motion/react';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
@@ -140,6 +141,8 @@ export default function Profitability() {
         description="Acompanhe o desempenho histórico da sua carteira comparado aos principais índices."
         icon={BarChart3}
       />
+
+      <NexusAgentUI />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-white/5">
         {stats.map((stat, idx) => (

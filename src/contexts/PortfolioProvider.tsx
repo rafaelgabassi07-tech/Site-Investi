@@ -2,6 +2,7 @@ import React, { useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { calculateAdvancedPortfolio } from '../lib/portfolioCalc';
 import { financeService } from '../services/financeService';
+import { nexusAgentService } from '../services/NexusAgent';
 
 import { Transaction, PortfolioItem, TaxMonth } from '../types';
 import { PortfolioContext } from './PortfolioContext';
@@ -16,6 +17,15 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [syncingDividends, setSyncingDividends] = useState(false);
   const lastSyncRef = React.useRef<number>(0);
+
+  useEffect(() => {
+    return nexusAgentService.subscribe((status) => {
+      setSyncingDividends(status.state === 'syncing' || status.state === 'analyzing');
+      if (status.state === 'complete') {
+        loadDividendsFromCloud();
+      }
+    });
+  }, [loadDividendsFromCloud]);
 
   const loadDividendsFromCloud = useCallback(async () => {
     try {
@@ -43,120 +53,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const syncAllDividends = useCallback(async () => {
-    if (portfolio.length === 0 || syncingDividends) return;
-    
-    // Prevent syncing too often (once every 15 mins)
-    const now = Date.now();
-    if (now - lastSyncRef.current < 15 * 60 * 1000) {
-      return;
-    }
-
-    setSyncingDividends(true);
-    lastSyncRef.current = now;
-
-    try {
-      
-      const results = await Promise.all(
-        portfolio.slice(0, 30).map(async (item) => {
-          try {
-            const divs = await financeService.getAssetDividends(item.ticker);
-            if (!divs || !Array.isArray(divs)) {
-              return [];
-            }
-            
-            return divs.map(d => ({
-              ticker: item.ticker.toUpperCase(),
-              type: item.assetType || (item.ticker.toUpperCase().endsWith('11') ? 'FII' : 'ACAO'),
-              date: d.dataCom || d.date, // Use explicit dataCom if available, otherwise date
-              paymentDate: d.paymentDate || d.date,
-              amount: typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount,
-              is_future: new Date(d.paymentDate || d.date) > new Date()
-            }));
-          } catch (err) {
-            console.warn(`[SYNC] Falha ao processar ${item.ticker}:`, err);
-            return [];
-          }
-        })
-      );
-
-      const flatDividends = results.flat().filter(d => d && d.date && d.amount > 0);
-
-      // Predição Automática (1 mês para FII, 3 meses para Ações)
-      const futurePredictions: any[] = [];
-      const currTime = new Date();
-      const byTicker = flatDividends.reduce((acc, curr) => {
-        if (!acc[curr.ticker]) acc[curr.ticker] = [];
-        acc[curr.ticker].push(curr);
-        return acc;
-      }, {} as Record<string, any[]>);
-
-      for (const ticker in byTicker) {
-        const history = byTicker[ticker].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        if (history.length > 0) {
-          const lastDiv = history[0];
-          const nextDate = new Date(lastDiv.date);
-          const isFII = ticker.endsWith('11') || lastDiv.type === 'FII';
-          
-          nextDate.setMonth(nextDate.getMonth() + (isFII ? 1 : 3));
-          
-          if (nextDate > currTime) {
-            futurePredictions.push({
-              ticker,
-              type: lastDiv.type,
-              date: nextDate.toISOString(),
-              amount: lastDiv.amount,
-              is_future: true
-            });
-          }
-        }
-      }
-
-      const allToSync = [...flatDividends, ...futurePredictions];
-      if (allToSync.length === 0) {
-        setSyncingDividends(false);
-        return;
-      }
-
-      const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (isConfigured) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Batch check exists would be better but let's do sequential for safety with RLS
-          let added = 0;
-          for (const div of allToSync) {
-            const { data: existing } = await supabase.from('dividends')
-              .select('id')
-              .match({ user_id: user.id, ticker: div.ticker, date: div.date })
-              .limit(1);
-            
-            if (!existing || existing.length === 0) {
-              const { error } = await supabase.from('dividends').insert({ ...div, user_id: user.id });
-              if (!error) added++;
-            }
-          }
-        }
-      } else {
-        const local = JSON.parse(localStorage.getItem('invest_dividends') || '[]');
-        let changed = false;
-        for (const div of allToSync) {
-          if (!local.find((l: any) => l.ticker === div.ticker && l.date === div.date)) {
-            local.push({ ...div, id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString() });
-            changed = true;
-          }
-        }
-        if (changed) {
-          localStorage.setItem('invest_dividends', JSON.stringify(local));
-          window.dispatchEvent(new Event('invest_dividends_updated'));
-        }
-      }
-      
-      await loadDividendsFromCloud();
-    } catch (e) {
-      console.error('[SYNC] Falha crítica na sincronização:', e);
-    } finally {
-      setSyncingDividends(false);
-    }
-  }, [portfolio, syncingDividends, loadDividendsFromCloud]);
+    nexusAgentService.runSync(portfolio);
+  }, [portfolio]);
 
   // Automatic Trigger when portfolio loads or changes
   useEffect(() => {

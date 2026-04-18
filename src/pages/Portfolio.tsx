@@ -1,4 +1,5 @@
 import { Briefcase, Plus, PieChart as PieIcon, BarChart3, TrendingUp, Layers, Globe, Activity, Loader2 } from 'lucide-react';
+import { NexusAgentUI } from '../components/NexusAgentUI';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -140,6 +141,8 @@ export default function Portfolio() {
           </button>
         }
       />
+
+      <NexusAgentUI />
 
       {portfolio.length === 0 ? (
         <div className="py-32 text-center flex flex-col items-center justify-center">

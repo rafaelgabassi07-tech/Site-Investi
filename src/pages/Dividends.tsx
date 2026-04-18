@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { PortfolioNav } from '../components/PortfolioNav';
 import { getHistoricalQuantity } from '../lib/portfolioCalc';
+import { NexusAgentUI } from '../components/NexusAgentUI';
 
 export default function Dividends() {
   const { portfolio, transactions, loading: contextLoading, dividends, fetchDividends, syncingDividends } = usePortfolio();
@@ -171,12 +172,6 @@ export default function Dividends() {
         icon={Calendar}
         actions={
           <div className="flex items-center gap-4">
-            {syncingDividends && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 rounded-full border border-blue-500/20 animate-pulse">
-                <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sincronização em Background</span>
-              </div>
-            )}
             <button 
               onClick={() => setIsFormOpen(!isFormOpen)}
               className="px-4 py-2 bg-blue-600 font-bold text-sm text-white rounded-xl shadow-lg border border-blue-500 hover:bg-blue-500 transition-all flex items-center gap-2"
@@ -187,6 +182,8 @@ export default function Dividends() {
           </div>
         }
       />
+
+      <NexusAgentUI />
 
       {isFormOpen && (
         <motion.div
