@@ -7,11 +7,19 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [
-      react({
-        fastRefresh: process.env.DISABLE_HMR !== 'true'
-      }),
+      react(),
       tailwindcss()
     ],
+    build: {
+      target: 'esnext',
+      modulePreload: false
+    },
+    esbuild: {
+      target: 'esnext',
+      supported: {
+        'top-level-await': true
+      }
+    },
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
