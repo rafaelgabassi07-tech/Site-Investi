@@ -21,7 +21,7 @@ export function getHistoricalQuantity(ticker: string, targetDateStr: string, por
   // As quantidades históricas já vêm ordenadas cronologicamente pelo motor
   // Mas por segurança, garantimos que pegamos a última antes ou na data alvo
   const history = [...item.historicalQuantities].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const match = history.find(h => new Date(h.date).getTime() <= targetTime);
+  const match = [...history].reverse().find(h => new Date(h.date).getTime() <= targetTime);
   
   return match ? match.quantity : 0;
 }
@@ -111,13 +111,16 @@ export function calculateAdvancedPortfolio(
 
       // Update Quota Value based on market movement BEFORE the cash flow
       if (previousPatrimony > 0 && totalQuotas > 0) {
-        quotaValue = currentPatrimonyBeforeTx / totalQuotas;
+        const potentialQuotaValue = currentPatrimonyBeforeTx / totalQuotas;
+        if (!isNaN(potentialQuotaValue) && isFinite(potentialQuotaValue) && potentialQuotaValue > 0) {
+          quotaValue = potentialQuotaValue;
+        }
       }
 
       if (tx.type === 'BUY') {
         const newTotalQuantity = pos.totalQuantity + tx.quantity;
         const newTotalInvested = pos.totalInvested + (tx.quantity * tx.price);
-        pos.averagePrice = newTotalInvested / newTotalQuantity;
+        pos.averagePrice = newTotalQuantity > 0 ? newTotalInvested / newTotalQuantity : 0;
         pos.totalQuantity = newTotalQuantity;
         pos.totalInvested = newTotalInvested;
 
@@ -129,12 +132,12 @@ export function calculateAdvancedPortfolio(
         const costBasis = tx.quantity * pos.averagePrice;
         const profit = saleVolume - costBasis;
 
-        pos.totalQuantity -= tx.quantity;
+        pos.totalQuantity = Math.max(0, pos.totalQuantity - tx.quantity);
         pos.totalInvested = pos.totalQuantity * pos.averagePrice;
 
         const cashOutflow = saleVolume;
         const quotasDestroyed = quotaValue > 0 ? cashOutflow / quotaValue : 0;
-        totalQuotas -= quotasDestroyed;
+        totalQuotas = Math.max(0, totalQuotas - quotasDestroyed);
 
         const taxM = getTaxMonth(tx.date);
         if (tx.assetType === 'ACAO') {

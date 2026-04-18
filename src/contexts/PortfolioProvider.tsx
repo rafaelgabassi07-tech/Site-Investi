@@ -72,9 +72,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       
       const updated = items.map(item => {
         const batchData = batchResults.find(b => b.ticker === item.ticker);
-        let currentPrice = batchData?.price || 0;
+        let currentPrice = 0;
         
-        if (currentPrice === 0) currentPrice = item.averagePrice;
+        if (batchData && batchData.price !== undefined) {
+          currentPrice = typeof batchData.price === 'number' ? batchData.price : parseFinanceValue(batchData.price);
+        }
+        
+        if (!currentPrice || isNaN(currentPrice)) currentPrice = item.averagePrice;
 
         const currentValue = currentPrice * item.totalQuantity;
         const profit = currentValue - item.totalInvested;
