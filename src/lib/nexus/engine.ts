@@ -1437,25 +1437,29 @@ export class NexusEngine {
     // Aplicar filtros
     if (filters.minDY) {
       filtered = filtered.filter(r => {
-        const dy = parseFloat(r.results.dividendYield?.replace('%', '').replace(',', '.') || '0');
+        const val = r.results.dividendYield;
+        const dy = parseFloat(typeof val === 'string' ? val.replace('%', '').replace(',', '.') : String(val || '0'));
         return dy >= parseFloat(filters.minDY);
       });
     }
     if (filters.maxPL) {
       filtered = filtered.filter(r => {
-        const pl = parseFloat(r.results.pl?.replace(',', '.') || '999');
+        const val = r.results.pl;
+        const pl = parseFloat(typeof val === 'string' ? val.replace(',', '.') : String(val || '999'));
         return pl > 0 && pl <= parseFloat(filters.maxPL);
       });
     }
     if (filters.maxPVP) {
       filtered = filtered.filter(r => {
-        const pvp = parseFloat(r.results.pvp?.replace(',', '.') || '999');
+        const val = r.results.pvp;
+        const pvp = parseFloat(typeof val === 'string' ? val.replace(',', '.') : String(val || '999'));
         return pvp > 0 && pvp <= parseFloat(filters.maxPVP);
       });
     }
     if (filters.minROE) {
       filtered = filtered.filter(r => {
-        const roe = parseFloat(r.results.roe?.replace('%', '').replace(',', '.') || '0');
+        const val = r.results.roe;
+        const roe = parseFloat(typeof val === 'string' ? val.replace('%', '').replace(',', '.') : String(val || '0'));
         return roe >= parseFloat(filters.minROE);
       });
     }
@@ -1541,7 +1545,17 @@ export class NexusEngine {
         includeNews ? this.fetchNews(cleanTicker) : Promise.resolve(undefined),
       ]);
 
-      const scrape   = scrapeResult.status === 'fulfilled' ? scrapeResult.value : { data: {}, bytes: 0, earlyAbort: false, cacheStatus: 'ERROR' };
+      const scrape   = scrapeResult.status === 'fulfilled' ? scrapeResult.value : { 
+        data: {}, 
+        bytes: 0, 
+        earlyAbort: false, 
+        cacheStatus: 'ERROR',
+        error: scrapeResult.status === 'rejected' ? scrapeResult.reason : 'Unknown scraper error'
+      };
+      
+      if (scrapeResult.status === 'rejected') {
+        console.warn(`[Nexus] Scraper failed for ${ticker}:`, scrapeResult.reason);
+      }
       const quote    = yahooResult.status  === 'fulfilled' ? yahooResult.value  : null;
       const fund     = yahooFund.status    === 'fulfilled' ? yahooFund.value    : {};
       const newsData = newsResult.status   === 'fulfilled' ? newsResult.value   : undefined;

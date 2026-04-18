@@ -16,18 +16,11 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [quotaHistory, setQuotaHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingDividends, setSyncingDividends] = useState(false);
-  const lastSyncRef = React.useRef<number>(0);
+  const [lastSyncRef] = useState(React.useRef<number>(0));
 
-  useEffect(() => {
-    return nexusAgentService.subscribe((status) => {
-      setSyncingDividends(status.state === 'syncing' || status.state === 'analyzing');
-      if (status.state === 'complete') {
-        loadDividendsFromCloud();
-      }
-    });
-  }, [loadDividendsFromCloud]);
+  const loadDividendsFromCloud = useCallback(loadDividendsFromCloudDeclaration, []);
 
-  const loadDividendsFromCloud = useCallback(async () => {
+  async function loadDividendsFromCloudDeclaration() {
     try {
       const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (isConfigured) {
@@ -50,7 +43,16 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.error('Error fetching dividends from cloud:', e);
     }
-  }, []);
+  }
+
+  useEffect(() => {
+    return nexusAgentService.subscribe((status) => {
+      setSyncingDividends(status.state === 'syncing' || status.state === 'analyzing');
+      if (status.state === 'complete') {
+        loadDividendsFromCloud();
+      }
+    });
+  }, [loadDividendsFromCloud]);
 
   const syncAllDividends = useCallback(async () => {
     nexusAgentService.runSync(portfolio);

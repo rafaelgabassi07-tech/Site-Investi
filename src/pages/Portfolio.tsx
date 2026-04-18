@@ -4,7 +4,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { usePortfolio } from '../hooks/usePortfolio';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area } from 'recharts';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b', '#14b8a6'];

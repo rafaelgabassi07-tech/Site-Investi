@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { NexusEngine, inferAssetType } from "../src/lib/nexus/engine.js";
+import { NexusEngine, inferAssetType } from "../src/lib/nexus/engine.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

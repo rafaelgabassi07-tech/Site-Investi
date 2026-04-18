@@ -33,8 +33,12 @@ export interface NewsItem {
 }
 
 async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 2): Promise<Response> {
+  const finalUrl = (typeof window === 'undefined' && url.startsWith('/')) 
+    ? `http://localhost:3000${url}` 
+    : url;
+
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(finalUrl, options);
     if (!response.ok) {
       if (retries > 0 && response.status >= 500) {
         console.warn(`[FINANCE] Retrying ${url} due to status ${response.status}. Retries left: ${retries - 1}`);
