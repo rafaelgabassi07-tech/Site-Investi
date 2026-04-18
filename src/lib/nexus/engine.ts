@@ -2,7 +2,7 @@ import { z } from 'zod';
 import yahooFinance from 'yahoo-finance2';
 
 // Set global config to quiet logs avoiding InvalidOptionsError
-yahooFinance.setGlobalConfig({
+(yahooFinance as any).setGlobalConfig({
   validation: {
     logErrors: false,
     logOptionsErrors: false
@@ -770,21 +770,22 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
         continue;
       }
       
-      if (!quote.regularMarketPrice) {
+      if (!(quote as any).regularMarketPrice) {
         continue;
       }
       
+      const q = quote as any;
       return {
-        regularMarketPrice:          quote.regularMarketPrice,
-        regularMarketChangePercent:  quote.regularMarketChangePercent,
-        trailingPE:                  quote.trailingPE,
-        priceToBook:                 quote.priceToBook,
-        bookValue:                   quote.bookValue,
-        epsTrailingTwelveMonths:     quote.epsTrailingTwelveMonths,
-        trailingAnnualDividendYield: quote.trailingAnnualDividendYield,
-        marketCap:                   quote.marketCap,
-        longName:                    quote.longName,
-        shortName:                   quote.shortName,
+        regularMarketPrice:          q.regularMarketPrice,
+        regularMarketChangePercent:  q.regularMarketChangePercent,
+        trailingPE:                  q.trailingPE,
+        priceToBook:                 q.priceToBook,
+        bookValue:                   q.bookValue,
+        epsTrailingTwelveMonths:     q.epsTrailingTwelveMonths,
+        trailingAnnualDividendYield: q.trailingAnnualDividendYield,
+        marketCap:                   q.marketCap,
+        longName:                    q.longName,
+        shortName:                   q.shortName,
       };
     } catch (e) { 
       console.warn(`[YAHOO] Erro ao buscar quote para ${symbol}:`, formatYahooError(e));
@@ -811,9 +812,10 @@ async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<Ya
         continue;
       }
       
-      const fd = result?.financialData;
-      const ks = result?.defaultKeyStatistics;
-      const ap = result?.assetProfile;
+      const res = result as any;
+      const fd = res?.financialData;
+      const ks = res?.defaultKeyStatistics;
+      const ap = res?.assetProfile;
       
       if (!fd && !ks && !ap) continue;
       
@@ -951,8 +953,9 @@ export class NexusEngine {
 
         if ((result as any).errors || (result as any).error) continue;
 
-        const incomeHistory = result?.incomeStatementHistory?.incomeStatementHistory || [];
-        const balanceHistory = result?.balanceSheetHistory?.balanceSheetStatements || [];
+        const res = result as any;
+        const incomeHistory = res?.incomeStatementHistory?.incomeStatementHistory || [];
+        const balanceHistory = res?.balanceSheetHistory?.balanceSheetStatements || [];
 
         // Combine by year
         const historyData: any[] = [];
@@ -1475,9 +1478,9 @@ export class NexusEngine {
       }
       
       // Prioritize Brazilian assets if query looks like a ticker
-      let quotes = result.quotes || [];
+      let quotes = (result as any).quotes || [];
       if (/^[A-Z]{4}[0-9]{1,2}$/.test(q)) {
-        quotes = quotes.sort((a, b) => {
+        quotes = quotes.sort((a: any, b: any) => {
           const aIsBr = a.symbol.endsWith('.SA');
           const bIsBr = b.symbol.endsWith('.SA');
           if (aIsBr && !bIsBr) return -1;
@@ -1677,9 +1680,9 @@ export class NexusEngine {
           continue;
         }
 
-        if (!result.quotes || result.quotes.length === 0) continue;
+        if (!(result as any).quotes || (result as any).quotes.length === 0) continue;
         
-        return result.quotes.map((q: any) => ({
+        return (result as any).quotes.map((q: any) => ({
           date: q.date.toISOString(),
           open: q.open,
           high: q.high,
@@ -1756,7 +1759,7 @@ export class NexusEngine {
           continue;
         }
 
-        const events = result?.events?.dividends;
+        const events = (result as any)?.events?.dividends;
         if (!events || events.length === 0) continue;
         
         return events.map((d: any) => ({
@@ -1788,14 +1791,14 @@ export class NexusEngine {
         const topSymbols = genericMap[genericQuery];
         const results = await Promise.all(topSymbols.map(async (symbol) => {
           try {
-            const quote = await yahooFinance.quote(symbol);
+            const qResp = await yahooFinance.quote(symbol) as any;
             return {
-              symbol: quote.symbol,
-              shortname: quote.shortName || quote.longName || symbol,
-              longname: quote.longName || quote.shortName || symbol,
+              symbol: qResp.symbol,
+              shortname: qResp.shortName || qResp.longName || symbol,
+              longname: qResp.longName || qResp.shortName || symbol,
               typeDisp: genericQuery === 'cripto' ? 'Cryptocurrency' : 'Equity',
-              regularMarketPrice: quote.regularMarketPrice,
-              regularMarketChangePercent: quote.regularMarketChangePercent
+              regularMarketPrice: qResp.regularMarketPrice,
+              regularMarketChangePercent: qResp.regularMarketChangePercent
             };
           } catch (e) {
             return null;
@@ -1816,20 +1819,20 @@ export class NexusEngine {
         console.warn(`[YAHOO] Search for ${searchQuery} returned errors:`, formatYahooError((result as any).errors));
       }
 
-      let quotes = result?.quotes ?? [];
+      let quotes = (result as any)?.quotes ?? [];
       
       // If no results and we tried with .SA, try without .SA
       if (quotes.length === 0 && isBrazilian) {
         const fallbackResult = await yahooFinance.search(query, {
           quotesCount: 6,
           newsCount: 0
-        });
+        }) as any;
         
         if (fallbackResult && (fallbackResult as any).errors) {
           console.warn(`[YAHOO] Fallback search for ${query} returned errors:`, formatYahooError((fallbackResult as any).errors));
         }
         
-        quotes = fallbackResult?.quotes ?? [];
+        quotes = (fallbackResult as any)?.quotes ?? [];
       }
 
       const enrichedQuotes = await Promise.all(quotes.map(async (q: any) => {
@@ -1874,7 +1877,7 @@ export class NexusEngine {
       const idx = i;
       const p   = tasks[idx]()
         .then(res  => { results[idx] = res; })
-        .catch(err => { results[idx] = null; }) // Return null on error
+        .catch(err => { results[idx] = err instanceof Error ? err : new Error(String(err)); }) 
         .finally(() => { executing.delete(p); });
 
       executing.add(p);

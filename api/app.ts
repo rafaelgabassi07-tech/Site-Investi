@@ -156,7 +156,7 @@ export async function createServer() {
               price: data.results?.precoAtual || 0,
               change: data.results?.variacaoDay || '0.00%',
               name: data.results?.nome || '',
-              type: data.assetType
+              type: data.type
             };
           } catch (e) {
             console.error(`[API] Batch quote error for ${ticker}:`, e);
@@ -271,6 +271,19 @@ export async function createServer() {
         appType: "spa",
       });
       app.use(vite.middlewares);
+
+      // SPA Fallback for development
+      app.get('*', async (req, res, next) => {
+        const url = req.originalUrl;
+        try {
+          let template = fs.readFileSync(path.resolve(process.cwd(), "index.html"), "utf-8");
+          template = await vite.transformIndexHtml(url, template);
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          vite.ssrFixStacktrace(e as Error);
+          next(e);
+        }
+      });
     } else {
       const distPath = path.join(process.cwd(), 'dist');
       if (fs.existsSync(distPath)) {
@@ -331,10 +344,12 @@ export async function createServer() {
   return serverPromise;
 }
 
-if (!process.env.VERCEL) {
+// Start server if not running on Vercel (or always if we want local/dev to work)
+const isDev = process.env.NODE_ENV !== "production";
+if (!process.env.VERCEL || isDev) {
   createServer().then(({ app, PORT }) => {
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`[SERVER] Running on http://localhost:${PORT} (${isDev ? 'Development' : 'Production'})`);
     });
   });
 }
