@@ -138,7 +138,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-white text-tiny font-black uppercase tracking-widest placeholder:text-slate-800 focus:outline-none focus:border-blue-500/30 focus:bg-white/[0.08] transition-all shadow-inner"
+                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-white text-tiny font-black tracking-widest placeholder:text-slate-800 focus:outline-none focus:border-blue-500/30 focus:bg-white/[0.08] transition-all shadow-inner"
                   required
                 />
               </div>
