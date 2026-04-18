@@ -2,12 +2,17 @@ import { z } from 'zod';
 import yahooFinance from 'yahoo-finance2';
 
 // Set global config to quiet logs avoiding InvalidOptionsError
-(yahooFinance as any).setGlobalConfig({
-  validation: {
-    logErrors: false,
-    logOptionsErrors: false
-  }
-});
+let yahooConfigured = false;
+function ensureYahooConfig() {
+  if (yahooConfigured) return;
+  (yahooFinance as any).setGlobalConfig({
+    validation: {
+      logErrors: false,
+      logOptionsErrors: false
+    }
+  });
+  yahooConfigured = true;
+}
 
 // 1. TIPAGENS E CONTRATOS
 // ════════════════════════════════════════════════════════════════════════════
@@ -754,6 +759,7 @@ interface YahooFundamentalsData {
 }
 
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
+  ensureYahooConfig();
   const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
 
   for (const symbol of symbols) {
@@ -796,6 +802,7 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
 }
 
 async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<YahooFundamentalsData> {
+  ensureYahooConfig();
   const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
   
   for (const symbol of symbols) {
