@@ -197,6 +197,26 @@ export function calculateAdvancedPortfolio(
     }
   }
 
+  // Add a final data point for "Today" so the quota history always reaches the current value
+  const today = new Date().toISOString();
+  if (quotaHistory.length > 0) {
+    let todayPatrimony = 0;
+    positions.forEach(p => {
+      const priceAtTime = currentPrices[p.ticker] || p.averagePrice; 
+      todayPatrimony += p.totalQuantity * priceAtTime;
+    });
+    
+    // If we have actual currentPrices passed, the patrimony will differ.
+    // If not, it will be the same as the last transaction, but at least we have a point in time for charts.
+    if (quotaHistory[quotaHistory.length - 1].date.split('T')[0] !== today.split('T')[0]) {
+      quotaHistory.push({
+        date: today,
+        quotaValue,
+        totalPatrimony: todayPatrimony
+      });
+    }
+  }
+
   return {
     currentPositions: Array.from(positions.values()),
     taxLedger,

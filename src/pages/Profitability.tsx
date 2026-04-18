@@ -27,10 +27,12 @@ export default function Profitability() {
   }, []);
 
   const performanceData = useMemo(() => {
-    if (quotaHistory.length === 0) return [];
+    if (!quotaHistory || quotaHistory.length < 2) return [];
 
     // Normalize quota history
     const firstQuota = quotaHistory[0].quotaValue;
+    if (!firstQuota) return [];
+
     const normalizedPortfolio = quotaHistory.map(q => ({
       date: q.date,
       value: ((q.quotaValue / firstQuota) - 1) * 100,
@@ -38,10 +40,10 @@ export default function Profitability() {
     }));
 
     // Normalize IBOV history to match portfolio dates
-    if (ibovHistory.length === 0 || !ibovHistory[0]?.close) return normalizedPortfolio;
+    if (!ibovHistory || ibovHistory.length === 0 || !ibovHistory[0]?.close) return normalizedPortfolio;
 
     const firstIbov = ibovHistory[0].close;
-    return normalizedPortfolio.map(p => {
+    return normalizedPortfolio.map((p, idx, arr) => {
       const pDate = new Date(p.date).getTime();
       // Find closest IBOV point before or at pDate
       const ibovPoint = ibovHistory.reduce((prev, curr) => {
@@ -50,24 +52,38 @@ export default function Profitability() {
         return prev;
       }, ibovHistory[0]);
 
+      // Estimate real historical value based on patrimony vs starting
+      // If it's the last point, inject the true current profitability
+      let realValue = p.value;
+      if (idx === arr.length - 1) {
+         const totalInvested = portfolio.reduce((acc, curr) => acc + (curr.totalInvested || 0), 0);
+         const currentTotalValue = portfolio.reduce((acc, curr) => acc + (curr.currentValue || curr.totalInvested), 0);
+         if (totalInvested > 0) realValue = ((currentTotalValue / totalInvested) - 1) * 100;
+      }
+
       return {
         ...p,
+        value: realValue,
         month: new Date(p.date).toLocaleDateString('pt-BR', { month: 'short' }),
         benchmark: ibovPoint?.close ? ((ibovPoint.close / firstIbov) - 1) * 100 : 0
       };
     });
-  }, [quotaHistory, ibovHistory]);
+  }, [quotaHistory, ibovHistory, portfolio]);
 
   const stats = useMemo(() => {
-    if (performanceData.length === 0) return [
+    if (!performanceData || performanceData.length < 2) return [
       { label: 'Rentabilidade Total', value: '0.00%', icon: TrendingUp, color: 'emerald' },
       { label: 'Média Mensal', value: '0.00%', icon: Calendar, color: 'blue' },
       { label: 'vs. IBOVESPA', value: '0.00%', icon: Activity, color: 'purple' },
       { label: 'Melhor Mês', value: '0.00%', icon: ArrowUpRight, color: 'emerald' },
     ];
 
-    const totalReturn = performanceData[performanceData.length - 1].value;
-    const ibovReturn = performanceData[performanceData.length - 1].benchmark || 0;
+    const totalInvested = portfolio.reduce((acc, curr) => acc + (curr.totalInvested || 0), 0);
+    const currentTotalValue = portfolio.reduce((acc, curr) => acc + (curr.currentValue || curr.totalInvested), 0);
+    const trueTotalReturn = totalInvested > 0 ? ((currentTotalValue / totalInvested) - 1) * 100 : 0;
+
+    const totalReturn = trueTotalReturn;
+    const ibovReturn = performanceData.length > 0 ? (performanceData[performanceData.length - 1].benchmark || 0) : 0;
     const alpha = totalReturn - ibovReturn;
 
     // Monthly returns estimation
@@ -168,62 +184,69 @@ export default function Profitability() {
           </div>
           
           <div className="h-[350px] w-full -mx-4 md:mx-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#475569" 
-                  fontSize={10} 
-                  fontWeight="bold"
-                  tickLine={false} 
-                  axisLine={false} 
-                  dy={10}
-                  tickFormatter={(val, idx) => idx % 2 === 0 ? val.toUpperCase() : ''}
-                  tick={{ fill: '#64748b' }}
-                />
-                <YAxis 
-                  stroke="#475569" 
-                  fontSize={10} 
-                  fontWeight="bold"
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(v) => `${v.toFixed(1)}%`} 
-                  tick={{ fill: '#64748b' }}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
-                  itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}
-                  labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                  formatter={(v: any) => [`${Number(v).toFixed(2)}%`]}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#3b82f6" 
-                  strokeWidth={4} 
-                  fillOpacity={1} 
-                  fill="url(#colorValue)" 
-                  animationDuration={2000} 
-                  activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="benchmark" 
-                  stroke="#475569" 
-                  strokeWidth={2} 
-                  fill="transparent" 
-                  strokeDasharray="5 5" 
-                  activeDot={{ r: 4, strokeWidth: 0, fill: '#475569' }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {performanceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={performanceData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="#475569" 
+                    fontSize={10} 
+                    fontWeight="bold"
+                    tickLine={false} 
+                    axisLine={false} 
+                    dy={10}
+                    tickFormatter={(val, idx) => idx % 2 === 0 ? val.toUpperCase() : ''}
+                    tick={{ fill: '#64748b' }}
+                  />
+                  <YAxis 
+                    stroke="#475569" 
+                    fontSize={10} 
+                    fontWeight="bold"
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(v) => `${v.toFixed(1)}%`} 
+                    tick={{ fill: '#64748b' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                    itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}
+                    labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                    formatter={(v: any) => [`${Number(v).toFixed(2)}%`]}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#3b82f6" 
+                    strokeWidth={4} 
+                    fillOpacity={1} 
+                    fill="url(#colorValue)" 
+                    animationDuration={2000} 
+                    activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="benchmark" 
+                    stroke="#475569" 
+                    strokeWidth={2} 
+                    fill="transparent" 
+                    strokeDasharray="5 5" 
+                    activeDot={{ r: 4, strokeWidth: 0, fill: '#475569' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 uppercase tracking-widest text-[10px] font-black border border-white/5 rounded-2xl">
+                <span>Dados insuficientes para gerar a evolução.</span>
+                <span className="opacity-50 mt-1">É necessário ter pelo menos 2 transações em dias diferentes.</span>
+              </div>
+            )}
           </div>
         </motion.div>
 

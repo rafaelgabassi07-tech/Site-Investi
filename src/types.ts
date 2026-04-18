@@ -20,6 +20,9 @@ export interface PortfolioItem {
   currentValue?: number;
   profit?: number;
   profitPercentage?: number;
+  sector?: string;
+  segment?: string;
+  subSector?: string;
 }
 
 export interface CorporateEvent {

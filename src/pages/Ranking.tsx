@@ -162,7 +162,7 @@ export default function Ranking() {
                     <h2 className="text-display-md text-white uppercase italic">{selectedCategory}</h2>
                     <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-tiny font-black uppercase tracking-widest rounded border border-blue-500/20">{selectedType}</span>
                   </div>
-                  <p className="text-label text-slate-500 uppercase italic">Os 10 melhores ativos filtrados por {selectedCategory.toLowerCase()}.</p>
+                  <p className="text-label text-slate-500 uppercase italic">Os {rankingData.length} melhores ativos filtrados por {selectedCategory.toLowerCase()}.</p>
                 </div>
               </div>
 

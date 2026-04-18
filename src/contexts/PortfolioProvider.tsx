@@ -67,9 +67,10 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             return divs.map(d => ({
               ticker: item.ticker.toUpperCase(),
               type: item.assetType || (item.ticker.toUpperCase().endsWith('11') ? 'FII' : 'ACAO'),
-              date: d.date,
+              date: d.dataCom || d.date, // Use explicit dataCom if available, otherwise date
+              paymentDate: d.paymentDate || d.date,
               amount: typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount,
-              is_future: new Date(d.date) > new Date()
+              is_future: new Date(d.paymentDate || d.date) > new Date()
             }));
           } catch (err) {
             console.warn(`[SYNC] Falha ao processar ${item.ticker}:`, err);
@@ -184,18 +185,48 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
           const profit = currentValue - item.totalInvested;
           const profitPercentage = (profit / item.totalInvested) * 100;
 
+          // Extrair metadados para gráficos de composição
+          const sector = results['Setor'] || undefined;
+          const segment = results['Segmento'] || results['Segmento ANBIMA'] || undefined;
+          const subSector = results['Subsetor'] || undefined;
+
+          // Se for FII e não tiver segmento, tenta inferir pelo tipo
+          const finalSegment = segment || (item.assetType === 'FII' ? (results['Tipo'] || 'FII - Outros') : undefined);
+
           return { 
             ...item, 
             currentPrice, 
             currentValue, 
             profit, 
-            profitPercentage 
+            profitPercentage,
+            sector,
+            segment: finalSegment,
+            subSector
           };
         } catch {
           return { ...item, currentPrice: item.averagePrice, currentValue: item.totalInvested, profit: 0, profitPercentage: 0 };
         }
       }));
       setPortfolio(updated);
+      
+      // Update the final data point in quotaHistory to reflect current true prices
+      setQuotaHistory(prev => {
+        if (!prev || prev.length === 0) return prev;
+        const newHistory = [...prev];
+        const lastIdx = newHistory.length - 1;
+        
+        let newTotalPatrimony = 0;
+        updated.forEach(item => {
+          newTotalPatrimony += (item.currentValue || item.totalInvested);
+        });
+        
+        newHistory[lastIdx] = {
+          ...newHistory[lastIdx],
+          totalPatrimony: newTotalPatrimony
+        };
+        
+        return newHistory;
+      });
     } catch (err) {
       console.error('Failed to fetch current prices', err);
     }

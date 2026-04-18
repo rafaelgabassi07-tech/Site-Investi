@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Calendar, DollarSign, ArrowUpRight, Loader2, TrendingUp, PieChart, BarChart3, RefreshCw, Plus, Trash2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { financeService } from '../services/financeService';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { supabase } from '../lib/supabase';
@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { PortfolioNav } from '../components/PortfolioNav';
 
 export default function Dividends() {
-  const { portfolio, loading: contextLoading, dividends, fetchDividends, syncingDividends } = usePortfolio();
+  const { portfolio, transactions, loading: contextLoading, dividends, fetchDividends, syncingDividends } = usePortfolio();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [filter, setFilter] = useState('Todos');
   const [ticker, setTicker] = useState('');
@@ -73,26 +73,55 @@ export default function Dividends() {
     }
   };
 
+  // Helper function to get the quantity of an asset at a specific date
+  const getQuantityAtDate = useCallback((ticker: string, date: Date) => {
+    if (!transactions) return 0;
+    return transactions
+      .filter(t => t.ticker === ticker && new Date(t.date) <= date)
+      .reduce((acc, t) => {
+        if (t.type === 'BUY') return acc + t.quantity;
+        if (t.type === 'SELL') return acc - t.quantity;
+        return acc;
+      }, 0);
+  }, [transactions]);
+
+  // Processed dividends includes the calculated total based on historical quantity
+  const processedDividends = useMemo(() => {
+    return dividends.map(div => {
+      // qty calculation is based on Ex-Date (div.date in our schema)
+      const dataCom = new Date(div.date); 
+      const paymentDate = div.paymentDate ? new Date(div.paymentDate) : dataCom;
+      
+      const qtyAtDate = getQuantityAtDate(div.ticker, dataCom);
+      const isFuture = paymentDate > new Date() || div.is_future;
+      const amount = Number(div.amount) || 0;
+
+      return {
+        ...div,
+        paymentDate: paymentDate.toISOString(),
+        isFuture,
+        quantityAtDate: Math.max(0, qtyAtDate), // Ensure no negative quantities
+        totalAmount: amount * Math.max(0, qtyAtDate)
+      };
+    }).filter(div => div.quantityAtDate > 0); // Only keep dividends where user had an active position
+  }, [dividends, getQuantityAtDate]);
 
   const monthlyHistory = useMemo(() => {
     const history: Record<string, number> = {};
     const now = new Date();
     
-    // Last 12 months
-    for (let i = 0; i < 12; i++) {
+    // Last 12 months (including current month) + next 2 months for future viewing
+    for (let i = -2; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
       history[key] = 0;
     }
 
-    dividends.forEach(div => {
-      const d = new Date(div.date);
+    processedDividends.forEach(div => {
+      const d = new Date(div.paymentDate || div.date);
       const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
       if (history[key] !== undefined) {
-        // Find quantity in portfolio
-        const asset = portfolio.find(p => p.ticker === div.ticker);
-        const qty = asset ? asset.totalQuantity : 0; 
-        history[key] += div.amount * qty;
+        history[key] += div.totalAmount;
       }
     });
 
@@ -102,25 +131,27 @@ export default function Dividends() {
         value,
         fullDate: key
       }))
-      .reverse();
-  }, [dividends, portfolio]);
+      .sort((a, b) => a.fullDate.localeCompare(b.fullDate));
+  }, [processedDividends]);
 
   const stats = useMemo(() => {
-    const totalReceived = monthlyHistory.reduce((acc, curr) => acc + curr.value, 0);
+    const pastDividends = processedDividends.filter(d => !d.isFuture);
+    const futureDividends = processedDividends.filter(d => d.isFuture);
+
+    const totalReceived = pastDividends.reduce((acc, curr) => acc + curr.totalAmount, 0);
+    const totalFuture = futureDividends.reduce((acc, curr) => acc + curr.totalAmount, 0);
     const avgMonthly = totalReceived / 12;
     
     // Calculate Portfolio Yield
     const totalInvested = portfolio.reduce((acc, curr) => acc + (curr.totalInvested || 0), 0);
-    const annualDividends = dividends.reduce((acc, div) => {
-      const d = new Date(div.date);
+    
+    const annualDividends = pastDividends.reduce((acc, div) => {
+      const d = new Date(div.paymentDate || div.date);
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
       
       if (d >= oneYearAgo) {
-        const asset = portfolio.find(p => p.ticker === div.ticker);
-        if (asset) {
-          acc += div.amount * asset.totalQuantity;
-        }
+        acc += div.totalAmount;
       }
       return acc;
     }, 0);
@@ -129,13 +160,14 @@ export default function Dividends() {
 
     return {
       totalReceived,
+      totalFuture,
       avgMonthly,
       yieldOnCost,
       annualDividends
     };
-  }, [monthlyHistory, dividends, portfolio]);
+  }, [monthlyHistory, processedDividends, portfolio]);
 
-  const filteredDividends = dividends.filter(d => {
+  const filteredDividends = processedDividends.filter(d => {
     if (filter === 'Todos') return true;
     if (filter === 'Ações') return d.type === 'ACAO';
     if (filter === 'FIIs') return d.type === 'FII';
@@ -213,7 +245,7 @@ export default function Dividends() {
           { label: 'Total 12m', value: `R$ ${stats.totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'emerald' },
           { label: 'Média Mensal', value: `R$ ${stats.avgMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'blue' },
           { label: 'Yield on Cost', value: `${stats.yieldOnCost.toFixed(2)}%`, icon: BarChart3, color: 'purple' },
-          { label: 'Proventos Anuais', value: `R$ ${stats.annualDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: PieChart, color: 'amber' },
+          { label: 'Proventos Futuros', value: `R$ ${stats.totalFuture.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: PieChart, color: 'amber' },
         ].map((stat, idx) => (
           <motion.div
             key={idx}
@@ -345,8 +377,11 @@ export default function Dividends() {
                       </div>
                       <div className="flex items-center gap-6 text-right">
                         <div>
-                          <div className="text-lg font-display font-black text-white italic leading-none">R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                          <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest mt-1.5 italic">Por Cota</div>
+                          <div className="text-lg font-display font-black text-white italic leading-none">R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                          <div className="flex items-center gap-2 mt-1.5 justify-end">
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">{item.quantityAtDate} cotas</span>
+                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">• R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/cota</span>
+                          </div>
                         </div>
                         <button
                           onClick={() => handleDelete(item.id)}

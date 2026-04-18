@@ -1,12 +1,11 @@
 import { z } from 'zod';
-import yahooFinanceRaw from 'yahoo-finance2';
+import yahooFinance from 'yahoo-finance2';
 
-// Instantiate yahooFinance to avoid "Call new YahooFinance() first" error
-// We disable validation logging to prevent library from spamming logs on schema mismatches
-const yahooFinance = new (yahooFinanceRaw as any)({
+// Set global config to quiet logs avoiding InvalidOptionsError
+yahooFinance.setGlobalConfig({
   validation: {
     logErrors: false,
-    logOptionsErrors: false,
+    logOptionsErrors: false
   }
 });
 
@@ -1309,7 +1308,7 @@ export class NexusEngine {
         sorted.forEach(s => s.value = s.raw?.dividendYield || '0,00%');
       }
 
-      const finalData = sorted.slice(0, 10);
+      const finalData = sorted.slice(0, 50);
       this._cache.set(cacheKey, { data: finalData, timestamp: Date.now() }, this._options.cacheStaleMs, this._options.cacheTtlMs);
       return finalData;
     } catch (e) {
@@ -1710,6 +1709,14 @@ export class NexusEngine {
             const [day, month, year] = d.dataCom.split('/');
             const date = new Date(`${year}-${month}-${day}T12:00:00Z`);
             
+            let paymentDate = null;
+            if (d.pagamento && d.pagamento !== '-') {
+              const [pDay, pMonth, pYear] = d.pagamento.split('/');
+              if (pDay && pMonth && pYear) {
+                paymentDate = new Date(`${pYear}-${pMonth}-${pDay}T12:00:00Z`).toISOString();
+              }
+            }
+            
             // Limpar valor (R$ 0,50 -> 0.50)
             const amount = typeof d.valor === 'string' 
               ? parseFloat(d.valor.replace('R$', '').replace(/\./g, '').replace(',', '.').trim())
@@ -1717,6 +1724,8 @@ export class NexusEngine {
 
             return {
               date: date.toISOString(),
+              paymentDate: paymentDate || date.toISOString(), // Fallback to Ex-Date if missing
+              dataCom: date.toISOString(),
               amount: isNaN(amount) ? 0 : amount,
               type: d.tipo || 'ACAO'
             };
@@ -1748,6 +1757,8 @@ export class NexusEngine {
         
         return events.map((d: any) => ({
           date: d.date.toISOString(),
+          paymentDate: d.date.toISOString(),
+          dataCom: d.date.toISOString(),
           amount: d.amount,
         })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       } catch (e) {
@@ -1759,6 +1770,36 @@ export class NexusEngine {
 
   static async searchTicker(query: string): Promise<any[]> {
     try {
+      const genericQuery = query.toLowerCase().trim();
+      const genericMap: Record<string, string[]> = {
+        'ações': ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'BBAS3.SA', 'WEGE3.SA'],
+        'fiis': ['MXRF11.SA', 'HGLG11.SA', 'BTLG11.SA', 'CPTS11.SA', 'KNRI11.SA', 'VISC11.SA'],
+        'bdr': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA'],
+        'bdrs': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA'],
+        'stocks': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA'],
+        'cripto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD']
+      };
+
+      if (genericMap[genericQuery]) {
+        const topSymbols = genericMap[genericQuery];
+        const results = await Promise.all(topSymbols.map(async (symbol) => {
+          try {
+            const quote = await yahooFinance.quote(symbol);
+            return {
+              symbol: quote.symbol,
+              shortname: quote.shortName || quote.longName || symbol,
+              longname: quote.longName || quote.shortName || symbol,
+              typeDisp: genericQuery === 'cripto' ? 'Cryptocurrency' : 'Equity',
+              regularMarketPrice: quote.regularMarketPrice,
+              regularMarketChangePercent: quote.regularMarketChangePercent
+            };
+          } catch (e) {
+            return null;
+          }
+        }));
+        return results.filter(Boolean);
+      }
+
       const isBrazilian = query.length >= 4 && query.length <= 6 && !query.includes('.');
       const searchQuery = isBrazilian ? `${query}.SA` : query;
       

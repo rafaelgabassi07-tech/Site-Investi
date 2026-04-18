@@ -70,7 +70,8 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
 
     // Check if we got JSON even if status is OK
     const contentType = response.headers.get('content-type');
-    if (options.method === 'GET' && contentType && !contentType.includes('application/json')) {
+    const method = options.method || 'GET';
+    if (method === 'GET' && contentType && !contentType.includes('application/json')) {
       const text = await response.clone().text();
       if (text.includes('<!doctype') || text.includes('<html')) {
         throw new Error(`Unexpected HTML response for ${url}. This might be a session timeout or internal routing issue.`);

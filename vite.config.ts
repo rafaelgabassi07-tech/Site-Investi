@@ -11,11 +11,11 @@ export default defineConfig(({ mode }) => {
       tailwindcss()
     ],
     build: {
-      target: 'esnext',
+      target: 'es2022',
       modulePreload: false
     },
     esbuild: {
-      target: 'esnext',
+      target: 'es2022',
       supported: {
         'top-level-await': true
       }
