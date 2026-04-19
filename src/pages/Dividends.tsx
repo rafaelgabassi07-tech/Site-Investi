@@ -180,7 +180,7 @@ export default function Dividends() {
     <div className="space-y-6 pb-24">
       <PageHeader 
         title="Agenda de Dividendos"
-        description="Acompanhe os pagamentos de proventos e a evolução da sua renda passiva."
+        description="Gestão de proventos e renda passiva."
         icon={Calendar}
         actions={
           <div className="flex items-center gap-4">

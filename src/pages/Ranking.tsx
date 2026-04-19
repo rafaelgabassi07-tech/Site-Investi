@@ -66,7 +66,7 @@ export default function Ranking() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <PageHeader 
                 title="Rankings Nexus"
-                description="Inteligência de mercado para encontrar as melhores oportunidades."
+                description="Inteligência de mercado e filtros."
                 icon={Award}
               />
 

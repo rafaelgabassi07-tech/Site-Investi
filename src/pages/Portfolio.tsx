@@ -102,7 +102,7 @@ export default function Portfolio() {
     <div className="space-y-6">
       <PageHeader 
         title="Minha Carteira"
-        description={<>Central de inteligência estratégica da sua <span className="text-blue-500 font-bold">Arquitetura de Ativos</span>.</>}
+        description={<><span className="text-blue-500 font-bold">Arquitetura de Ativos</span> Estratégica.</>}
         icon={Briefcase}
         actions={
           <button 

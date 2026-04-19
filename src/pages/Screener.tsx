@@ -69,7 +69,7 @@ export default function Screener() {
     <div className="space-y-8 pb-24">
       <PageHeader 
         title="Busca Avançada"
-        description="Filtre ativos por indicadores fundamentalistas."
+        description="Filtros fundamentalistas."
         icon={Filter}
       />
 

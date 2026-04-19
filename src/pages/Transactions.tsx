@@ -361,7 +361,7 @@ export default function Transactions() {
     <div className="space-y-8">
       <PageHeader 
         title="Lançamentos"
-        description={<>Registre suas operações e mantenha seu histórico atualizado no <span className="text-blue-500 font-bold">Invest Engine</span>.</>}
+        description="Gestão de ordens e histórico."
         icon={History}
         actions={
           <div className="flex items-center gap-2">
