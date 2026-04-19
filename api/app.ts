@@ -91,7 +91,7 @@ export async function createServer() {
       }
     });
 
-    app.get("/api/test-div", async (req, res) => {
+    app.get("/api/test-div", async (_req, res) => {
       try {
         const historical = await yahooFinance.historical('PETR4.SA', {
           period1: '2020-01-01',
@@ -206,7 +206,7 @@ export async function createServer() {
       }
     });
 
-    app.get("/api/exchange-rate", async (req, res) => {
+    app.get("/api/exchange-rate", async (_req, res) => {
       try {
         const data = await NexusEngine.fetchAtivo('USDBRL=X', 'STOCK');
         res.json({ rate: data.results?.precoAtual || 5.25 });

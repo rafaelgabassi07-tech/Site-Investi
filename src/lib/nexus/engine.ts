@@ -7,7 +7,7 @@ export const yahooFinance = new YahooFinance();
 let yahooConfigured = false;
 export function ensureYahooConfig() {
   if (yahooConfigured) return;
-  yahooFinance.setGlobalConfig({
+  (yahooFinance as any).setGlobalConfig({
     validation: {
       logErrors: false,
       logOptionsErrors: false
@@ -1269,7 +1269,7 @@ export class NexusEngine {
         })
       );
 
-      const filteredResults = results.filter(r => r !== null && r.raw && Object.keys(r.raw).length > 0) as any[];
+      const filteredResults = results.filter((r): r is any => r !== null && (r as any).raw && Object.keys((r as any).raw).length > 0);
 
       // Ordenação baseada na categoria
       let sorted = [...filteredResults];
