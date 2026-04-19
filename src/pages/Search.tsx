@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Search as SearchIcon, TrendingUp, ArrowUpRight, ArrowDownRight, Loader2, X } from 'lucide-react';
+import { Search as SearchIcon, TrendingUp, ArrowUpRight, ArrowDownRight, Loader2, X, Layers, Globe, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AssetIcon } from '../components/ui/AssetIcon';
@@ -81,45 +81,25 @@ export default function Search() {
         icon={SearchIcon}
       />
 
-      <div className="relative flex items-center w-full bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] focus-within:border-blue-500/30 transition-all p-1.5 overflow-hidden group">
-        <div className="absolute inset-0 bg-blue-600/[0.02] opacity-0 group-focus-within:opacity-100 transition-opacity" />
-        <div className="pl-3 md:pl-5 text-slate-500 relative z-10">
-          {loading ? (
-            <Loader2 className="icon-sm md:icon-md text-blue-500 animate-spin" />
-          ) : (
-            <SearchIcon className="icon-sm md:icon-md group-focus-within:text-blue-500 transition-colors" />
-          )}
-        </div>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent border-none outline-none py-2.5 px-3 md:py-4 md:px-5 text-xs md:text-base text-white font-medium placeholder:text-slate-700 placeholder:italic relative z-10"
-          placeholder="Buscar ativos (ex: PETR4, AAPL, BTC-USD)"
-        />
-        <AnimatePresence>
-          {query && (
-            <motion.button 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={() => setQuery('')}
-              className="p-4 text-slate-500 hover:text-white transition-colors bg-white/5 rounded-2xl border border-white/5 mr-2 relative z-10 hover:bg-red-500 hover:border-red-500/30"
-            >
-              <X className="w-4 h-4" />
-            </motion.button>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 pt-2">
-        {['Ações', 'FIIs', 'Stocks', 'BDRs', 'Cripto'].map((type) => (
+      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 pt-8">
+        {[
+          { label: 'Ações', icon: TrendingUp },
+          { label: 'FIIs', icon: Layers },
+          { label: 'Stocks', icon: Globe },
+          { label: 'BDRs', icon: Activity },
+          { label: 'Cripto', icon: SearchIcon }
+        ].map((type) => (
           <button 
-            key={type} 
-            onClick={() => setQuery(type)}
-            className="px-8 py-3.5 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] hover:bg-white/10 hover:text-white transition-all whitespace-nowrap italic active:scale-95"
+            key={type.label} 
+            onClick={() => setQuery(type.label)}
+            className={`group px-6 py-4 rounded-2xl border transition-all whitespace-nowrap italic flex items-center gap-3 ${
+              query === type.label 
+                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]' 
+                : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
+            }`}
           >
-            {type}
+            <type.icon className={`w-4 h-4 ${query === type.label ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{type.label}</span>
           </button>
         ))}
       </div>

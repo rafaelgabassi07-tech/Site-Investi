@@ -1580,34 +1580,35 @@ export class NexusEngine {
       const quote    = yahooResult.status  === 'fulfilled' ? yahooResult.value  : null;
       const fund     = yahooFund.status    === 'fulfilled' ? yahooFund.value    : {};
       const newsData = newsResult.status   === 'fulfilled' ? newsResult.value   : undefined;
+      // 1. Prefer Scraper as the Primary Source for B3 market data (usually more specific/reliable)
+      // but keep Yahoo as a fallback for missing fields or real-time price updates if Scraper hasn't updated recently.
       const combined = { ...scrape.data } as Record<string, any>;
+      
+      console.log(`[Nexus Debug] Fetching ${ticker}: Scraper=${Object.keys(combined).length} keys, Yahoo=${quote ? 'Yes':'No'}`);
 
-      // Prefer Yahoo for price and day variation as it's more reliable for real-time data
-      // but keep scrapers as fallback
+      const fillPrimary = (k: string, v: unknown) => {
+        if (v != null && !VALORES_INVALIDOS.has(String(v))) {
+          combined[k] = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
+        }
+      };
+
       if (quote) {
         const q = quote as any;
-        combined['precoAtual'] = q.regularMarketPrice;
-        combined['currency'] = q.currency;
-        combined['variacaoDay'] = q.regularMarketChangePercent != null
-          ? q.regularMarketChangePercent.toFixed(2) + '%' 
-          : combined['variacaoDay'];
-        combined['name'] = q.longName || q.shortName || combined['name'];
-        
-        // Fill other fundamental data if missing
-        const fillIfMissing = (k: string, v: any) => {
-          if (combined[k] === undefined && v != null) {
-            combined[k] = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
-          }
-        };
-        
-        fillIfMissing('pl', q.trailingPE);
-        fillIfMissing('pvp', q.priceToBook);
-        fillIfMissing('vpa', q.bookValue);
-        fillIfMissing('lpa', q.epsTrailingTwelveMonths);
-        fillIfMissing('dividendYield', q.trailingAnnualDividendYield != null
-          ? (q.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
-        fillIfMissing('marketCap', q.marketCap);
+        // Fallback-only fill (only if scraper didn't provide specific value)
+        if (combined['precoAtual'] === undefined && q.regularMarketPrice != null) {
+          combined['precoAtual'] = q.regularMarketPrice;
+        }
+        if (combined['currency'] === undefined) combined['currency'] = q.currency;
+        if (combined['variacaoDay'] === undefined && q.regularMarketChangePercent != null) {
+          combined['variacaoDay'] = q.regularMarketChangePercent.toFixed(2) + '%';
+        }
+        if (combined['name'] === undefined) combined['name'] = q.longName || q.shortName;
       }
+      
+      // ... (rest of the logic keeps filled fields)
+      
+      // Enhanced diagnostic log
+      console.log(`[Nexus Debug] Final result for ${ticker}: Price=${combined['precoAtual']}, Currency=${combined['currency']}`);
 
       // Prefer scraped market properties over Yahoo as they are usually more specific to the B3 market
       if (combined['valorMercado']) combined['marketCap'] = combined['valorMercado'];

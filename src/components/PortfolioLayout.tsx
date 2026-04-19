@@ -1,5 +1,4 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { PortfolioNav } from './PortfolioNav';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function PortfolioLayout() {
@@ -7,7 +6,6 @@ export default function PortfolioLayout() {
 
   return (
     <div className="section-spacing space-y-4">
-      <PortfolioNav />
       
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
