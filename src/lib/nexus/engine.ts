@@ -7,12 +7,16 @@ export const yahooFinance = new YahooFinance();
 let yahooConfigured = false;
 export function ensureYahooConfig() {
   if (yahooConfigured) return;
-  (yahooFinance as any).setGlobalConfig({
-    validation: {
-      logErrors: false,
-      logOptionsErrors: false
+  try {
+    // In some versions of yahoo-finance2, setGlobalConfig is on the instance
+    if (typeof (yahooFinance as any).setGlobalConfig === 'function') {
+      (yahooFinance as any).setGlobalConfig({
+        validation: { logErrors: false, logOptionsErrors: false }
+      });
     }
-  });
+  } catch (e) {
+    console.warn('[Nexus] Could not set yahoo-finance global config', e);
+  }
   yahooConfigured = true;
 }
 
@@ -788,7 +792,7 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
 
   for (const symbol of symbols) {
     try {
-      const quote = await yahooFinance.quote(symbol);
+      const quote = await yahooFinance.quote(symbol, { validate: false } as any);
       
       if (!quote) {
         continue;
@@ -1276,8 +1280,12 @@ export class NexusEngine {
       const cat = category.toLowerCase();
 
       if (cat.includes('dividend') || cat.includes('yield') || cat.includes('bazin')) {
-        sorted.sort((a, b) => safeParse(b.raw?.dividendYield) - safeParse(a.raw?.dividendYield));
-        sorted.forEach(s => s.value = s.raw?.dividendYield || '0,00%');
+        sorted.sort((a, b) => {
+          const valA = a.raw ? safeParse(a.raw.dividendYield) : 0;
+          const valB = b.raw ? safeParse(b.raw.dividendYield) : 0;
+          return valB - valA;
+        });
+        sorted.forEach(s => s.value = (s.raw && s.raw.dividendYield) || '0,00%');
       } else if (cat.includes('pl') || cat.includes('baratas') || cat.includes('graham')) {
         if (cat.includes('graham')) {
           // Graham Formula: sqrt(22.5 * VPA * LPA)

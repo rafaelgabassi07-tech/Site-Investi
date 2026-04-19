@@ -28,7 +28,7 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
           <h2 className="text-lg md:text-display-md text-white mb-1 md:mb-2 leading-none italic tracking-tighter uppercase font-black">
             {title}
           </h2>
-          <div className="text-[10px] md:text-tiny font-bold md:font-black text-slate-500 md:uppercase tracking-normal md:tracking-[0.2em] max-w-xl opacity-80 leading-tight">
+          <div className="text-[9px] md:text-tiny font-black text-slate-500 uppercase tracking-widest md:tracking-[0.2em] max-w-xl opacity-80 leading-tight italic">
             {description}
           </div>
         </div>

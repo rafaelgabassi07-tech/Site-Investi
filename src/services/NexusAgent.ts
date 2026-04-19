@@ -81,15 +81,31 @@ class NexusDividendAgent {
               is_future: new Date(d.paymentDate || d.date) > new Date()
             })).filter(d => d.date && d.amount > 0);
 
-            // 2. Save to Supabase (Avoiding duplicates)
+            // 2. Save to Supabase (Avoiding duplicates with robust date matching)
             for (const div of formattedDivs) {
-              const { data: existing } = await supabase.from('dividends')
+              const divDate = new Date(div.date);
+              const startOfDay = new Date(divDate);
+              startOfDay.setUTCHours(0,0,0,0);
+              const endOfDay = new Date(divDate);
+              endOfDay.setUTCHours(23,59,59,999);
+
+              const { data: existing, error: checkError } = await supabase.from('dividends')
                 .select('id')
-                .match({ user_id: user.id, ticker: div.ticker, date: div.date })
+                .eq('user_id', user.id)
+                .eq('ticker', div.ticker)
+                .gte('date', startOfDay.toISOString())
+                .lte('date', endOfDay.toISOString())
                 .limit(1);
               
+              if (checkError) {
+                console.error(`[Robot Agent] Error checking existence for ${div.ticker}:`, checkError);
+                continue;
+              }
+
               if (!existing || existing.length === 0) {
-                await supabase.from('dividends').insert(div);
+                console.log(`[Robot Agent] Inserindo novo provento para ${div.ticker}: R$ ${div.amount} em ${div.date}`);
+                const { error: insertError } = await supabase.from('dividends').insert(div);
+                if (insertError) console.error(`[Robot Agent] Error inserting dividend for ${div.ticker}:`, insertError);
               }
             }
 

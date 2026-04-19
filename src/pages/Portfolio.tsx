@@ -67,14 +67,13 @@ export default function Portfolio() {
     { 
       title: 'Detalhes do Patrimônio', 
       icon: Briefcase, 
-      to: '#', 
-      description: 'Explore gráficos e tabelas detalhadas da sua evolução.',
+      to: '/portfolio/resumo', 
+      description: 'Análise aprofundada da sua evolução patrimonial.',
       color: 'amber',
       bg: 'bg-amber-500/10',
       border: 'border-amber-500/20',
       text: 'text-amber-500',
-      glow: 'group-hover:bg-amber-500/10',
-      isComingSoon: true
+      glow: 'group-hover:bg-amber-500/10'
     },
     { 
       title: 'Lançamentos', 
@@ -102,7 +101,7 @@ export default function Portfolio() {
     <div className="space-y-6">
       <PageHeader 
         title="Minha Carteira"
-        description={<><span className="text-blue-500 font-bold">Arquitetura de Ativos</span> Estratégica.</>}
+        description={<><span className="text-blue-500 font-bold">Arquitetura</span> Estratégica.</>}
         icon={Briefcase}
         actions={
           <button 

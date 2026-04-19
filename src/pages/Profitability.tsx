@@ -138,7 +138,7 @@ export default function Profitability() {
     <div className="space-y-6">
       <PageHeader 
         title="Rentabilidade"
-        description="Desempenho da carteira vs. índices."
+        description="Carteira vs. índices."
         icon={BarChart3}
       />
 

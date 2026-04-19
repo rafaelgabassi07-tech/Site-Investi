@@ -148,60 +148,61 @@ export default function Home() {
   return (
     <div className="space-y-4 pb-12 max-w-lg mx-auto md:max-w-4xl lg:max-w-5xl">
       {/* Header / Greeting */}
-      <header className="px-4 pt-8 space-y-6">
+      <header className="px-3 pt-6 space-y-5">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight italic uppercase">
+          <div className="space-y-0.5">
+            <h2 className="text-xl md:text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight italic uppercase">
               Bem-vindo, <span className="text-blue-600">{displayName}</span>
             </h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">Status da Carteira: <span className="text-emerald-500">Monitorado</span></p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic">Status da Carteira: <span className="text-emerald-500">Monitorado</span></p>
           </div>
           <div className="flex items-center gap-2">
-             <Logo size={32} showText={false} />
+             <Logo size={28} showText={false} />
           </div>
         </div>
 
         {/* Branding Message */}
-        <div className="bg-blue-600/5 border border-blue-600/10 rounded-[2rem] p-8 text-center space-y-3 shadow-sm">
-           <Logo size={40} showText={false} className="mx-auto mb-2" />
-           <h3 className="text-xl font-display font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">O Futuro dos seus Investimentos</h3>
-           <p className="text-xs text-slate-500 font-bold max-w-sm mx-auto leading-relaxed">
-             Análise de fundamentos, proventos e cotações em tempo real com o motor de inteligência Nexus.
+        <div className="relative group overflow-hidden bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 rounded-[2rem] p-6 text-center space-y-2 shadow-sm transition-all duration-500 hover:border-blue-500/20">
+           <div className="absolute inset-0 bg-gradient-to-b from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+           <Logo size={36} showText={false} className="mx-auto mb-1 relative z-10" />
+           <h3 className="text-lg font-display font-black text-slate-900 dark:text-white tracking-tighter uppercase italic relative z-10">Terminal Nexus</h3>
+           <p className="text-[10px] text-slate-500 font-bold max-w-[280px] mx-auto leading-relaxed uppercase tracking-tight relative z-10">
+             Inteligência em tempo real para sua Arquitetura de Ativos.
            </p>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="px-4 space-y-6">
+      <main className="px-3 space-y-6">
         
         {/* Portfolio Summary Card (Liberdade Financeira) */}
-        <section className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-blue-900/10 rounded-[2rem] p-6 relative overflow-hidden group">
+        <section className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-blue-900/10 rounded-[2.5rem] p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/5 to-transparent pointer-events-none" />
           
-          <div className="flex items-center justify-between mb-4 relative z-10">
+          <div className="flex items-center justify-between mb-2 relative z-10">
             <div className="flex items-center gap-2">
-              <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">Patrimônio Consolidado</h3>
-              <ChevronRight className="icon-xs text-slate-300 dark:text-slate-700" />
+              <h3 className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">Patrimônio Consolidado</h3>
+              <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-700" />
             </div>
             <button 
-              onClick={() => setShowValues(!showValues)}
-              className="p-1 px-2 text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 dark:bg-white/5 rounded-full"
+              onClick={(e) => { e.preventDefault(); setShowValues(!showValues); }}
+              className="p-1.5 px-2.5 text-slate-400 hover:text-blue-600 transition-all bg-slate-50 dark:bg-white/5 rounded-full border border-slate-100 dark:border-white/10 active:scale-90"
             >
-              {showValues ? <Eye className="icon-xs" /> : <EyeOff className="icon-xs" />}
+              {showValues ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
             </button>
           </div>
           
-          <div className="flex flex-col gap-1 relative z-10">
-            <span className="text-display-lg text-slate-900 dark:text-white leading-none tracking-tighter">
+          <div className="flex flex-col gap-0.5 relative z-10">
+            <span className="text-3xl md:text-4xl font-display font-black text-slate-900 dark:text-white leading-none tracking-tighter italic">
               {showValues ? `R$ ${portfolioStats.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'R$ ••••••'}
             </span>
             <div className="flex items-center gap-3 mt-4">
               <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-white/10 rounded-full border border-slate-100 dark:border-white/5 shadow-sm">
                 <Briefcase className="w-3 h-3 text-blue-500" />
-                <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase italic">{portfolioStats.count} Ativos</span>
+                <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase italic">{portfolioStats.count} Ativos</span>
               </div>
               <div className={`flex items-center gap-1 px-3 py-1 rounded-full border shadow-sm transition-all duration-500 ${portfolioStats.change >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'}`}>
-                 <span className="text-[10px] font-black italic">
+                 <span className="text-[9px] font-black italic">
                    {showValues ? `${portfolioStats.change >= 0 ? '+' : ''}${portfolioStats.change.toFixed(2)}%` : '•••%'}
                  </span>
                  {portfolioStats.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}

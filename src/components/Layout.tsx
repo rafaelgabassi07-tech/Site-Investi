@@ -346,7 +346,7 @@ export default function Layout() {
 
       {/* Main Content */}
       <main className="flex-1 pt-28 md:pt-32 pb-24 md:pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname.startsWith('/portfolio') ? 'portfolio-section' : location.pathname}

@@ -51,28 +51,24 @@ export function Logo({ className = "", size = 40, showText = false, variant = 'd
               </filter>
             </defs>
 
-            {/* The Geometric 'N' - Clean Version */}
+            {/* The Geometric 'N' - Ultra Clean & Modern */}
             <g filter="url(#nexusGlow)">
-              {/* Main N Shape */}
+              {/* Simplified Modern N */}
               <path 
-                d="M25 20 V80 H38 V45 L62 80 H75 V20 H62 V55 L38 20 H25 Z" 
+                d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" 
                 fill="url(#nexusGradient)"
-                opacity="1"
               />
-              
-              {/* Accent Detail */}
-              <circle cx="50" cy="50" r="1" fill="white" opacity="0.5" />
             </g>
 
-            {/* Text Below N */}
+            {/* Text Below N - Tighter and Cleaner */}
             <text 
               x="50" y="93" 
               textAnchor="middle" 
               fill="url(#nexusAccent)" 
-              fontSize="10" 
-              fontWeight="800" 
-              letterSpacing="0.3em" 
-              className="font-bold uppercase tracking-widest"
+              fontSize="9" 
+              fontWeight="900" 
+              letterSpacing="0.4em" 
+              className="font-display uppercase tracking-widest italic"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               NEXUS

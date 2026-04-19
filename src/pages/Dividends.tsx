@@ -138,7 +138,14 @@ export default function Dividends() {
 
     const totalReceived = pastDividends.reduce((acc, curr) => acc + curr.totalAmount, 0);
     const totalFuture = futureDividends.reduce((acc, curr) => acc + curr.totalAmount, 0);
-    const avgMonthly = totalReceived / 12;
+    
+    // Better Avg Monthly Calculation
+    const monthsWithData = new Set(processedDividends.map(d => {
+      const dt = new Date(d.paymentDate || d.date);
+      return `${dt.getFullYear()}-${dt.getMonth()}`;
+    })).size;
+    
+    const avgMonthly = monthsWithData > 0 ? totalReceived / Math.min(monthsWithData, 12) : 0;
     
     // Calculate Portfolio Yield
     const totalInvested = portfolio.reduce((acc, curr) => acc + (curr.totalInvested || 0), 0);
@@ -179,8 +186,8 @@ export default function Dividends() {
   return (
     <div className="space-y-6 pb-24">
       <PageHeader 
-        title="Agenda de Dividendos"
-        description="Gestão de proventos e renda passiva."
+        title="Dividendos"
+        description="Gestão de renda passiva."
         icon={Calendar}
         actions={
           <div className="flex items-center gap-4">
