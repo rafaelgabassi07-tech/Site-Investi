@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { NexusEngine, inferAssetType } from "../src/lib/nexus/engine.ts";
+import { NexusEngine, inferAssetType, formatYahooError, yahooFinance, ensureYahooConfig } from "../src/lib/nexus/engine.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,11 +14,20 @@ export async function createServer() {
   if (serverPromise) return serverPromise;
 
   serverPromise = (async () => {
+    ensureYahooConfig();
     const app = express();
     const PORT = 3000;
 
     app.use(cors());
     app.use(express.json());
+
+    // Request Logger (API only to reduce noise)
+    app.use((req, _res, next) => {
+      if (req.url.startsWith('/api/')) {
+        console.log(`[API REQUEST] ${req.method} ${req.url}`);
+      }
+      next();
+    });
 
     // API Routes
     app.get("/api/health", (_req, res) => {
@@ -32,7 +41,7 @@ export async function createServer() {
         res.json(result);
       } catch (error) {
         console.error(`[API] [${new Date().toISOString()}] ERROR /api/search q=${q}:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: formatYahooError(error) });
       }
     });
 
@@ -57,55 +66,80 @@ export async function createServer() {
         res.json(result);
       } catch (error) {
         console.error(`[API] [${new Date().toISOString()}] ERROR /api/news ticker=${ticker}:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: formatYahooError(error) });
       }
     });
 
     app.get("/api/ranking", async (req, res) => {
       const { category, type } = req.query;
+      
+      // Set a local timeout for the ranking call to prevent proxy timeouts
+      let completed = false;
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => { if (!completed) reject(new Error("Ranking fetch timeout")); }, 25000);
+      });
+
       try {
-        const result = await NexusEngine.fetchRanking((category as string) || "Dividend Yield", (type as any) || "ACAO");
+        const fetchPromise = NexusEngine.fetchRanking((category as string) || "Dividend Yield", (type as any) || "ACAO");
+        const result = await Promise.race([fetchPromise, timeoutPromise]) as any[];
+        completed = true;
         res.json(result);
       } catch (error) {
-        console.error(`[API] [${new Date().toISOString()}] ERROR /api/ranking:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        completed = true;
+        console.error(`[API] [${new Date().toISOString()}] ERROR /api/ranking ${category}:`, error);
+        res.status(500).json({ error: formatYahooError(error) });
       }
     });
 
-    app.get("/api/market-stats", async (_req, res) => {
-      const tickers = ["^BVSP", "^GSPC", "USDBRL=X", "BTC-USD", "IFIX.SA"];
+    app.get("/api/test-div", async (req, res) => {
       try {
-        const results = await Promise.all(tickers.map(async (t) => {
+        const historical = await yahooFinance.historical('PETR4.SA', {
+          period1: '2020-01-01',
+          events: 'dividends',
+          validate: false
+        } as any);
+        res.json(historical);
+      } catch(e: any) { res.status(500).json({error: formatYahooError(e)}); }
+    });
+
+    app.get("/api/market-stats", async (_req, res) => {
+      const tickers = [
+        { sym: "^BVSP", label: "IBOVESPA" },
+        { sym: "^GSPC", label: "S&P 500" },
+        { sym: "USDBRL=X", label: "DÓLAR" },
+        { sym: "BTC-USD", label: "BITCOIN" },
+        { sym: "IFIX.SA", label: "IFIX" }
+      ];
+      try {
+        const results = await Promise.all(tickers.map(async ({ sym, label }) => {
           try {
-            const data = await NexusEngine.fetchAtivo(t, 'ACAO');
-            return data;
+            const data = await yahooFinance.quote(sym);
+            const preco = data?.regularMarketPrice;
+            const change = data?.regularMarketChangePercent;
+            const strChange = change != null ? (change > 0 ? '+' : '') + change.toFixed(2) + '%' : '0.00%';
+            
+            return {
+              ticker: sym,
+              label,
+              price: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '---',
+              value: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '---',
+              change: strChange,
+              color: change && change < 0 ? 'red' : 'emerald'
+            };
           } catch (e) {
-            console.error(`[API] Error fetching market stat for ${t}:`, e);
-            return { ticker: t, results: { precoAtual: 0, variacaoDay: '0.00%' }, cacheStatus: 'ERROR' };
+            console.error(`[API] Error fetching market stat for ${sym}:`, e);
+            return {
+              ticker: sym,
+              label,
+              price: '---',
+              value: '---',
+              change: '0.00%',
+              color: 'emerald'
+            };
           }
         }));
 
-        const stats = results.map((r: any, idx: number) => {
-          const preco = r.results?.precoAtual;
-          const variacao = r.results?.variacaoDay || '0.00%';
-          
-          let label = '';
-          if (idx === 0) label = 'IBOVESPA';
-          else if (idx === 1) label = 'S&P 500';
-          else if (idx === 2) label = 'DÓLAR';
-          else if (idx === 3) label = 'BITCOIN';
-          else if (idx === 4) label = 'IFIX';
-
-          return {
-            ticker: tickers[idx],
-            label,
-            price: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR') : (preco || '---'),
-            value: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR') : (preco || '---'),
-            change: variacao,
-            color: variacao.startsWith('-') ? 'red' : 'emerald'
-          };
-        });
-        res.json(stats);
+        res.json(results);
       } catch (error) {
         console.error(`[API] Critical error in market-stats:`, error);
         res.status(500).json({ error: 'Failed to fetch market stats', details: (error as Error).message });
@@ -133,7 +167,7 @@ export async function createServer() {
         console.error(`[API] [${new Date().toISOString()}] ERROR /api/asset/${ticker}:`, error);
         res.status(500).json({ 
           error: "Failed to fetch asset details", 
-          details: error instanceof Error ? error.message : String(error) 
+          details: formatYahooError(error) 
         });
       }
     });
@@ -154,20 +188,30 @@ export async function createServer() {
             return {
               ticker,
               price: data.results?.precoAtual || 0,
+              currency: data.results?.currency || 'BRL',
               change: data.results?.variacaoDay || '0.00%',
               name: data.results?.nome || '',
               type: data.type
             };
           } catch (e) {
             console.error(`[API] Batch quote error for ${ticker}:`, e);
-            return { ticker, price: 0, change: '0.00%', error: true };
+            return { ticker, price: 0, change: '0.00%', error: true, currency: 'BRL' };
           }
         }));
 
         res.json(results);
       } catch (error) {
         console.error(`[API] Critical error in /api/quotes/batch:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: formatYahooError(error) });
+      }
+    });
+
+    app.get("/api/exchange-rate", async (req, res) => {
+      try {
+        const data = await NexusEngine.fetchAtivo('USDBRL=X', 'STOCK');
+        res.json({ rate: data.results?.precoAtual || 5.25 });
+      } catch (error) {
+        res.json({ rate: 5.25 });
       }
     });
 
@@ -179,7 +223,7 @@ export async function createServer() {
         res.json(data);
       } catch (error) {
         console.error(`[API] [${new Date().toISOString()}] ERROR /api/history/${ticker}:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: formatYahooError(error) });
       }
     });
 
@@ -190,7 +234,7 @@ export async function createServer() {
         res.json(data);
       } catch (error) {
         console.error(`[API] [${new Date().toISOString()}] ERROR /api/dividends/${ticker}:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: formatYahooError(error) });
       }
     });
 
@@ -201,7 +245,7 @@ export async function createServer() {
         res.json(data);
       } catch (error) {
         console.error(`[API] ERROR /api/historical-fundamentals/${ticker}:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: formatYahooError(error) });
       }
     });
 
@@ -213,7 +257,7 @@ export async function createServer() {
         res.json(result);
       } catch (error) {
         console.error(`[API] [${new Date().toISOString()}] ERROR /api/peers/${ticker}:`, error);
-        res.status(500).json({ error: (error as Error).message });
+        res.status(500).json({ error: formatYahooError(error) });
       }
     });
 
@@ -255,7 +299,8 @@ export async function createServer() {
     });
 
     // API 404 Handler
-    app.use('/api/*', (req, res) => {
+    app.all('/api/*', (req, res) => {
+      console.warn(`[API] 404 Not Found: ${req.method} ${req.originalUrl}`);
       res.status(404).json({ 
         error: 'API Route Not Found', 
         path: req.originalUrl,
@@ -275,6 +320,12 @@ export async function createServer() {
       // SPA Fallback for development
       app.get('*', async (req, res, next) => {
         const url = req.originalUrl;
+        
+        // Safety: Never serve HTML for API paths
+        if (url.startsWith('/api/')) {
+          return next();
+        }
+
         try {
           let template = fs.readFileSync(path.resolve(process.cwd(), "index.html"), "utf-8");
           template = await vite.transformIndexHtml(url, template);
@@ -303,32 +354,11 @@ export async function createServer() {
     app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
       console.error(`[SERVER ERROR] [${new Date().toISOString()}]`, err);
       
-      let errorMessage = err.message;
-      let errorDetails = err;
-
-      // Try to parse JSON error messages or handle objects with 'errors' property
-      try {
-        if (err.errors && Array.isArray(err.errors)) {
-          errorMessage = err.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
-        } else if (typeof errorMessage === 'string' && (errorMessage.startsWith('{') || errorMessage.startsWith('['))) {
-          const parsed = JSON.parse(errorMessage);
-          if (Array.isArray(parsed)) {
-            errorMessage = parsed.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
-          } else if (parsed.errors && Array.isArray(parsed.errors)) {
-            errorMessage = parsed.errors.map((e: any) => e.message || e.description || JSON.stringify(e)).join(', ');
-          } else if (parsed.message) {
-            errorMessage = parsed.message;
-          }
-        }
-      } catch (e) {
-        // Fallback to original message
-      }
-
       res.status(500).json({ 
         error: 'Internal Server Error', 
-        message: errorMessage,
+        message: formatYahooError(err),
         path: req.path,
-        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+        details: process.env.NODE_ENV === 'development' ? err : undefined
       });
     });
 

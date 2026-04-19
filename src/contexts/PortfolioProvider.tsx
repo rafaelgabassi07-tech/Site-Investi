@@ -70,17 +70,26 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     
     try {
       const tickers = items.map(i => i.ticker);
-      const batchResults = await financeService.getQuotesBatch(tickers);
+      const [batchResults, exchangeRate] = await Promise.all([
+        financeService.getQuotesBatch(tickers),
+        financeService.getExchangeRate()
+      ]);
       
       const updated = items.map(item => {
         const batchData = batchResults.find(b => b.ticker === item.ticker);
         let currentPrice = 0;
+        let currency = 'BRL';
         
-        if (batchData && batchData.price !== undefined) {
+        if (batchData) {
           currentPrice = typeof batchData.price === 'number' ? batchData.price : parseFinanceValue(batchData.price);
+          currency = batchData.currency || 'BRL';
         }
         
-        if (!currentPrice || isNaN(currentPrice)) currentPrice = item.averagePrice;
+        if (!currentPrice || isNaN(currentPrice)) {
+          currentPrice = item.averagePrice;
+        } else if (currency === 'USD') {
+          currentPrice = currentPrice * exchangeRate;
+        }
 
         const currentValue = currentPrice * item.totalQuantity;
         const profit = currentValue - item.totalInvested;

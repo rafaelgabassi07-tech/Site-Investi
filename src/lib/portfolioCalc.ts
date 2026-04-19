@@ -16,12 +16,17 @@ export function getHistoricalQuantity(ticker: string, targetDateStr: string, por
   const item = portfolio.find(p => p.ticker === ticker);
   if (!item || !item.historicalQuantities || item.historicalQuantities.length === 0) return 0;
   
-  const targetTime = new Date(targetDateStr).getTime();
+  // Use YYYY-MM-DD for comparison to avoid timezone issues
+  const targetDateStrNormalized = targetDateStr.split('T')[0];
   
   // As quantidades históricas já vêm ordenadas cronologicamente pelo motor
   // Mas por segurança, garantimos que pegamos a última antes ou na data alvo
   const history = [...item.historicalQuantities].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const match = [...history].reverse().find(h => new Date(h.date).getTime() <= targetTime);
+  
+  const match = [...history].reverse().find(h => {
+    const hDateStrNormalized = h.date.split('T')[0];
+    return hDateStrNormalized <= targetDateStrNormalized;
+  });
   
   return match ? match.quantity : 0;
 }

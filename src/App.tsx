@@ -33,6 +33,8 @@ import { ScrollToTop } from './components/ScrollToTop';
 
 import PortfolioLayout from './components/PortfolioLayout';
 
+import { ThemeProvider } from './components/ThemeProvider';
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -100,8 +102,9 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <Router>
+    <ThemeProvider defaultTheme="dark" storageKey="nexus-theme">
+      <ErrorBoundary>
+        <Router>
         <ScrollToTop />
         <Routes>
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
@@ -143,5 +146,6 @@ export default function App() {
         </Routes>
       </Router>
     </ErrorBoundary>
+    </ThemeProvider>
   );
 }

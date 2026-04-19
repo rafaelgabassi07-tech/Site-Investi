@@ -1,4 +1,4 @@
-import { Briefcase, Plus, PieChart as PieIcon, BarChart3, TrendingUp, Layers, Globe, Activity, Loader2 } from 'lucide-react';
+import { Briefcase, Plus, PieChart as PieIcon, BarChart3, TrendingUp, Layers, Globe, Activity, Loader2, ArrowUpRight } from 'lucide-react';
 import { NexusAgentUI } from '../components/NexusAgentUI';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useNavigate } from 'react-router-dom';
@@ -28,119 +28,72 @@ const TooltipContent = ({ active, payload, totalValue }: any) => {
 
 export default function Portfolio() {
   const navigate = useNavigate();
-  const { portfolio, quotaHistory, loading } = usePortfolio();
+  const { portfolio, loading } = usePortfolio();
 
-  const currentTotalValue = portfolio.reduce((acc, item) => acc + (item.currentValue || item.totalInvested), 0);
-
-  // 1. Posição de ativos (All assets)
-  const positionByAsset = useMemo(() => {
-    return portfolio
-      .map(item => ({
-        name: item.ticker,
-        value: item.currentValue || item.totalInvested,
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [portfolio]);
-
-  // 2. Posição atual por tipo de ativos (Ação vs FII vs BDR etc)
-  const positionByType = useMemo(() => {
-    const acc: Record<string, number> = {};
-    portfolio.forEach(item => {
-      const type = item.assetType || 'OUTROS';
-      acc[type] = (acc[type] || 0) + (item.currentValue || item.totalInvested);
-    });
-    return Object.entries(acc).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [portfolio]);
-
-  // 3. Exposição ao exterior (BDR vs Nacional)
-  const exposureForeign = useMemo(() => {
-    let foreign = 0;
-    let national = 0;
-    portfolio.forEach(item => {
-      const value = item.currentValue || item.totalInvested;
-      // Assume BDRs or tickers ending in 34/35 are foreign
-      if (item.assetType === 'BDR' || item.ticker.endsWith('34') || item.ticker.endsWith('35')) {
-        foreign += value;
-      } else {
-        national += value;
-      }
-    });
-    return [
-      { name: 'Nacional', value: national },
-      { name: 'Exterior', value: foreign }
-    ].filter(i => i.value > 0);
-  }, [portfolio]);
-
-  // 4. Posição atual das ações (Only Stocks)
-  const acoesPortfolio = portfolio.filter(p => p.assetType === 'ACAO');
-  
-  // Posição atual das ações por Setor
-  const acoesBySector = useMemo(() => {
-    const acc: Record<string, number> = {};
-    acoesPortfolio.forEach(item => {
-      const sector = item.sector || 'Não Classificado';
-      acc[sector] = (acc[sector] || 0) + (item.currentValue || item.totalInvested);
-    });
-    return Object.entries(acc).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [acoesPortfolio]);
-
-  // Posição atual das ações por Segmento
-  const acoesBySegment = useMemo(() => {
-    const acc: Record<string, number> = {};
-    acoesPortfolio.forEach(item => {
-      const segment = item.segment || 'Não Classificado';
-      acc[segment] = (acc[segment] || 0) + (item.currentValue || item.totalInvested);
-    });
-    return Object.entries(acc).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10);
-  }, [acoesPortfolio]);
-
-  // 5. Posição atual de FIIs (Only FIIs)
-  const fiisPortfolio = portfolio.filter(p => p.assetType === 'FII' || p.ticker.endsWith('11'));
-
-  // Posição atual de FIIs por Tipo / Segmento
-  const fiisBySegment = useMemo(() => {
-    const acc: Record<string, number> = {};
-    fiisPortfolio.forEach(item => {
-      const segment = item.segment || 'Não Classificado';
-      acc[segment] = (acc[segment] || 0) + (item.currentValue || item.totalInvested);
-    });
-    return Object.entries(acc).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [fiisPortfolio]);
-
-  // Evolução de Patrimônio
-  const [evolutionRange, setEvolutionRange] = useState('ALL');
-
-  const portfolioEvolution = useMemo(() => {
-    if (!quotaHistory || quotaHistory.length < 2) return [];
-    
-    let filtered = [...quotaHistory];
-    const now = new Date();
-    
-    if (evolutionRange === '1M') {
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(now.getMonth() - 1);
-      filtered = filtered.filter(q => new Date(q.date) >= oneMonthAgo);
-    } else if (evolutionRange === '6M') {
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(now.getMonth() - 6);
-      filtered = filtered.filter(q => new Date(q.date) >= sixMonthsAgo);
-    } else if (evolutionRange === '1Y') {
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(now.getFullYear() - 1);
-      filtered = filtered.filter(q => new Date(q.date) >= oneYearAgo);
-    }
-
-    return filtered.map(q => ({
-      date: new Date(q.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-      value: q.totalPatrimony
-    }));
-  }, [quotaHistory, evolutionRange]);
+  const menuItems = [
+    { 
+      title: 'Resumo da Carteira', 
+      icon: PieIcon, 
+      to: '/portfolio/resumo',
+      description: 'Visão geral da sua alocação, lucros e composição atualizada.',
+      color: 'blue',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      text: 'text-blue-500',
+      glow: 'group-hover:bg-blue-500/10'
+    },
+    { 
+      title: 'Agenda de Proventos', 
+      icon: TrendingUp, 
+      to: '/portfolio/proventos',
+      description: 'Acompanhe seus dividendos recebidos e projeções futuras.',
+      color: 'emerald',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/20',
+      text: 'text-emerald-500',
+      glow: 'group-hover:bg-emerald-500/10'
+    },
+    { 
+      title: 'Rentabilidade', 
+      icon: BarChart3, 
+      to: '/portfolio/rentabilidade',
+      description: 'Desempenho da sua carteira contra o IBOVESPA e benchmarks.',
+      color: 'purple',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/20',
+      text: 'text-purple-500',
+      glow: 'group-hover:bg-purple-500/10'
+    },
+    { 
+      title: 'Detalhes do Patrimônio', 
+      icon: Briefcase, 
+      to: '#', 
+      description: 'Explore gráficos e tabelas detalhadas da sua evolução.',
+      color: 'amber',
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/20',
+      text: 'text-amber-500',
+      glow: 'group-hover:bg-amber-500/10',
+      isComingSoon: true
+    },
+    { 
+      title: 'Lançamentos', 
+      icon: Activity, 
+      to: '/portfolio/lancamentos',
+      description: 'Gerencie suas movimentações, compras e vendas de ativos.',
+      color: 'rose',
+      bg: 'bg-rose-500/10',
+      border: 'border-rose-500/20',
+      text: 'text-rose-500',
+      glow: 'group-hover:bg-rose-500/10'
+    },
+  ];
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-        <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Carregando Patrimônio...</p>
+        <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Carregando Terminal Nexus...</p>
       </div>
     );
   }
@@ -148,8 +101,8 @@ export default function Portfolio() {
   return (
     <div className="space-y-6">
       <PageHeader 
-        title="Patrimônio"
-        description={<>Composição estratégica de ativos e alocação via <span className="text-blue-500 font-bold">Invest Engine</span>.</>}
+        title="Minha Carteira"
+        description={<>Central de inteligência estratégica da sua <span className="text-blue-500 font-bold">Arquitetura de Ativos</span>.</>}
         icon={Briefcase}
         actions={
           <button 
@@ -164,261 +117,53 @@ export default function Portfolio() {
 
       <NexusAgentUI />
 
-      {portfolio.length === 0 ? (
-        <div className="py-32 text-center flex flex-col items-center justify-center">
-          <Briefcase className="w-16 h-16 text-slate-800 mb-6" />
-          <h2 className="text-xl font-display font-black text-white italic">Nenhum Ativo Encontrado</h2>
-          <p className="text-slate-500 mt-2 max-w-md">Sua carteira está vazia. Adicione novas operações para visualizar seus gráficos de patrimônio.</p>
-          <button 
-            onClick={() => navigate('/portfolio/lancamentos')}
-            className="mt-8 px-6 py-3 bg-blue-600 text-white font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-blue-500 transition-colors"
+      <div className="grid grid-cols-2 gap-3 md:gap-6 pt-4">
+        {menuItems.map((item, idx) => (
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: idx * 0.03 }}
+            onClick={() => !item.isComingSoon && navigate(item.to)}
+            className={`group relative p-4 md:p-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-[2.5rem] flex flex-col gap-4 transition-all duration-500 cursor-pointer overflow-hidden shadow-sm hover:shadow-2xl active:scale-[0.98] ${
+              item.isComingSoon ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-white dark:hover:bg-slate-800/60 hover:border-blue-500/30'
+            }`}
           >
-            Adicionar Transação
-          </button>
+            {/* Animated Glow Backdrop */}
+            <div className={`absolute -top-10 -right-10 w-40 h-40 ${item.bg} blur-[60px] opacity-0 group-hover:opacity-40 transition-opacity duration-700`} />
+            
+            <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center border ${item.border} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg relative shrink-0`}>
+              <div className="absolute inset-0 bg-white/10 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+              <item.icon className={`w-7 h-7 ${item.text}`} />
+            </div>
+            
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base md:text-xl text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-tight font-black">{item.title}</h3>
+                {item.isComingSoon && (
+                  <span className="text-[8px] px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded-full text-slate-400 font-black">SOON</span>
+                )}
+              </div>
+              <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed uppercase tracking-widest italic opacity-70 group-hover:opacity-100 transition-opacity line-clamp-2">{item.description}</p>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5 group-hover:border-blue-500/20 transition-colors mt-auto">
+              <span className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase italic tracking-[0.2em] group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
+                {item.isComingSoon ? 'BLOQUEADO' : 'EXPLORAR MÓDULO'}
+              </span>
+              <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-blue-500 dark:group-hover:bg-blue-600 transition-colors shadow-inner">
+                <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-white transition-colors" />
+              </div>
+            </div>
+          </motion.div>
+        ))}
+
+        {/* Empty placeholder to complete 2x2 grid if needed or just to maintain balance */}
+        <div className="hidden lg:flex p-6 border-2 border-dashed border-white/5 rounded-[2rem] flex-col items-center justify-center text-center opacity-20">
+          <Layers className="icon-xl mb-4 text-slate-600" />
+          <p className="text-tiny font-black uppercase tracking-widest italic text-slate-600">Espaço Reservado</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-          
-          {/* Evolução de Patrimônio */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-1 md:col-span-2 lg:col-span-3 py-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="text-blue-500 icon-md" />
-                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Evolução de Patrimônio</h3>
-              </div>
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
-                {['1M', '6M', '1Y', 'ALL'].map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setEvolutionRange(r)}
-                    className={`px-3 py-1 text-[10px] font-black rounded-lg transition-all ${evolutionRange === r ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="h-[300px] w-full">
-              {portfolioEvolution.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={portfolioEvolution}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} dy={10} />
-                    <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${(v/1000).toFixed(0)}k`} />
-                    <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-slate-500 uppercase tracking-widest text-[10px] font-black border border-white/5 rounded-2xl">
-                  Dados insuficientes para evolução histórica
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Posicao por Tipo */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="py-6 flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <PieIcon className="text-emerald-500 icon-md" />
-              <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Por Tipo de Ativo</h3>
-            </div>
-            <div className="h-[200px] w-full mb-6 relative flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={positionByType} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {positionByType.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-3 mt-auto">
-              {positionByType.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                    <span className="text-slate-400 font-bold uppercase tracking-widest">{item.name}</span>
-                  </div>
-                  <span className="text-white font-black">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Posicao de Ativos (Geral) */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="py-6 flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <Layers className="text-purple-500 icon-md" />
-              <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Posição de Ativos</h3>
-            </div>
-            <div className="h-[200px] w-full mb-6 relative flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={positionByAsset.slice(0, 10)} cx="50%" cy="50%" innerRadius={0} outerRadius={80} paddingAngle={2} dataKey="value">
-                    {positionByAsset.slice(0, 10).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-3 mt-auto overflow-y-auto max-h-[100px] pr-2 custom-scrollbar">
-              {positionByAsset.slice(0, 10).map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[(idx + 3) % COLORS.length] }} />
-                    <span className="text-slate-400 font-bold uppercase tracking-widest">{item.name}</span>
-                  </div>
-                  <span className="text-white font-black">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Exposicao Exterior */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="py-6 flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <Globe className="text-amber-500 icon-md" />
-              <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Exposição ao Exterior</h3>
-            </div>
-            <div className="h-[200px] w-full mb-6 relative flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={exposureForeign} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {exposureForeign.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === 0 ? '#3b82f6' : '#f59e0b'} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-3 mt-auto">
-              {exposureForeign.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: idx === 0 ? '#3b82f6' : '#f59e0b' }} />
-                    <span className="text-slate-400 font-bold uppercase tracking-widest">{item.name}</span>
-                  </div>
-                  <span className="text-white font-black">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Acoes por Setor */}
-          {acoesPortfolio.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="py-6 flex flex-col">
-              <div className="flex items-center gap-3 mb-6">
-                <BarChart3 className="text-cyan-500 icon-md" />
-                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Por Setor</h3>
-              </div>
-              <div className="h-[200px] w-full mb-6 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={acoesBySector} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      {acoesBySector.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-3 mt-auto overflow-y-auto max-h-[150px] pr-2 custom-scrollbar">
-                {acoesBySector.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                      <span className="text-slate-400 font-bold uppercase tracking-widest">{item.name}</span>
-                    </div>
-                    <span className="text-white font-black">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Acoes por Segmento */}
-          {acoesPortfolio.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="py-6 flex flex-col">
-              <div className="flex items-center gap-3 mb-6">
-                <Activity className="text-blue-500 icon-md" />
-                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">Por Segmento</h3>
-              </div>
-              <div className="h-[200px] w-full mb-6 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={acoesBySegment} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                      {acoesBySegment.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[(index + 4) % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-3 mt-auto overflow-y-auto max-h-[150px] pr-2 custom-scrollbar">
-                {acoesBySegment.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[(idx + 4) % COLORS.length] }} />
-                      <span className="text-slate-400 font-bold uppercase tracking-widest">{item.name}</span>
-                    </div>
-                    <span className="text-white font-black">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* FIIs por Segmento */}
-          {fiisPortfolio.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="col-span-1 md:col-span-2 lg:col-span-3 py-6">
-              <div className="flex items-center gap-3 mb-6">
-                <PieIcon className="text-indigo-500 icon-md" />
-                <h3 className="text-white font-display font-black italic tracking-tighter text-lg uppercase">FIIs por Segmento / Tipo</h3>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="h-[250px] w-full relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={fiisBySegment} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
-                        {fiisBySegment.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<TooltipContent totalValue={currentTotalValue} />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex flex-col justify-center space-y-4">
-                  {fiisBySegment.map((item, idx) => {
-                    const totalFiis = fiisPortfolio.reduce((acc, a) => acc + (a.currentValue || a.totalInvested), 0);
-                    return (
-                      <div key={idx} className="flex justify-between items-center text-sm border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 rounded-md" style={{ backgroundColor: COLORS[(idx + 2) % COLORS.length] }} />
-                          <span className="text-slate-300 font-bold uppercase tracking-wider text-xs">{item.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white font-black">{((item.value / totalFiis) * 100).toFixed(1)}%</p>
-                          <p className="text-[10px] text-slate-500">R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-        </div>
-      )}
+      </div>
     </div>
   );
 }

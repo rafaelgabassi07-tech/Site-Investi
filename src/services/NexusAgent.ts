@@ -74,7 +74,7 @@ class NexusDividendAgent {
             const formattedDivs = divs.map(d => ({
               user_id: user.id,
               ticker: item.ticker.toUpperCase(),
-              type: item.assetType || (item.ticker.toUpperCase().endsWith('11') ? 'FII' : 'ACAO'),
+              type: d.type || d.tipo || (item.ticker.toUpperCase().endsWith('11') ? 'Rendimento' : 'Dividendo'),
               date: d.dataCom || d.date,
               paymentDate: d.paymentDate || d.date,
               amount: typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount,

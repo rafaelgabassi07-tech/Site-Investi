@@ -78,7 +78,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
     if (method === 'GET' && contentType && !contentType.includes('application/json')) {
       const text = await response.clone().text();
       if (text.includes('<!doctype') || text.includes('<html')) {
-        throw new Error(`Unexpected HTML response for ${url}. This might be a session timeout or internal routing issue.`);
+        throw new Error(`Unexpected HTML response (Status ${response.status}) for ${url}. This might be a session timeout or internal routing issue.`);
       }
     }
 
@@ -225,5 +225,13 @@ export const financeService = {
     const data = await res.json();
     cache[key] = { data, timestamp: now };
     return data;
+  },
+
+  async getExchangeRate(): Promise<number> {
+    return fetchWithCache('exchange-rate', async () => {
+      const res = await fetchWithRetry('/api/exchange-rate');
+      const data = await res.json();
+      return data.rate || 5.25;
+    });
   }
 };

@@ -197,7 +197,7 @@ export default function Ranking() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 md:gap-4">
+                <div className="flex flex-col gap-3">
                   {filteredRankingData.map((item, idx) => (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}

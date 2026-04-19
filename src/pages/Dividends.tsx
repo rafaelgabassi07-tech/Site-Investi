@@ -93,7 +93,15 @@ export default function Dividends() {
         quantityAtDate: Math.max(0, qtyAtDate), // Ensure no negative quantities
         totalAmount: amount * Math.max(0, qtyAtDate)
       };
-    }).filter(div => div.quantityAtDate > 0); // Only keep dividends where user had an active position
+    }).filter(div => {
+      // Relaxed filter: show if user ever had this asset or if it's manual
+      const divTicker = (div.ticker || '').toUpperCase();
+      const hasAssetInHistory = portfolio.some(p => p.ticker.toUpperCase() === divTicker);
+      const isManual = div.is_manual === true;
+      
+      // We show it if they have the asset OR if it was accurately tracked (qty > 0) OR if it's future
+      return isManual || hasAssetInHistory || div.quantityAtDate > 0 || div.isFuture;
+    });
   }, [dividends, portfolio]);
 
   const monthlyHistory = useMemo(() => {
@@ -159,8 +167,12 @@ export default function Dividends() {
 
   const filteredDividends = processedDividends.filter(d => {
     if (filter === 'Todos') return true;
-    if (filter === 'Ações') return d.type === 'ACAO';
-    if (filter === 'FIIs') return d.type === 'FII';
+    const ticker = d.ticker || '';
+    const isFII = ticker.toUpperCase().endsWith('11') || 
+                  (d.type || '').toUpperCase().includes('FII') || 
+                  (d.type || '').toUpperCase().includes('RENDIMENTO');
+    if (filter === 'Ações') return !isFII;
+    if (filter === 'FIIs') return isFII;
     return true;
   });
 
@@ -356,8 +368,13 @@ export default function Dividends() {
                           <div className="text-display-tiny text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter">
                             {item.ticker}
                           </div>
-                          <div className="flex items-center gap-3 mt-1.5">
+                          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic group-hover:text-slate-400">Data Ex: {date.toLocaleDateString('pt-BR')}</span>
+                            {item.type && !['ACAO', 'FII'].includes(item.type.toUpperCase()) && (
+                              <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-black uppercase tracking-widest rounded-full italic">
+                                {item.type}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

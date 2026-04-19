@@ -1,11 +1,13 @@
 import { z } from 'zod';
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
+
+export const yahooFinance = new YahooFinance();
 
 // Set global config to quiet logs avoiding InvalidOptionsError
 let yahooConfigured = false;
-function ensureYahooConfig() {
+export function ensureYahooConfig() {
   if (yahooConfigured) return;
-  (yahooFinance as any).setGlobalConfig({
+  yahooFinance.setGlobalConfig({
     validation: {
       logErrors: false,
       logOptionsErrors: false
@@ -123,51 +125,61 @@ function safeCpuDeltaMs(start: any | null): number {
   return (d.user + d.system) / 1000;
 }
 
-function formatYahooError(error: any): string {
+export function formatYahooError(error: any): string {
   if (!error) return 'Erro desconhecido';
   
-  // Clean up validation errors from yahoo-finance2
   if (error.name === 'Failed validation' || (typeof error.message === 'string' && error.message.includes('validation'))) {
-    return 'Yahoo Finance data validation warning (non-critical)';
+    return 'Divergência técnica nos dados (Validação de Schema)';
   }
 
-  // Handle objects with subErrors or errors array
-  const errors = error.errors || error.subErrors || (Array.isArray(error) ? error : null);
-  if (Array.isArray(errors)) {
-    return errors.map((e: any) => e.message || e.description || e.title || (typeof e === 'string' ? e : JSON.stringify(e))).join('; ');
-  }
+  const extractMessages = (obj: any): string[] => {
+    let messages: string[] = [];
+    if (!obj || typeof obj !== 'object') return messages;
 
-  // If it's a string, try to parse it as JSON
-  if (typeof error === 'string') {
-    try {
-      if (error.startsWith('{') || error.startsWith('[')) {
-        const parsed = JSON.parse(error);
-        return formatYahooError(parsed);
-      }
-    } catch {
-      return error;
+    const list = obj.errors || obj.subErrors;
+    if (Array.isArray(list)) {
+      list.forEach((e: any) => {
+        if (e && typeof e === 'object') {
+          if (e.message || e.description || e.title) {
+            messages.push(e.message || e.description || e.title);
+          }
+          if (e.subErrors && Array.isArray(e.subErrors)) {
+            messages.push(...extractMessages(e));
+          }
+        } else if (typeof e === 'string') {
+          messages.push(e);
+        }
+      });
+    } else if (obj.message) {
+      messages.push(obj.message);
     }
-  }
+    
+    return messages;
+  };
 
-  // If it has a message property
-  if (error.message) {
-    if (typeof error.message === 'string' && (error.message.startsWith('{') || error.message.startsWith('['))) {
-      try {
-        const parsed = JSON.parse(error.message);
-        return formatYahooError(parsed);
-      } catch {
-        return error.message;
-      }
-    }
-    return error.message;
-  }
-
-  // Fallback
   try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
+    let errorObj = error;
+    if (typeof error === 'string') {
+      const jsonMatch = error.match(/\{.*\}/s) || error.match(/\[.*\]/s);
+      if (jsonMatch) {
+         try {
+           errorObj = JSON.parse(jsonMatch[0]);
+         } catch { /* ignore */ }
+      }
+    }
+
+    const messages = extractMessages(errorObj);
+    if (messages.length > 0) {
+      return Array.from(new Set(messages)).join('; ');
+    }
+  } catch (e) { /* ignore */ }
+
+  const fallback = error.message || (typeof error === 'string' ? error : '');
+  if (fallback && !fallback.includes('"errors":') && !fallback.includes('"subErrors":')) {
+    return fallback.slice(0, 500);
   }
+
+  return 'Erro na consulta de dados (Yahoo Finance). Verifique o ticker ou tente mais tarde.';
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -222,8 +234,9 @@ export function inferAssetType(ticker: string): ExtendedAssetType {
   const clean = canonicalizeTicker(ticker);
   if (!clean) return 'ACAO';
 
-  // Crypto detection
-  if (clean.includes('-USD') || clean.includes('-BTC') || clean.includes('-ETH')) return 'CRYPTO';
+  // Crypto detection - Common crypto symbols
+  const commonCryptos = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOT', 'DOGE', 'LINK', 'MATIC'];
+  if (clean.includes('-USD') || clean.includes('-BTC') || clean.includes('-ETH') || commonCryptos.includes(clean)) return 'CRYPTO';
   
   // BDR detection (usually 4 letters + 34/35)
   if (RE_BDR.test(clean)) return 'BDR';
@@ -236,10 +249,11 @@ export function inferAssetType(ticker: string): ExtendedAssetType {
   // FII detection (ends in 12)
   if (clean.endsWith('12')) return 'FII';
   
-  // Brazilian Stocks (4 letters + number 3, 4, 5, 6)
-  if (/^[A-Z]{4}[3-6]$/.test(clean)) return 'ACAO';
+  // Brazilian Stocks (4 letters + number 0, 1, 3, 4, 5, 6)
+  if (/^[A-Z]{4}[0-9]$/.test(clean)) return 'ACAO';
   
-  // US Stocks (1-5 letters, no numbers at the end)
+  // US Stocks (1-5 letters, no numbers at the end usually)
+  // If it's 3-5 letters and doesn't end in number, likely US Stock
   if (/^[A-Z]{1,5}$/.test(clean)) return 'STOCK';
   
   return 'ACAO';
@@ -669,6 +683,7 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
     { name: 'sector',        anchors: ['Setor</span>', 'SETOR</span>'],                           extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'segment',       anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Subsetor</span>', 'SUBSETOR</span>'],       extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',         anchors: ['Sobre a Empresa', 'Descrição'],                 extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
+    { name: 'dividendosRaw', anchors: ['Histórico de Dividendos', 'Proventos', 'Pagamentos'], extractRegex: /<table id="table-dividends"[^>]*>([\s\S]*?)<\/table>/i },
   ],
 };
 
@@ -695,6 +710,7 @@ export const fiiTemplate: ExtractorTemplate<FIIData> = {
     { name: 'sector',            anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Setor</span>', 'SETOR</span>'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'segment',           anchors: ['Subsetor</span>', 'SUBSETOR</span>', 'Tipo Anatel', 'TIPO ANATEL'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',             anchors: ['Sobre o Fundo', 'Descrição'],           extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
+    { name: 'dividendosRaw',     anchors: ['Histórico de Rendimentos', 'Proventos', 'Pagamentos'], extractRegex: /<table id="table-dividends"[^>]*>([\s\S]*?)<\/table>/i },
   ],
 };
 
@@ -740,6 +756,7 @@ interface YahooQuoteData {
   marketCap?: number;
   longName?: string;
   shortName?: string;
+  currency?: string;
 }
 
 interface YahooFundamentalsData {
@@ -760,7 +777,14 @@ interface YahooFundamentalsData {
 
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   ensureYahooConfig();
-  const symbols = [`${ticker}.SA`, ticker.toUpperCase()];
+  
+  const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]$/.test(ticker);
+  const symbols = isBRLSymbol ? [`${ticker.replace(RE_SA, '')}.SA`] : [ticker.toUpperCase()];
+  
+  // For cryptos, maybe they need -USD suffix
+  if (['BTC', 'ETH', 'SOL', 'LTC'].includes(ticker.toUpperCase())) {
+    symbols.push(`${ticker.toUpperCase()}-USD`);
+  }
 
   for (const symbol of symbols) {
     try {
@@ -769,18 +793,10 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
       if (!quote) {
         continue;
       }
-
-      // Check for errors in the response object (some versions/cases return errors instead of throwing)
-      if ((quote as any).errors || (quote as any).error) {
-        console.warn(`[YAHOO] Quote for ${symbol} returned errors:`, formatYahooError((quote as any).errors || (quote as any).error));
-        continue;
-      }
-      
-      if (!(quote as any).regularMarketPrice) {
-        continue;
-      }
       
       const q = quote as any;
+      if (!q.regularMarketPrice) continue;
+      
       return {
         regularMarketPrice:          q.regularMarketPrice,
         regularMarketChangePercent:  q.regularMarketChangePercent,
@@ -792,9 +808,10 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
         marketCap:                   q.marketCap,
         longName:                    q.longName,
         shortName:                   q.shortName,
+        currency:                    q.currency,
       };
     } catch (e) { 
-      console.warn(`[YAHOO] Erro ao buscar quote para ${symbol}:`, formatYahooError(e));
+      // Silently fail for individual attempts
       continue; 
     }
   }
@@ -808,8 +825,9 @@ async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<Ya
   for (const symbol of symbols) {
     try {
       const result = await yahooFinance.quoteSummary(symbol, {
-        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
-      });
+        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile'],
+        validate: false
+      } as any);
       
       if (!result) continue;
 
@@ -948,13 +966,15 @@ export class NexusEngine {
 
   static async fetchHistoricalFundamentals(ticker: string) {
     const cleanTicker = canonicalizeTicker(ticker);
-    const symbols = [`${cleanTicker}.SA`, cleanTicker];
+    const isBrazilian = /^[A-Z]{4}[3-6]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
+    const symbols = [isBrazilian ? `${cleanTicker}.SA` : cleanTicker, cleanTicker];
 
     for (const symbol of symbols) {
       try {
         const result = await yahooFinance.quoteSummary(symbol, {
-          modules: ['incomeStatementHistory', 'balanceSheetHistory', 'earningsHistory', 'defaultKeyStatistics']
-        });
+          modules: ['incomeStatementHistory', 'balanceSheetHistory', 'earningsHistory', 'defaultKeyStatistics'],
+          validate: false
+        } as any);
 
         if (!result) continue;
 
@@ -1207,30 +1227,23 @@ export class NexusEngine {
       const popularTickers: any = {
         ACAO: [
           'PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 
-          'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3', 'GGBR4', 'SUZB3', 'JBSS3', 'BRFS3', 'LREN3',
-          'RADL3', 'EQTL3', 'VIVT3', 'SANB11', 'ENGI11', 'TAEE11', 'TRPL4', 'KLBN11', 'CPFE3', 'BBSE3',
-          'GOAU4', 'CCRO3', 'TIMS3', 'BRAP4', 'USIM5', 'MRFG3', 'ASAI3', 'HAPV3', 'RDOR3', 'SBSP3'
+          'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3'
         ],
         FII: [
           'HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 
-          'KNIP11', 'DEVA11', 'RECR11', 'VGIR11', 'TGAR11', 'MALL11', 'HGBS11', 'HGRU11', 'BRCR11',
-          'JSRE11', 'RECT11', 'VILG11', 'RBRP11', 'ALZR11', 'GALG11', 'CPFF11', 'KNSC11', 'RBRR11'
+          'KNIP11'
         ],
         BDR: [
-          'AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'DISB34', 'NFLX34', 
-          'PYPL34', 'NIKE34', 'COCA34', 'MCDC34', 'HOME34', 'VISA34', 'JPMC34', 'WMTB34', 'PEP434'
+          'AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34'
         ],
         ETF: [
-          'BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'GOLD11', 'EURP11',
-          'NASD11', 'USTK11', 'FIXA11', 'LFTS11', 'WRLD11', 'QBTC11', 'QETH11'
+          'BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'
         ],
         STOCK: [
-          'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'BRK-B', 'V', 'JPM', 'UNH', 
-          'MA', 'PG', 'HD', 'LLY', 'AVGO', 'COST', 'CVX', 'ABBV', 'PEP', 'KO', 'BAC', 'ADBE'
+          'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'V', 'JPM'
         ],
         CRYPTO: [
-          'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'DOT-USD', 
-          'MATIC-USD', 'LINK-USD', 'SHIB-USD', 'AVA-USD', 'LTC-USD', 'UNI-USD', 'ATOM-USD'
+          'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD'
         ]
       };
 
@@ -1256,7 +1269,7 @@ export class NexusEngine {
         })
       );
 
-      const filteredResults = results.filter(r => r !== null) as any[];
+      const filteredResults = results.filter(r => r !== null && r.raw && Object.keys(r.raw).length > 0) as any[];
 
       // Ordenação baseada na categoria
       let sorted = [...filteredResults];
@@ -1307,7 +1320,7 @@ export class NexusEngine {
           return (v1 > 0 && v2 > 0) ? v1 - v2 : v2 - v1;
         });
         sorted.forEach(s => s.value = s.raw?.pvp || 'N/A');
-      } else if (cat.includes('capitalização') || cat.includes('maiores')) {
+      } else if (cat.includes('capitalização') || cat.includes('maiores') || cat.includes('market cap') || cat.includes('valuation')) {
         sorted.sort((a, b) => (b.raw?.marketCap || 0) - (a.raw?.marketCap || 0));
         sorted.forEach(s => s.value = s.raw?.marketCap ? `R$ ${(s.raw.marketCap / 1e9).toFixed(2)}B` : 'N/A');
       } else if (cat.includes('prejuízo') || cat.includes('buy and hold')) {
@@ -1566,6 +1579,7 @@ export class NexusEngine {
       if (quote) {
         const q = quote as any;
         combined['precoAtual'] = q.regularMarketPrice;
+        combined['currency'] = q.currency;
         combined['variacaoDay'] = q.regularMarketChangePercent != null
           ? q.regularMarketChangePercent.toFixed(2) + '%' 
           : combined['variacaoDay'];
@@ -1691,8 +1705,9 @@ export class NexusEngine {
       try {
         const result = await yahooFinance.chart(symbol, {
           period1: period1,
-          interval: interval as any
-        });
+          interval: interval as any,
+          validate: false
+        } as any);
         
         if (!result) continue;
 
@@ -1722,42 +1737,60 @@ export class NexusEngine {
   static async fetchDividends(ticker: string): Promise<any[]> {
     const cleanTicker = canonicalizeTicker(ticker);
     const assetType = inferAssetType(cleanTicker);
-    const isBrazilian = /^[A-Z]{4}[3-6]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
+    const isBrazilian = /^[A-Z]{4}[0-9]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
 
-    // Para ativos brasileiros, tentamos primeiro o Scraper (Investidor10)
-    // pois o Yahoo Finance é instável com dividendos brasileiros (especialmente FIIs)
     if (isBrazilian) {
       try {
         const scrapeResult = await this.fetchAtivo(cleanTicker, assetType);
+        const htmlTable = scrapeResult.results?.dividendosRaw;
         
-        if (scrapeResult.results && scrapeResult.results.dividendos && scrapeResult.results.dividendos.length > 0) {
+        if (htmlTable) {
+          const dividends: any[] = [];
+          const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+          const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
           
-          return scrapeResult.results.dividendos.map((d: any) => {
-            // Converter data brasileira DD/MM/YYYY para ISO
-            const [day, month, year] = d.dataCom.split('/');
-            const date = new Date(`${year}-${month}-${day}T12:00:00Z`);
-            
-            let paymentDate = null;
-            if (d.pagamento && d.pagamento !== '-') {
-              const [pDay, pMonth, pYear] = d.pagamento.split('/');
-              if (pDay && pMonth && pYear) {
-                paymentDate = new Date(`${pYear}-${pMonth}-${pDay}T12:00:00Z`).toISOString();
-              }
+          let rowMatch;
+          while ((rowMatch = rowRegex.exec(htmlTable)) !== null) {
+            const cells: string[] = [];
+            let cellMatch;
+            const rowHtml = rowMatch[1];
+            while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
+              cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
             }
             
-            // Limpar valor (R$ 0,50 -> 0.50)
-            const amount = typeof d.valor === 'string' 
-              ? parseFloat(d.valor.replace('R$', '').replace(/\./g, '').replace(',', '.').trim())
-              : d.valor;
-
-            return {
-              date: date.toISOString(),
-              paymentDate: paymentDate || date.toISOString(), // Fallback to Ex-Date if missing
-              dataCom: date.toISOString(),
-              amount: isNaN(amount) ? 0 : amount,
-              type: d.tipo || 'ACAO'
-            };
-          }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            if (cells.length >= 4) {
+              // Investidor10 table: [Tipo, Data COM, Pagamento, Valor]
+              const tipo = cells[0];
+              const dataComRaw = cells[1];
+              const pagamentoRaw = cells[2];
+              const valorRaw = cells[3];
+              
+              const [d, m, y] = dataComRaw.split('/');
+              if (d && m && y) {
+                const date = new Date(`${y}-${m}-${d}T12:00:00Z`);
+                
+                let paymentDate = date.toISOString();
+                if (pagamentoRaw && pagamentoRaw !== '-') {
+                  const [pd, pm, py] = pagamentoRaw.split('/');
+                  if (pd && pm && py) paymentDate = new Date(`${py}-${pm}-${pd}T12:00:00Z`).toISOString();
+                }
+                
+                const amount = parseFloat(valorRaw.replace('R$', '').replace(/\./g, '').replace(',', '.').trim());
+                
+                dividends.push({
+                  date: date.toISOString(),
+                  paymentDate,
+                  dataCom: date.toISOString(),
+                  amount: isNaN(amount) ? 0 : amount,
+                  type: tipo || 'Dividendo'
+                });
+              }
+            }
+          }
+          
+          if (dividends.length > 0) {
+            return dividends.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          }
         }
       } catch (err) {
         console.warn(`[SCRAPER] Falha ao raspar dividendos para ${cleanTicker}:`, err);
@@ -1768,26 +1801,20 @@ export class NexusEngine {
     const symbols = [isBrazilian ? `${cleanTicker}.SA` : cleanTicker, cleanTicker];
     for (const symbol of symbols) {
       try {
-        const result = await yahooFinance.chart(symbol, {
-          period1: '5y',
-          interval: '1mo',
-          events: 'div'
-        });
+        const result = await yahooFinance.historical(symbol, {
+          period1: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          events: 'dividends',
+          validate: false
+        } as any);
         
-        if (!result) continue;
+        if (!result || !Array.isArray(result) || result.length === 0) continue;
 
-        if ((result as any).errors || (result as any).error) {
-          continue;
-        }
-
-        const events = (result as any)?.events?.dividends;
-        if (!events || events.length === 0) continue;
-        
-        return events.map((d: any) => ({
-          date: d.date.toISOString(),
-          paymentDate: d.date.toISOString(),
-          dataCom: d.date.toISOString(),
-          amount: d.amount,
+        return result.map((d: any) => ({
+          date: new Date(d.date).toISOString(),
+          paymentDate: new Date(d.date).toISOString(), // YF generally provides Ex-Date for events.
+          dataCom: new Date(d.date).toISOString(),
+          amount: d.dividends || d.amount || 0,
+          type: 'VALOR'
         })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       } catch (e) {
         continue;
@@ -1897,8 +1924,15 @@ export class NexusEngine {
     for (let i = 0; i < tasks.length; i++) {
       const idx = i;
       const p   = tasks[idx]()
-        .then(res  => { results[idx] = res; })
-        .catch(err => { results[idx] = err instanceof Error ? err : new Error(String(err)); }) 
+        .then(res  => { 
+          results[idx] = res; 
+          (this as any)._totalSuccess++;
+        })
+        .catch(err => { 
+          results[idx] = err instanceof Error ? err : new Error(String(err)); 
+          (this as any)._totalFailures++;
+          console.error(`[Nexus] Task failed in batch #${idx}:`, err);
+        })
         .finally(() => { executing.delete(p); });
 
       executing.add(p);
