@@ -79,7 +79,7 @@ export function MarketMarquee() {
       {/* Market Status Indicator Overlay */}
       <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-[#0f172a] via-[#0f172a] to-transparent pl-12 pr-4 flex items-center gap-2 pointer-events-none">
         <div className={`w-1.5 h-1.5 rounded-full ${isMarketOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
-        <span className={`text-tiny font-black uppercase tracking-widest ${isMarketOpen ? 'text-emerald-500' : 'text-slate-500'}`} title="Simulação baseada no horário de Brasília (B3)">
+        <span className={`text-[8px] font-black uppercase tracking-widest`} title="Simulação baseada no horário de Brasília (B3)">
           {isMarketOpen ? 'Mercado Aberto' : 'Mercado Fechado'}
         </span>
       </div>

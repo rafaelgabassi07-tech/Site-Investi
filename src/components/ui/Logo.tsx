@@ -35,43 +35,32 @@ export function Logo({ className = "", size = 40, showText = false, variant = 'd
             className={`w-full h-full relative z-10 p-1`}
           >
             <defs>
-              <linearGradient id="nexusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#60a5fa" />
-                <stop offset="100%" stopColor="#2563eb" />
+              <linearGradient id="metalN" x1="0" y1="0" x2="0" y2="100%">
+                <stop offset="0%" stopColor="#f8fafc" /> 
+                <stop offset="50%" stopColor="#94a3b8" /> 
+                <stop offset="100%" stopColor="#475569" /> 
               </linearGradient>
-              
-              <linearGradient id="nexusAccent" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#06b6d4" />
-              </linearGradient>
-
-              <filter id="nexusGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="1.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
             </defs>
 
-            {/* The Geometric 'N' - Ultra Clean & Modern */}
-            <g filter="url(#nexusGlow)">
-              {/* Simplified Modern N */}
-              <path 
-                d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" 
-                fill="url(#nexusGradient)"
-              />
-            </g>
+            {/* The Geometric 'N' - Metallic */}
+            <path 
+              d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" 
+              fill="url(#metalN)"
+              className="drop-shadow-lg"
+            />
 
-            {/* Text Below N - Tighter and Cleaner */}
+            {/* Text Below N - INVEST */}
             <text 
               x="50" y="93" 
               textAnchor="middle" 
-              fill="url(#nexusAccent)" 
-              fontSize="9" 
+              fill="#94a3b8" 
+              fontSize="10" 
               fontWeight="900" 
-              letterSpacing="0.4em" 
-              className="font-display uppercase tracking-widest italic"
+              letterSpacing="0.1em" 
+              className="font-display uppercase italic text-xs tracking-widest"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              NEXUS
+              INVEST
             </text>
           </svg>
         </div>
@@ -86,10 +75,9 @@ export function Logo({ className = "", size = 40, showText = false, variant = 'd
             <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 ml-0.5">
-            <span className="text-[8px] sm:text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] italic">
+            <span className="text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
               Invest
             </span>
-            <div className="h-0.5 flex-1 bg-gradient-to-r from-blue-500/50 via-blue-500/10 to-transparent min-w-[20px] rounded-full" />
           </div>
         </div>
       )}

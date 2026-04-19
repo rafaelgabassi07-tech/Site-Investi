@@ -47,7 +47,7 @@ export interface ScrapeSource<T = any> {
   requireStealth?: boolean;
 }
 
-export type ExtendedAssetType = 'ACAO' | 'FII' | 'BDR' | 'ETF' | 'STOCK' | 'CRYPTO';
+export type ExtendedAssetType = 'ACAO' | 'FII' | 'BDR' | 'ETF' | 'STOCK';
 
 export interface NewsItem {
   title: string;
@@ -238,10 +238,6 @@ export function inferAssetType(ticker: string): ExtendedAssetType {
   const clean = canonicalizeTicker(ticker);
   if (!clean) return 'ACAO';
 
-  // Crypto detection - Common crypto symbols
-  const commonCryptos = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOT', 'DOGE', 'LINK', 'MATIC'];
-  if (clean.includes('-USD') || clean.includes('-BTC') || clean.includes('-ETH') || commonCryptos.includes(clean)) return 'CRYPTO';
-  
   // BDR detection (usually 4 letters + 34/35)
   if (RE_BDR.test(clean)) return 'BDR';
   
@@ -742,7 +738,6 @@ const ASSET_PRESETS: Record<string, {
   BDR:  { i10Base: 'https://investidor10.com.br/bdrs',   template: bdrTemplate  },
   ETF:  { i10Base: 'https://investidor10.com.br/etfs',   template: etfTemplate  },
   STOCK: { i10Base: 'https://investidor10.com.br/stocks', template: acaoTemplate },
-  CRYPTO: { i10Base: 'https://investidor10.com.br/cripto', template: acaoTemplate },
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -792,13 +787,15 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
 
   for (const symbol of symbols) {
     try {
-      const quote = await yahooFinance.quote(symbol, { validate: false } as any);
+      const quote = await yahooFinance.quote(symbol);
       
       if (!quote) {
         continue;
       }
       
       const q = quote as any;
+      console.log(`[Nexus Debug] Yahoo Quote for ${symbol}: Price=${q.regularMarketPrice}, Currency=${q.currency}`);
+      
       if (!q.regularMarketPrice) continue;
       
       return {
@@ -815,6 +812,7 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
         currency:                    q.currency,
       };
     } catch (e) { 
+      console.error(`[Nexus Debug] Error fetching quote for ${symbol}:`, e);
       // Silently fail for individual attempts
       continue; 
     }
@@ -1382,8 +1380,7 @@ export class NexusEngine {
           FII: ['HGLG11', 'MXRF11', 'KNRI11', 'XPLG11', 'VISC11'],
           BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34'],
           ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'],
-          STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA'],
-          CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD']
+          STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA']
         };
         peers = popular[type] || popular.ACAO;
       }
@@ -1432,8 +1429,7 @@ export class NexusEngine {
       FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 'BCFF11', 'BRCR11', 'HGBS11', 'JSRE11', 'VILG11', 'RBRP11', 'KNIP11', 'KNCR11', 'HGRU11', 'PVBI11', 'LVBI11'],
       BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'NFLX34', 'DISB34', 'PYPL34', 'BABA34', 'NIKE34', 'JNJB34', 'PGCO34', 'VIVT34'],
       ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'FIND11', 'MATB11', 'GOVE11', 'XFIX11', 'GOLD11', 'SPXI11'],
-      STOCK: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'BRK-B', 'V', 'JNJ', 'WMT', 'PG', 'MA', 'HD', 'DIS'],
-      CRYPTO: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'AVAX-USD', 'DOT-USD', 'DOGE-USD', 'LINK-USD']
+      STOCK: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'BRK-B', 'V', 'JNJ', 'WMT', 'PG', 'MA', 'HD', 'DIS']
     };
 
     const tickers = popularTickers[type] || popularTickers.ACAO;
@@ -1586,12 +1582,6 @@ export class NexusEngine {
       
       console.log(`[Nexus Debug] Fetching ${ticker}: Scraper=${Object.keys(combined).length} keys, Yahoo=${quote ? 'Yes':'No'}`);
 
-      const fillPrimary = (k: string, v: unknown) => {
-        if (v != null && !VALORES_INVALIDOS.has(String(v))) {
-          combined[k] = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
-        }
-      };
-
       if (quote) {
         const q = quote as any;
         // Fallback-only fill (only if scraper didn't provide specific value)
@@ -1621,20 +1611,6 @@ export class NexusEngine {
         if (!VALORES_INVALIDOS.has(s)) combined[k] = s;
       };
 
-      if (quote) {
-        const q = quote as any;
-        fill('precoAtual',    q.regularMarketPrice);
-        fill('variacaoDay',   q.regularMarketChangePercent != null
-          ? q.regularMarketChangePercent.toFixed(2) + '%' : undefined);
-        fill('pl',            q.trailingPE);
-        fill('pvp',           q.priceToBook);
-        fill('vpa',           q.bookValue);
-        fill('lpa',           q.epsTrailingTwelveMonths);
-        fill('dividendYield', q.trailingAnnualDividendYield != null
-          ? (q.trailingAnnualDividendYield * 100).toFixed(2) + '%' : undefined);
-        fill('marketCap',     q.marketCap);
-        fill('name',          q.longName || q.shortName);
-      }
       if (fund) {
         fill('margemLiquida',  fund.profitMargins    != null ? (fund.profitMargins    * 100).toFixed(2) + '%' : undefined);
         fill('margemBruta',    fund.grossMargins     != null ? (fund.grossMargins     * 100).toFixed(2) + '%' : undefined);

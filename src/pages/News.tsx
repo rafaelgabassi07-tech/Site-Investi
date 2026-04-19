@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { financeService, NewsItem } from '../services/financeService';
 
-const THEMES = ['Todos', 'Mercado', 'Negócios', 'Criptomoedas', 'Política', 'Economia'];
+const THEMES = ['Todos', 'Mercado', 'Negócios', 'Política', 'Economia'];
 
 export default function News() {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -37,7 +37,6 @@ export default function News() {
     switch (activeTheme) {
       case 'Mercado': return searchStr.includes('mercado') || searchStr.includes('ibovespa') || searchStr.includes('ações') || searchStr.includes('bolsa');
       case 'Negócios': return searchStr.includes('negócios') || searchStr.includes('empresa') || searchStr.includes('banco') || searchStr.includes('lucro');
-      case 'Criptomoedas': return searchStr.includes('cripto') || searchStr.includes('bitcoin') || searchStr.includes('ethereum');
       case 'Política': return searchStr.includes('política') || searchStr.includes('governo') || searchStr.includes('presidente') || searchStr.includes('ministro');
       case 'Economia': return searchStr.includes('economia') || searchStr.includes('inflação') || searchStr.includes('selic') || searchStr.includes('pib');
       default: return true;

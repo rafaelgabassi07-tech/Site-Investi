@@ -192,7 +192,6 @@ export default function Transactions() {
           if (mercado.includes('FII') || mercado.includes('IMOBILIÁRIO') || produto.includes('FII ') || produto.includes('FUNDO DE INVESTIMENTO IMOBILIARIO')) return 'FII';
           if (mercado.includes('BDR') || produto.includes('BDR ')) return 'BDR';
           if (mercado.includes('ETF') || mercado.includes('ÍNDICE') || produto.includes('ETF ') || produto.includes('FUNDO DE INDICE')) return 'ETF';
-          if (mercado.includes('CRIPTO') || mercado.includes('BITCOIN') || produto.includes('BITCOIN') || produto.includes('ETHEREUM')) return 'CRIPT';
 
           // 2. Lógica de sufixo de Ticker (Média prioridade)
           if (t.endsWith('11')) {
@@ -482,7 +481,6 @@ export default function Transactions() {
                     <option value="FII" className="bg-slate-900">FII</option>
                     <option value="ETF" className="bg-slate-900">ETF</option>
                     <option value="BDR" className="bg-slate-900">BDR</option>
-                    <option value="CRIPT" className="bg-slate-900">Cripto</option>
                     <option value="RF" className="bg-slate-900">Renda Fixa</option>
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">

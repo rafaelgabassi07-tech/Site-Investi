@@ -89,8 +89,7 @@ export default function Ranking() {
                     {[
                       { label: 'Ações', value: 'ACAO' },
                       { label: 'FIIs', value: 'FII' },
-                      { label: 'Stocks', value: 'STOCK' },
-                      { label: 'Cripto', value: 'CRYPTO' }
+                      { label: 'Stocks', value: 'STOCK' }
                     ].map((type) => (
                       <button 
                         key={type.label} 

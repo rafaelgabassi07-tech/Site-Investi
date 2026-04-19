@@ -18,7 +18,7 @@ export default function About() {
     {
       icon: Globe,
       title: "Mercado Global",
-      description: "Acompanhamento completo de Ações, FIIs, Stocks e Criptomoedas em uma única interface."
+      description: "Acompanhamento completo de Ações, FIIs e Stocks em uma única interface."
     },
     {
       icon: BarChart3,

@@ -124,34 +124,34 @@ export default function Portfolio() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.03 }}
             onClick={() => !item.isComingSoon && navigate(item.to)}
-            className={`group relative p-4 md:p-6 bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-[2.5rem] flex flex-col gap-4 transition-all duration-500 cursor-pointer overflow-hidden shadow-sm hover:shadow-2xl active:scale-[0.98] ${
-              item.isComingSoon ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-white dark:hover:bg-slate-800/60 hover:border-blue-500/30'
+            className={`group relative p-3 md:p-5 bg-slate-900/20 border border-white/5 rounded-xl md:rounded-2xl flex flex-col gap-3 transition-all duration-500 cursor-pointer overflow-hidden shadow-sm hover:shadow-2xl active:scale-[0.98] ${
+              item.isComingSoon ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-slate-900/40 hover:border-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/5'
             }`}
           >
             {/* Animated Glow Backdrop */}
-            <div className={`absolute -top-10 -right-10 w-40 h-40 ${item.bg} blur-[60px] opacity-0 group-hover:opacity-40 transition-opacity duration-700`} />
+            <div className={`absolute top-0 right-0 w-24 h-24 ${item.bg} blur-[40px] -z-10 ${item.glow} transition-all duration-1000 group-hover:scale-150`} />
             
-            <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center border ${item.border} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg relative shrink-0`}>
-              <div className="absolute inset-0 bg-white/10 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <item.icon className={`w-7 h-7 ${item.text}`} />
+            <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center border ${item.border} group-hover:scale-105 transition-transform duration-500 shadow-xl relative shrink-0`}>
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
+              <item.icon className={`w-5 h-5 ${item.text}`} />
             </div>
             
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-base md:text-xl text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-tight font-black">{item.title}</h3>
+                <h3 className="text-[10px] md:text-sm text-white mb-1 group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-tight font-black truncate">{item.title}</h3>
                 {item.isComingSoon && (
                   <span className="text-[8px] px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded-full text-slate-400 font-black">SOON</span>
                 )}
               </div>
-              <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed uppercase tracking-widest italic opacity-70 group-hover:opacity-100 transition-opacity line-clamp-2">{item.description}</p>
+              <p className="text-[8px] md:text-[9px] text-slate-500 font-black leading-tight uppercase tracking-widest italic opacity-70 group-hover:opacity-100 transition-opacity line-clamp-2">{item.description}</p>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5 group-hover:border-blue-500/20 transition-colors mt-auto">
-              <span className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase italic tracking-[0.2em] group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
-                {item.isComingSoon ? 'BLOQUEADO' : 'EXPLORAR MÓDULO'}
+            <div className="flex items-center justify-between pt-2 border-t border-white/5 group-hover:border-blue-500/10 transition-colors mt-auto">
+              <span className="text-[8px] font-black text-slate-700 uppercase italic tracking-widest group-hover:text-slate-400">
+                {item.isComingSoon ? 'BLOQUEADO' : 'EXPLORAR'}
               </span>
-              <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-blue-500 dark:group-hover:bg-blue-600 transition-colors shadow-inner">
-                <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-white transition-colors" />
+              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-600 transition-colors shadow-inner">
+                <ArrowUpRight className="w-3 h-3 text-slate-600 group-hover:text-white transition-colors" />
               </div>
             </div>
           </motion.div>

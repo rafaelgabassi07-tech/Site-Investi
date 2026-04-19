@@ -2,7 +2,6 @@ import {
   TrendingUp, 
   Building2, 
   Globe, 
-  Bitcoin, 
   Landmark, 
   Layers 
 } from 'lucide-react';
@@ -13,7 +12,6 @@ export const ASSET_TYPES = [
   { id: 'ETF', label: 'ETF', icon: Layers, color: 'indigo' },
   { id: 'BDR', label: 'BDR', icon: Globe, color: 'purple' },
   { id: 'STOCK', label: 'Stock', icon: TrendingUp, color: 'cyan' },
-  { id: 'CRYPTO', label: 'Cripto', icon: Bitcoin, color: 'orange' },
   { id: 'RF', label: 'Renda Fixa', icon: Landmark, color: 'slate' },
 ] as const;
 

@@ -102,7 +102,6 @@ export default function Layout() {
         { label: 'Ações', to: '/ranking?type=ACAO', icon: TrendingUp },
         { label: 'FIIs', to: '/ranking?type=FII', icon: Building2 },
         { label: 'Stocks', to: '/ranking?type=STOCK', icon: TrendingUp },
-        { label: 'Criptomoedas', to: '/ranking?type=CRYPTO', icon: Bitcoin },
         { label: 'Renda Fixa', to: '/renda-fixa', icon: Shield },
       ]
     },

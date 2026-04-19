@@ -81,25 +81,24 @@ export default function Search() {
         icon={SearchIcon}
       />
 
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 pt-8">
+      <div className="grid grid-cols-2 gap-3 mt-0 pb-2">
         {[
-          { label: 'Ações', icon: TrendingUp },
-          { label: 'FIIs', icon: Layers },
-          { label: 'Stocks', icon: Globe },
-          { label: 'BDRs', icon: Activity },
-          { label: 'Cripto', icon: SearchIcon }
+          { label: 'Ações', icon: TrendingUp, color: 'text-blue-500', active: 'bg-blue-600/20 border-blue-500/50' },
+          { label: 'FIIs', icon: Layers, color: 'text-emerald-500', active: 'bg-emerald-600/20 border-emerald-500/50' },
+          { label: 'Stocks', icon: Globe, color: 'text-cyan-500', active: 'bg-cyan-600/20 border-cyan-500/50' },
+          { label: 'BDRs', icon: Activity, color: 'text-purple-500', active: 'bg-purple-600/20 border-purple-500/50' },
         ].map((type) => (
           <button 
             key={type.label} 
             onClick={() => setQuery(type.label)}
-            className={`group px-6 py-4 rounded-2xl border transition-all whitespace-nowrap italic flex items-center gap-3 ${
+            className={`group relative w-full px-4 py-3 rounded-2xl border backdrop-blur-sm transition-all duration-300 italic flex items-center justify-center gap-3 ${
               query === type.label 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]' 
-                : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
+                ? `${type.active} text-white shadow-[0_0_15px_rgba(37,99,235,0.2)]` 
+                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/[0.08] hover:border-white/20 hover:text-white'
             }`}
           >
-            <type.icon className={`w-4 h-4 ${query === type.label ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{type.label}</span>
+            <type.icon className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${query === type.label ? 'text-white' : type.color}`} />
+            <span className="text-[10px] font-black uppercase tracking-[0.25em]">{type.label}</span>
           </button>
         ))}
       </div>
