@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 
 export interface AssetDetails {
   ticker: string;
@@ -148,39 +147,39 @@ export const financeService = {
   async analyzeNews(news: NewsItem[], ticker?: string): Promise<any> {
     if (!news || news.length === 0) return { sentiment: "Neutro", score: 50, summary: "Baixo volume de informações no radar para uma análise direcional." };
     
-    // Algoritmo interno de NLP Heurística simplificada
-    const textualData = news.map(n => (n.title || '').toLowerCase()).join(' ');
-    
-    const bullishWords = ['alta', 'lucro', 'crescimento', 'dividendos', 'recorde', 'compra', 'positivo', 'avança', 'supera', 'dispara', 'otimismo', 'salto', 'aprovado'];
-    const bearishWords = ['queda', 'prejuízo', 'crise', 'venda', 'negativo', 'recua', 'perde', 'despenca', 'rebaixado', 'risco', 'pessimismo', 'investigação', 'cai'];
-    
-    let score = 50;
-    
-    bullishWords.forEach(w => { 
-      // Conta ocorrências simples
-      const matches = textualData.split(w).length - 1;
-      score += (matches * 10); 
-    });
-    
-    bearishWords.forEach(w => { 
-      const matches = textualData.split(w).length - 1;
-      score -= (matches * 10);
-    });
-    
-    score = Math.max(0, Math.min(100, score));
-    
-    let sentiment = 'Neutro';
-    let summary = 'Mercado lateralizado. As notícias indicam estabilidade e volume informacional neutro no momento.';
-    
-    if (score >= 65) {
-      sentiment = 'Otimista';
-      summary = 'Forte vetor de otimismo estrutural detectado. O fluxo de informações aponta crescimento ativo e dados sistêmicos favoráveis na rede.';
-    } else if (score <= 35) {
-      sentiment = 'Pessimista';
-      summary = 'Alerta direcional: Indicadores pessimistas detectados no fluxo matriz das notícias recentes, apontando turbulências no espectro.';
+    // Agora chama a IA Nativa do Nexus no Backend
+    try {
+      const res = await fetchWithRetry('/api/ai/sentiment');
+      const data = await res.json();
+      
+      // Mapeia o retorno simplificado do backend para o formato esperado pelo widget
+      const insight = data.text || "";
+      const isBullish = insight.toLowerCase().includes('alta') || insight.toLowerCase().includes('momentum');
+      const isBearish = insight.toLowerCase().includes('alerta') || insight.toLowerCase().includes('negativa');
+      
+      return { 
+        sentiment: isBullish ? 'Otimista' : (isBearish ? 'Pessimista' : 'Neutro'), 
+        score: isBullish ? 80 : (isBearish ? 20 : 50), 
+        summary: insight 
+      };
+    } catch (e) {
+      console.warn("[NEXUS AI] Fallback to local heuristics:", e);
+      return { sentiment: "Neutro", score: 50, summary: "Análise sistêmica temporariamente em modo de contingência local." };
     }
-    
-    return { sentiment, score, summary };
+  },
+
+  async askNexusAI(question: string, context?: any): Promise<string> {
+    try {
+      const res = await fetchWithRetry('/api/ai/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, context })
+      });
+      const data = await res.json();
+      return data.text;
+    } catch (e) {
+      return "Sistemas Nexus em manutenção. Tente novamente em breve.";
+    }
   },
 
   async getRanking(category: string, type: string = 'ACAO'): Promise<any[]> {

@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      // API Key removed from client-side for security
     },
     resolve: {
       alias: {
@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       host: '0.0.0.0',
-      hmr: process.env.DISABLE_HMR !== 'true',
+      hmr: false, // Force disable HMR to avoid port conflicts in dev environment
     },
   };
 });
