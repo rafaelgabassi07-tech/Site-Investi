@@ -33,6 +33,10 @@ export interface GenericRule {
    * Útil para tabelas de dividendos, histórico, etc.
    */
   multiple?: boolean;
+  /**
+   * Tamanho máximo do bloco de HTML a ser analisado após a âncora (default: multiple ? 3000 : 400)
+   */
+  chunkSize?: number;
 }
 
 export interface ExtractorTemplate<T = any> {
@@ -478,33 +482,6 @@ export function universalLexer<T = any>(
   const results: any = { ...existingResults };
   const htmlLower = html.toLowerCase();
 
-  // Extração especial para dividendos (tabelas)
-  if (html.includes('table-dividends') || html.includes('dividendos') || html.includes('rendimentos')) {
-    // Regex flexível para: <td> ... </td> com <td class="..."> e <tr class="..."> ignorados
-    const rowRegex = /<tr[^>]*>\s*<td[^>]*>([\d\/]+)<\/td>\s*<td[^>]*>([\w\d\/.-]*|-)<\/td>\s*<td[^>]*>([R$\s\d,.]+)<\/td>\s*<td[^>]*>([^<]+)<\/td>\s*<\/tr>/gi;
-    const matches = [...html.matchAll(rowRegex)];
-    if (matches.length > 0) {
-      results.dividendos = matches.slice(0, 50).map(match => ({
-        dataCom: match[1].trim(),
-        pagamento: match[2].trim(),
-        valor: match[3].trim(),
-        tipo: match[4].trim()
-      }));
-    } else {
-      // Investidor10 format: Tipo | Data Com | Pagamento | Valor
-      const altRowRegex = /<tr[^>]*>\s*<td[^>]*>([\w\s.]+)<\/td>\s*<td[^>]*>([\d\/]+)<\/td>\s*<td[^>]*>([\w\d\/.-]*|-)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/gi;
-      const altMatches = [...html.matchAll(altRowRegex)];
-      if (altMatches.length > 0) {
-        results.dividendos = altMatches.slice(0, 50).map(match => ({
-          tipo: match[1].trim(),
-          dataCom: match[2].trim(),
-          pagamento: match[3].trim(),
-          valor: match[4].replace(/\\n/g, '').replace(/\s+/g, '').trim()
-        }));
-      }
-    }
-  }
-
   for (const rule of template.rules) {
     if (results[rule.name] !== undefined && !rule.multiple) continue;
 
@@ -516,7 +493,7 @@ export function universalLexer<T = any>(
       if (idx === -1) idx = htmlLower.indexOf(anchorLower);
       if (idx === -1) continue;
 
-      const chunkSize = rule.multiple ? 3000 : 400;
+      const chunkSize = rule.chunkSize ?? (rule.multiple ? 3000 : 400);
       const chunk = html.slice(idx, idx + chunkSize);
 
       if (rule.multiple) {
@@ -683,7 +660,7 @@ export const acaoTemplate: ExtractorTemplate<B3Data> = {
     { name: 'sector',        anchors: ['Setor</span>', 'SETOR</span>'],                           extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'segment',       anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Subsetor</span>', 'SUBSETOR</span>'],       extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',         anchors: ['Sobre a Empresa', 'Descrição'],                 extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
-    { name: 'dividendosRaw', anchors: ['Histórico de Dividendos', 'Proventos', 'Pagamentos'], extractRegex: /<table id="table-dividends"[^>]*>([\s\S]*?)<\/table>/i },
+    { name: 'dividendosRaw', anchors: ['Histórico de Dividendos', 'Proventos', 'Pagamentos'], extractRegex: /<table[^>]*id="table-dividends"[^>]*>([\s\S]*?)<\/table>|<table[^>]*>(?:[\s\S]*?)(?:Data COM|Pagamento)(?:[\s\S]*?)<\/table>/i, chunkSize: 15000 },
   ],
 };
 
@@ -710,7 +687,7 @@ export const fiiTemplate: ExtractorTemplate<FIIData> = {
     { name: 'sector',            anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Setor</span>', 'SETOR</span>'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'segment',           anchors: ['Subsetor</span>', 'SUBSETOR</span>', 'Tipo Anatel', 'TIPO ANATEL'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
     { name: 'about',             anchors: ['Sobre o Fundo', 'Descrição'],           extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
-    { name: 'dividendosRaw',     anchors: ['Histórico de Rendimentos', 'Proventos', 'Pagamentos'], extractRegex: /<table id="table-dividends"[^>]*>([\s\S]*?)<\/table>/i },
+    { name: 'dividendosRaw',     anchors: ['Histórico de Rendimentos', 'Proventos', 'Pagamentos'], extractRegex: /<table[^>]*id="table-dividends"[^>]*>([\s\S]*?)<\/table>|<table[^>]*>(?:[\s\S]*?)(?:Data COM|Pagamento)(?:[\s\S]*?)<\/table>/i, chunkSize: 15000 },
   ],
 };
 
@@ -1811,9 +1788,33 @@ export class NexusEngine {
         const dividends: any[] = [];
         const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
         const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
+        const headerRegex = /<th[^>]*>([\s\S]*?)<\/th>/g;
         
         let rowMatch;
-        // Skip header if it exists
+        let colIndices = { tipo: 0, dataCom: 1, pagamento: 2, valor: 3 };
+        
+        // Find headers first to map column indices dynamically
+        const headerMatch = /<thead[^>]*>([\s\S]*?)<\/thead>|<tr[^>]*>([\s\S]*?)<\/tr>/.exec(htmlTable);
+        if (headerMatch) {
+          const headersHtml = headerMatch[0];
+          const headers: string[] = [];
+          let hMatch;
+          while ((hMatch = headerRegex.exec(headersHtml)) !== null) {
+            headers.push(hMatch[1].replace(/<[^>]*>/g, '').trim().toLowerCase());
+          }
+          if (headers.length > 0) {
+            const iTipo = headers.findIndex(h => h.includes('tipo'));
+            const iCom = headers.findIndex(h => h.includes('com') || h.includes('base') || h.includes('aprovação'));
+            const iPag = headers.findIndex(h => h.includes('pagamento'));
+            const iValor = headers.findIndex(h => h === 'valor' || h === 'rendimento' || h.includes('valor'));
+            
+            if (iTipo !== -1) colIndices.tipo = iTipo;
+            if (iCom !== -1) colIndices.dataCom = iCom;
+            if (iPag !== -1) colIndices.pagamento = iPag;
+            if (iValor !== -1) colIndices.valor = iValor;
+          }
+        }
+
         const rows = [...htmlTable.matchAll(rowRegex)];
         for (const rowMatch of rows) {
           const cells: string[] = [];
@@ -1824,13 +1825,10 @@ export class NexusEngine {
           }
           
           if (cells.length >= 4) {
-            // Investidor10 table variants
-            // Common: [Tipo, Data COM, Pagamento, Valor]
-            // FII: [Rendimento, Data Base, Pagamento, Valor]
-            const tipo = cells[0];
-            const dataComRaw = cells[1];
-            const pagamentoRaw = cells[2];
-            const valorRaw = cells[3];
+            const tipo = cells[colIndices.tipo] || '';
+            const dataComRaw = cells[colIndices.dataCom] || '';
+            const pagamentoRaw = cells[colIndices.pagamento] || '';
+            const valorRaw = cells[colIndices.valor] || '';
             
             if (dataComRaw.includes('/')) {
               const [d, m, y] = dataComRaw.split('/');
@@ -1875,10 +1873,13 @@ export class NexusEngine {
       const today = new Date();
       const fiveYearsAgo = new Date();
       fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+      
+      const futureDate = new Date();
+      futureDate.setFullYear(today.getFullYear() + 1); // Fetch 1 year into the future
 
       const historical = await yahooFinance.historical(symbol, {
         period1: fiveYearsAgo,
-        period2: today,
+        period2: futureDate,
         events: 'dividends'
       } as any);
 

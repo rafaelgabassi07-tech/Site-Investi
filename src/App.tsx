@@ -4,32 +4,32 @@ import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
 
 // Lazy loaded pages to optimize bundle size
-const Portfolio = lazy(() => import('./pages/Portfolio'));
-const PortfolioSummaryPage = lazy(() => import('./pages/PortfolioSummaryPage'));
-const Patrimony = lazy(() => import('./pages/Patrimony'));
-const Transactions = lazy(() => import('./pages/Transactions'));
-const News = lazy(() => import('./pages/News'));
-const Settings = lazy(() => import('./pages/Settings'));
-const Login = lazy(() => import('./pages/Login'));
-const Home = lazy(() => import('./pages/Home'));
-const Search = lazy(() => import('./pages/Search'));
-const Ranking = lazy(() => import('./pages/Ranking'));
-const Screener = lazy(() => import('./pages/Screener'));
-const Menu = lazy(() => import('./pages/Menu'));
-const Dividends = lazy(() => import('./pages/Dividends'));
-const Calculators = lazy(() => import('./pages/Calculators'));
-const RecommendedPortfolios = lazy(() => import('./pages/RecommendedPortfolios'));
-const Asset = lazy(() => import('./pages/Asset'));
-const AssetAnalysis = lazy(() => import('./pages/AssetAnalysis'));
-const FixedIncome = lazy(() => import('./pages/FixedIncome'));
-const Compare = lazy(() => import('./pages/Compare'));
-const Rebalance = lazy(() => import('./pages/Rebalance'));
-const Taxes = lazy(() => import('./pages/Taxes'));
-const About = lazy(() => import('./pages/About'));
-const Profitability = lazy(() => import('./pages/Profitability'));
-const Favorites = lazy(() => import('./pages/Favorites'));
-const BeginnersGuide = lazy(() => import('./pages/BeginnersGuide'));
-const NexusIAPanel = lazy(() => import('./pages/NexusIAPanel'));
+import Portfolio from './pages/Portfolio';
+import PortfolioSummaryPage from './pages/PortfolioSummaryPage';
+import Patrimony from './pages/Patrimony';
+import Transactions from './pages/Transactions';
+import News from './pages/News';
+import Settings from './pages/Settings';
+import Login from './pages/Login';
+import Home from './pages/Home';
+import Search from './pages/Search';
+import Ranking from './pages/Ranking';
+import Screener from './pages/Screener';
+import Menu from './pages/Menu';
+import Dividends from './pages/Dividends';
+import Calculators from './pages/Calculators';
+import RecommendedPortfolios from './pages/RecommendedPortfolios';
+import Asset from './pages/Asset';
+import AssetAnalysis from './pages/AssetAnalysis';
+import FixedIncome from './pages/FixedIncome';
+import Compare from './pages/Compare';
+import Rebalance from './pages/Rebalance';
+import Taxes from './pages/Taxes';
+import About from './pages/About';
+import Profitability from './pages/Profitability';
+import Favorites from './pages/Favorites';
+import BeginnersGuide from './pages/BeginnersGuide';
+import NexusIAPanel from './pages/NexusIAPanel';
 
 import { PortfolioProvider } from './contexts/PortfolioProvider';
 import { PrivacyProvider } from './contexts/PrivacyContext';
@@ -149,16 +149,8 @@ export default function App() {
               <Route path="guide" element={<BeginnersGuide />} />
               <Route path="nexus-ia" element={<NexusIAPanel />} />
             </Route>
-            <Route 
-              path="/portfolio/analise/:ticker" 
-              element={user ? <Suspense fallback={
-                <div className="flex flex-col items-center justify-center min-h-[100vh] bg-[#020617] gap-4">
-                  <div className="w-12 h-12 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">
-                    Analisando Ativo...
-                  </span>
-                </div>
-              }><AssetAnalysis /></Suspense> : <Navigate to="/login" />} 
+            <Route path="/portfolio/analise/:ticker" 
+              element={user ? <AssetAnalysis /> : <Navigate to="/login" />} 
             />
           </Routes>
             </Router>

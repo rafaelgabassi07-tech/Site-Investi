@@ -370,21 +370,28 @@ export default function Transactions() {
         actions={
           <div className="flex items-center gap-2">
             <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".xlsx,.xls,.csv" />
+            <div className="flex bg-secondary/50 rounded-lg p-1 border border-border">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
+                title="Importar Excel B3"
+              >
+                <Upload className="icon-sm" />
+              </button>
+              <button 
+                onClick={handleExport}
+                className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
+                title="Exportar Backup"
+              >
+                <Download className="icon-sm" />
+              </button>
+            </div>
             <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl border border-white/10 transition-all flex items-center gap-2 text-label"
-              title="Importar Excel B3"
+              onClick={() => setIsFormOpen(!isFormOpen)}
+              className="btn-primary"
             >
-              <Upload className="icon-sm" />
-              <span className="hidden md:inline">Importar</span>
-            </button>
-            <button 
-              onClick={handleExport}
-              className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl border border-white/10 transition-all flex items-center gap-2 text-label"
-              title="Exportar Backup"
-            >
-              <Download className="icon-sm" />
-              <span className="hidden md:inline">Exportar</span>
+              <Plus className="icon-sm" />
+              <span className="hidden sm:inline">Nova Operação</span>
             </button>
           </div>
         }
@@ -395,26 +402,26 @@ export default function Transactions() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden"
+          className="nexus-card"
         >
           <button 
             onClick={() => setIsFormOpen(!isFormOpen)}
-            className="w-full p-6 flex items-center justify-between hover:bg-white/5 transition-all"
+            className="w-full flex items-center justify-between hover:bg-secondary/50 p-2 -m-2 rounded-xl transition-all"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
+            <div className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20">
                 {editingId ? <Edit2 className="icon-lg" /> : <Plus className="icon-lg" />}
               </div>
               <div className="text-left">
-                <h3 className="text-display-sm text-white">
+                <h3 className="nexus-title text-xl">
                   {editingId ? 'Editar Operação' : 'Nova Operação'}
                 </h3>
-                <p className="text-label mt-0.5">
+                <p className="nexus-label mt-0.5">
                   {isFormOpen ? 'Preencha os dados abaixo' : 'Clique para expandir o formulário'}
                 </p>
               </div>
             </div>
-            <div className={`p-2 rounded-lg bg-white/5 text-slate-400 transition-transform duration-300 ${isFormOpen ? 'rotate-180' : ''}`}>
+            <div className={`p-2 rounded-lg bg-secondary text-muted-foreground mr-4 transition-transform duration-300 ${isFormOpen ? 'rotate-180' : ''}`}>
               <ChevronRight className="icon-md rotate-90" />
             </div>
           </button>
@@ -427,17 +434,17 @@ export default function Transactions() {
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
               >
-                <div className="p-6 pt-0 border-t border-slate-800/50 relative">
-                  <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+                <div className="pt-6 border-t border-border mt-4 relative">
+                  <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="block text-label mb-3">Tipo de Operação</label>
-                <div className="flex p-1.5 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex p-1.5 bg-secondary rounded-xl border border-border">
                   <button
                     type="button"
                     onClick={() => setType('BUY')}
                     className={`flex-1 py-3 text-label rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
-                      type === 'BUY' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-200'
+                      type === 'BUY' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     <ArrowUpRight className="icon-xs" />
@@ -447,7 +454,7 @@ export default function Transactions() {
                     type="button"
                     onClick={() => setType('SELL')}
                     className={`flex-1 py-3 text-label rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
-                      type === 'SELL' ? 'bg-red-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-200'
+                      type === 'SELL' ? 'bg-red-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     <ArrowDownRight className="icon-xs" />
@@ -457,7 +464,7 @@ export default function Transactions() {
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                <label className="flex items-center gap-2 text-label group-focus-within:text-primary transition-colors">
                   <Tag className="icon-xs" />
                   Ativo (Ticker)
                 </label>
@@ -467,12 +474,12 @@ export default function Transactions() {
                   onChange={(e) => setTicker(e.target.value)}
                   placeholder="EX: PETR4"
                   required
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold uppercase placeholder:text-slate-600 transition-all duration-300 hover:border-white/20 text-sm"
+                  className="w-full px-4 py-3 bg-card border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground font-bold uppercase placeholder:text-muted-foreground transition-all duration-300 text-sm"
                 />
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                <label className="flex items-center gap-2 text-label group-focus-within:text-primary transition-colors">
                   <Layers className="icon-xs" />
                   Tipo de Ativo
                 </label>
@@ -480,22 +487,22 @@ export default function Transactions() {
                   <select
                     value={assetType}
                     onChange={(e) => setAssetType(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold appearance-none transition-all duration-300 hover:border-white/20 text-sm"
+                    className="w-full px-4 py-3 bg-card border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground font-bold appearance-none transition-all duration-300 text-sm"
                   >
-                    <option value="ACAO" className="bg-slate-900">Ação</option>
-                    <option value="FII" className="bg-slate-900">FII</option>
-                    <option value="ETF" className="bg-slate-900">ETF</option>
-                    <option value="BDR" className="bg-slate-900">BDR</option>
-                    <option value="RF" className="bg-slate-900">Renda Fixa</option>
+                    <option value="ACAO" className="bg-card">Ação</option>
+                    <option value="FII" className="bg-card">FII</option>
+                    <option value="ETF" className="bg-card">ETF</option>
+                    <option value="BDR" className="bg-card">BDR</option>
+                    <option value="RF" className="bg-card">Renda Fixa</option>
                   </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                     <Plus className="icon-sm rotate-45" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                <label className="flex items-center gap-2 text-label group-focus-within:text-primary transition-colors">
                   <Plus className="icon-xs" />
                   Quantidade
                 </label>
@@ -506,12 +513,12 @@ export default function Transactions() {
                   onChange={(e) => setQuantity(e.target.value)}
                   placeholder="0.00"
                   required
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold placeholder:text-slate-600 transition-all duration-300 hover:border-white/20 text-sm"
+                  className="w-full px-4 py-3 bg-card border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground font-bold placeholder:text-muted-foreground transition-all duration-300 text-sm"
                 />
               </div>
 
               <div className="space-y-2 group">
-                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                <label className="flex items-center gap-2 text-label group-focus-within:text-primary transition-colors">
                   <DollarSign className="icon-xs" />
                   Preço Unitário
                 </label>
@@ -522,12 +529,12 @@ export default function Transactions() {
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="R$ 0,00"
                   required
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold placeholder:text-slate-600 transition-all duration-300 hover:border-white/20 text-sm"
+                  className="w-full px-4 py-3 bg-card border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground font-bold placeholder:text-muted-foreground transition-all duration-300 text-sm"
                 />
               </div>
 
               <div className="md:col-span-2 space-y-2 group">
-                <label className="flex items-center gap-2 text-label group-focus-within:text-blue-400 transition-colors">
+                <label className="flex items-center gap-2 text-label group-focus-within:text-primary transition-colors">
                   <Calendar className="icon-xs" />
                   Data da Operação
                 </label>
@@ -536,7 +543,7 @@ export default function Transactions() {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-white font-bold transition-all duration-300 hover:border-white/20 [color-scheme:dark] text-sm"
+                  className="w-full px-4 py-3 bg-card border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground font-bold transition-all duration-300 [color-scheme:dark] text-sm"
                 />
               </div>
             </div>
@@ -571,8 +578,8 @@ export default function Transactions() {
                   exit={{ opacity: 0, y: -10 }}
                   className={`p-4 rounded-xl text-center text-sm font-semibold border shadow-sm mt-4 ${
                     message.includes('sucesso') 
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                      : 'bg-red-500/10 text-red-400 border-red-500/20'
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' 
+                      : 'bg-red-500/10 text-red-600 border-red-500/20'
                   }`}
                 >
                   {message}
@@ -592,12 +599,12 @@ export default function Transactions() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <div className="relative flex flex-col min-h-[600px]">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
+          <div className="relative flex flex-col min-h-[600px] nexus-card pt-6">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] -z-10" />
             
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <h3 className="text-display-sm text-white flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 px-6">
+              <h3 className="nexus-title flex items-center gap-3 text-lg">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20">
                   <History className="icon-md" />
                 </div>
                 Histórico de Operações
@@ -608,9 +615,9 @@ export default function Transactions() {
                   placeholder="Filtrar por Ativo..."
                   value={filterQuery}
                   onChange={(e) => setFilterQuery(e.target.value)}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-blue-500 transition-colors w-full sm:w-48 placeholder:text-slate-600 font-bold"
+                  className="px-4 py-2 bg-card border border-border rounded-xl text-foreground text-sm outline-none focus:border-primary transition-colors w-full sm:w-48 placeholder:text-muted-foreground font-bold"
                 />
-                <div className="text-label text-slate-500 whitespace-nowrap">
+                <div className="text-label text-muted-foreground whitespace-nowrap">
                   {transactions.filter(t => !filterQuery || t.ticker.includes(filterQuery.toUpperCase())).length} Lançamentos
                 </div>
               </div>
@@ -619,14 +626,14 @@ export default function Transactions() {
             <div className="overflow-hidden">
               {/* Desktop List */}
               <div className="hidden md:block">
-                <div className="flex items-center px-6 py-4 bg-white/[0.02] border-b border-white/5">
-                  <div className="flex-1 text-[10px] font-black uppercase text-slate-500 tracking-widest">Ativo & Tipo</div>
-                  <div className="w-32 text-center text-[10px] font-black uppercase text-slate-500 tracking-widest">Tipo</div>
-                  <div className="w-40 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Qtd & Preço</div>
-                  <div className="w-48 text-right text-[10px] font-black uppercase text-slate-500 tracking-widest">Total Operação</div>
+                <div className="flex items-center px-6 py-4 bg-secondary/50 border-y border-border">
+                  <div className="flex-1 text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Ativo & Tipo</div>
+                  <div className="w-32 text-center text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Tipo</div>
+                  <div className="w-40 text-right text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Qtd & Preço</div>
+                  <div className="w-48 text-right text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Total Operação</div>
                   <div className="w-16 text-right"></div>
                 </div>
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-border">
                   {transactions
                     .filter(t => !filterQuery || t.ticker.includes(filterQuery.toUpperCase()))
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
@@ -635,42 +642,45 @@ export default function Transactions() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.01 }}
-                      className="flex items-center px-6 py-5 hover:bg-white/[0.03] transition-all group"
+                      className="flex items-center px-6 py-5 hover:bg-secondary/30 transition-all group relative"
                     >
-                      <div className={`absolute left-0 top-1 bottom-1 w-0.5 rounded-full ${tx.type === 'BUY' ? 'bg-blue-600' : 'bg-red-600'} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                      <div className={`absolute left-0 top-1 bottom-1 w-0.5 rounded-full ${tx.type === 'BUY' ? 'bg-primary' : 'bg-red-600'} opacity-0 group-hover:opacity-100 transition-opacity`} />
                       <div className="flex-1 flex items-center gap-4">
-                        <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
+                        <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-card p-1 shadow-sm border border-border" />
                         <div>
-                          <div className="text-display-tiny text-white uppercase italic">{tx.ticker}</div>
-                          <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
+                          <div className="text-display-tiny text-foreground uppercase italic">{tx.ticker}</div>
+                          <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
                         </div>
                       </div>
                       <div className="w-32 flex justify-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border ${
                           tx.type === 'BUY' 
-                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                            ? 'bg-primary/10 text-primary border-primary/20' 
+                            : 'bg-red-500/10 text-red-600 border-red-500/20'
                         }`}>
                           {tx.type === 'BUY' ? 'Compra' : 'Venda'}
                         </span>
                       </div>
                       <div className="w-40 text-right mask-value">
-                        <div className="text-[11px] font-black text-slate-300">{showValues ? tx.quantity : '•••'} <span className="opacity-40">UND</span></div>
-                        <div className="text-[10px] font-black text-slate-600 italic">@ {showValues ? formatNumber(tx.price, { style: 'currency' }) : '••••••'}</div>
+                        <div className="text-[11px] font-bold text-foreground/80">{showValues ? tx.quantity : '•••'} <span className="opacity-40">UND</span></div>
+                        <div className="text-[10px] font-bold text-muted-foreground italic">@ {showValues ? formatNumber(tx.price, { style: 'currency' }) : '••••••'}</div>
                       </div>
                       <div className="w-48 text-right mask-value">
-                        <div className="text-display-tiny text-white uppercase italic">{showValues ? formatNumber(tx.quantity * tx.price, { style: 'currency' }) : 'R$ ••••••'}</div>
+                        <div className="text-sm font-bold text-foreground flex items-center justify-end gap-1">
+                          {tx.type === 'BUY' ? <span className="text-muted-foreground">-</span> : <span className="text-primary">+</span>}
+                          {showValues ? formatNumber(tx.quantity * tx.price, { style: 'currency' }) : 'R$ ••••••'}
+                        </div>
                       </div>
                       <div className="w-16 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                         <button 
                           onClick={() => startEdit(tx)}
-                          className="p-1.5 bg-white/5 hover:bg-blue-600 text-slate-400 hover:text-white rounded-lg transition-all border border-white/10"
+                          className="p-1.5 bg-card hover:bg-primary text-muted-foreground hover:text-primary-foreground rounded-lg transition-all border border-border shadow-sm"
                         >
                           <Edit2 className="icon-xs" />
                         </button>
                         <button 
                           onClick={() => setShowDeleteConfirm(tx.id)}
-                          className="p-1.5 bg-white/5 hover:bg-red-600 text-slate-400 hover:text-white rounded-lg transition-all border border-white/10"
+                          className="p-1.5 bg-card hover:bg-red-600 text-muted-foreground hover:text-white rounded-lg transition-all border border-border shadow-sm"
                         >
                           <Trash2 className="icon-xs" />
                         </button>
@@ -680,7 +690,7 @@ export default function Transactions() {
                 </div>
               </div>
 
-                <div className="md:hidden divide-y divide-white/5 border-t border-white/5">
+                <div className="md:hidden divide-y divide-border border-t border-border">
                   {transactions
                     .filter(t => !filterQuery || t.ticker.includes(filterQuery.toUpperCase()))
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
@@ -689,21 +699,21 @@ export default function Transactions() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.01 }}
-                      className="p-5 space-y-4 hover:bg-white/[0.02] transition-all relative border-l-2 border-transparent group"
-                      style={{ borderLeftColor: tx.type === 'BUY' ? 'rgba(37, 99, 235, 0.3)' : 'rgba(220, 38, 38, 0.3)' }}
+                      className="p-5 space-y-4 hover:bg-secondary/30 transition-all relative border-l-2 border-transparent group"
+                      style={{ borderLeftColor: tx.type === 'BUY' ? 'hsl(var(--primary))' : 'hsl(var(--destructive))' }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
+                          <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-card p-1 shadow-sm border border-border" />
                           <div>
-                            <div className="text-display-tiny text-white uppercase italic">{tx.ticker}</div>
-                            <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
+                            <div className="text-display-tiny text-foreground uppercase italic">{tx.ticker}</div>
+                            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
                           </div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border ${
                           tx.type === 'BUY' 
-                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                            ? 'bg-primary/10 text-primary border-primary/20' 
+                            : 'bg-red-500/10 text-red-600 border-red-500/20'
                         }`}>
                           {tx.type === 'BUY' ? 'Compra' : 'Venda'}
                         </span>
@@ -711,26 +721,26 @@ export default function Transactions() {
 
                       <div className="flex items-center justify-between">
                         <div className="mask-value">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-0.5">Qtd / Preço</p>
-                          <p className="text-xs font-bold text-slate-300 italic">{showValues ? tx.quantity : '•••'} x {showValues ? formatNumber(tx.price, { style: 'currency' }) : '••••••'}</p>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Qtd / Preço</p>
+                          <p className="text-xs font-bold text-foreground/80">{showValues ? tx.quantity : '•••'} x {showValues ? formatNumber(tx.price, { style: 'currency' }) : '••••••'}</p>
                         </div>
                         <div className="text-right mask-value">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-0.5">Total</p>
-                          <p className="text-display-tiny text-white italic tracking-tight">{showValues ? formatNumber(tx.quantity * tx.price, { style: 'currency' }) : 'R$ ••••••'}</p>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Total</p>
+                          <p className="text-sm font-bold text-foreground flex items-center justify-end gap-1">{tx.type === 'BUY' ? <span className="text-muted-foreground">-</span> : <span className="text-primary">+</span>}{showValues ? formatNumber(tx.quantity * tx.price, { style: 'currency' }) : 'R$ ••••••'}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
                         <button 
                           onClick={() => startEdit(tx)}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-slate-500 rounded-lg border border-white/10 text-[10px] font-black uppercase tracking-widest"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-card text-muted-foreground hover:text-primary-foreground hover:bg-primary rounded-lg border border-border text-[10px] font-bold uppercase tracking-widest transition-colors shadow-sm"
                         >
                           <Edit2 className="w-3 h-3" />
                           Editar
                         </button>
                         <button 
                           onClick={() => setShowDeleteConfirm(tx.id)}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-slate-500 rounded-lg border border-white/10 text-[10px] font-black uppercase tracking-widest"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-card text-muted-foreground hover:text-white hover:bg-red-600 rounded-lg border border-border text-[10px] font-bold uppercase tracking-widest transition-colors shadow-sm"
                         >
                           <Trash2 className="w-3 h-3" />
                           Excluir
@@ -741,12 +751,12 @@ export default function Transactions() {
                 </div>
 
               {transactions.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-center">
-                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-center">
+                  <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4 border border-border shadow-sm">
                     <History className="icon-lg opacity-40" />
                   </div>
-                  <p className="text-label text-slate-300">Nenhum lançamento</p>
-                  <p className="text-tiny font-bold text-slate-600 uppercase tracking-widest mt-1 italic">Suas operações aparecerão aqui.</p>
+                  <p className="text-label text-foreground/80">Nenhum lançamento</p>
+                  <p className="text-tiny font-bold text-muted-foreground uppercase tracking-widest mt-1">Suas operações aparecerão aqui.</p>
                 </div>
               )}
             </div>
@@ -761,13 +771,13 @@ export default function Transactions() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl max-w-sm w-full shadow-2xl"
+                className="bg-card border border-border p-6 rounded-2xl max-w-sm w-full shadow-2xl"
               >
-                <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 mx-auto">
+                <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-600 mb-4 mx-auto">
                   <AlertCircle className="icon-lg" />
                 </div>
-                <h3 className="text-display-sm text-center mb-2">Excluir Lançamento?</h3>
-                <p className="text-label text-slate-400 text-center mb-6 normal-case">Esta ação não pode ser desfeita. O lançamento será removido permanentemente da sua carteira.</p>
+                <h3 className="nexus-title text-xl text-center mb-2">Excluir Lançamento?</h3>
+                <p className="text-sm font-medium text-muted-foreground text-center mb-6 normal-case">Esta ação não pode ser desfeita. O lançamento será removido permanentemente da sua carteira.</p>
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setShowDeleteConfirm(null)}
@@ -777,7 +787,7 @@ export default function Transactions() {
                   </button>
                   <button 
                     onClick={() => handleDelete(showDeleteConfirm)}
-                    className="flex-1 py-2.5 btn-primary bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20"
+                    className="flex-1 py-2.5 btn-primary bg-red-600 hover:bg-red-700 hover:border-red-700 shadow-lg shadow-red-600/20 text-white"
                   >
                     Excluir
                   </button>

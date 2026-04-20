@@ -10,9 +10,21 @@ export function AssetIcon({ assetType, ticker, className = "" }: AssetIconProps)
   const metadata = getAssetMetadata(assetType);
   const Icon = metadata.icon;
 
+  // Mapa de cores para Tailwind robusto sem interpolação de classes complexas
+  const colorMap: Record<string, string> = {
+    blue: 'bg-blue-500/5 text-blue-600 border-blue-500/20',
+    emerald: 'bg-emerald-500/5 text-emerald-600 border-emerald-500/20',
+    indigo: 'bg-indigo-500/5 text-indigo-600 border-indigo-500/20',
+    purple: 'bg-purple-500/5 text-purple-600 border-purple-500/20',
+    cyan: 'bg-cyan-500/5 text-cyan-600 border-cyan-500/20',
+    slate: 'bg-slate-500/5 text-slate-600 border-slate-500/20',
+  };
+
+  const styleClass = colorMap[metadata.color] || colorMap.blue;
+
   return (
-    <div className={`w-12 h-12 bg-${metadata.color}-600/10 rounded-2xl flex items-center justify-center text-${metadata.color}-500 border border-${metadata.color}-500/20 group-hover:scale-110 transition-all duration-500 group-hover:border-${metadata.color}-500/40 group-hover:shadow-[0_0_20px_rgba(37,99,235,0.15)] ${className}`}>
-      <Icon size={24} />
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-sm transition-all duration-300 ${styleClass} ${className}`}>
+      <Icon className="w-6 h-6" strokeWidth={2} />
     </div>
   );
 }

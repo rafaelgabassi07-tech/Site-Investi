@@ -119,116 +119,99 @@ export function PortfolioSummary() {
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-5 bg-blue-600/[0.03] border border-blue-500/10 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group"
+        className="p-5 bg-card border border-border rounded-xl flex flex-col md:flex-row items-center justify-between gap-6 relative group shadow-sm transition-all hover:border-primary/20"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[50px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
         <div className="flex items-center gap-5">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+          <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10 transition-colors group-hover:bg-primary group-hover:text-white shrink-0">
             <Cpu className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.25em] italic mb-1">Nexus Portfolio Intel</h4>
-            <p className="text-xs md:text-sm font-bold text-foreground leading-relaxed italic max-w-2xl">
+            <h4 className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Nexus Portfolio Intel</h4>
+            <p className="text-xs md:text-sm font-semibold text-muted-foreground leading-relaxed max-w-2xl">
               "{portfolioInsight}"
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-            <div className="px-3 py-1 bg-secondary border border-border rounded-lg text-[9px] font-bold text-muted-foreground uppercase italic tracking-widest">
+        <div className="flex items-center gap-3 shrink-0">
+            <div className="px-3 py-1 bg-secondary border border-border rounded-lg text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
               Telemetria Viva
             </div>
-            <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/10 rounded-lg text-[9px] font-bold text-emerald-500 uppercase italic tracking-widest">
+            <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[9px] font-bold text-emerald-600 uppercase tracking-widest">
               Otimizado
             </div>
         </div>
       </motion.div>
 
       {/* Top Cards - Formal & Professional */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-blue-500/30 transition-all">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
-              <Briefcase className="w-4 h-4" />
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-card border border-border rounded-xl overflow-hidden relative shadow-sm"
+      >
+        <div className="p-5 md:p-6 grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Briefcase className="w-3 h-3 text-primary" />
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Patrimônio Total</span>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Patrimônio Total</span>
+            <div className="text-xl font-bold text-foreground mask-value">
+              {showValues ? formatNumber(currentTotalValue, { style: 'currency' }) : 'R$ ••••••'}
+            </div>
           </div>
-          <p className="text-2xl font-display font-black text-white tracking-tighter mask-value">
-            {showValues ? formatNumber(currentTotalValue, { style: 'currency' }) : 'R$ ••••••'}
-          </p>
-          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{portfolio.length} ATIVOS</span>
-            <span className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest">Nexus Verified</span>
-          </div>
-        </div>
 
-        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
-              <TrendingUp className="w-4 h-4" />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <TrendingUp className={`w-3 h-3 ${totalProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`} />
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Lucro Total</span>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Lucro Total</span>
+            <div className={`text-xl font-bold mask-value ${totalProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {showValues ? formatNumber(totalProfit, { style: 'currency' }) : 'R$ •••••'}
+              <span className="text-xs ml-2">({totalProfit >= 0 ? '+' : ''}{formatNumber(totalProfitPercentage)}%)</span>
+            </div>
           </div>
-          <p className={`text-2xl font-display font-black tracking-tighter mask-value ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-            {showValues ? formatNumber(totalProfit, { style: 'currency' }) : 'R$ •••••'}
-          </p>
-          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">RENTABILIDADE</span>
-            <span className={`text-[9px] font-black ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {totalProfit >= 0 ? '+' : ''}{formatNumber(totalProfitPercentage)}%
-            </span>
-          </div>
-        </div>
 
-        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-amber-500/30 transition-all">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
-              <Calendar className="w-4 h-4" />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Calendar className="w-3 h-3 text-amber-600" />
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Dividendos</span>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Dividendos</span>
+            <div className="text-xl font-bold text-foreground mask-value">
+              {showValues ? formatNumber(totalDividends, { style: 'currency' }) : 'R$ ••••••'}
+              <span className="text-xs text-amber-600 ml-2">(YOC {formatNumber(dividendYield)}%)</span>
+            </div>
           </div>
-          <p className="text-2xl font-display font-black text-white tracking-tighter mask-value">
-            {showValues ? formatNumber(totalDividends, { style: 'currency' }) : 'R$ ••••••'}
-          </p>
-          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">YIELD ON COST</span>
-            <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest">{formatNumber(dividendYield)}%</span>
-          </div>
-        </div>
 
-        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-purple-500/30 transition-all">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
-              <Target className="w-4 h-4" />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Target className="w-3 h-3 text-purple-600" />
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Progresso (Meta 100k)</span>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Progresso</span>
-          </div>
-          <div className="flex items-end justify-between mb-2">
-            <p className="text-2xl font-display font-black text-white tracking-tighter">
-              {Math.min(100, (currentTotalValue / 100000) * 100).toFixed(1)}%
-            </p>
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Meta: R$ 100K</span>
-          </div>
-          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-            <div 
-              className="bg-purple-500 h-full transition-all duration-1000 shadow-[0_0_10px_rgba(168,85,247,0.4)]" 
-              style={{ width: `${Math.min(100, (currentTotalValue / 100000) * 100)}%` }} 
-            />
+            <div className="flex flex-col gap-1.5 mt-1">
+              <div className="text-lg font-bold text-foreground leading-none">
+                {Math.min(100, (currentTotalValue / 100000) * 100).toFixed(1)}%
+              </div>
+              <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden border border-border mt-0.5">
+                <div 
+                  className="bg-purple-600 h-full transition-all duration-1000" 
+                  style={{ width: `${Math.min(100, (currentTotalValue / 100000) * 100)}%` }} 
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
         {/* Allocation Chart */}
         <div id="composicao" className="nexus-card">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[50px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
                 <PieIcon className="w-4 h-4" />
               </div>
               <span className="nexus-label">Composição</span>
             </div>
-            <Link to="/portfolio" className="nexus-label text-blue-500 hover:text-blue-400">Análise Completa</Link>
+            <Link to="/portfolio" className="nexus-label text-primary hover:text-primary/80">Análise Completa</Link>
           </div>
           <div className="h-56 relative">
             <ResponsiveContainer width="100%" height="100%">
@@ -248,7 +231,7 @@ export function PortfolioSummary() {
                     <Cell 
                       key={`cell-${index}`} 
                       fill={COLORS[index % COLORS.length]} 
-                      stroke="rgba(255,255,255,0.05)"
+                      stroke="var(--color-card)"
                       strokeWidth={2}
                     />
                   ))}
@@ -257,10 +240,10 @@ export function PortfolioSummary() {
                   content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-popover/95 border border-border p-3 rounded-2xl shadow-2xl backdrop-blur-3xl">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">{payload[0].name}</p>
-                          <p className="text-sm font-black text-foreground italic">{formatNumber(payload[0].value, { style: 'currency' })}</p>
-                          <p className="text-[9px] font-bold text-blue-500 mt-1 uppercase tracking-widest">Nexus Verified</p>
+                        <div className="bg-popover border border-border p-3 rounded-xl shadow-lg">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{payload[0].name}</p>
+                          <p className="text-sm font-bold text-foreground">{formatNumber(payload[0].value, { style: 'currency' })}</p>
+                          <p className="text-[9px] font-bold text-primary mt-1 uppercase tracking-widest">Nexus Verified</p>
                         </div>
                       );
                     }
@@ -270,15 +253,15 @@ export function PortfolioSummary() {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">Total</span>
-              <span className="text-lg font-display font-black text-foreground italic tracking-tighter">100%</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Total</span>
+              <span className="text-lg font-bold text-foreground tracking-tighter">100%</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-6">
             {allocationData.map((item: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between p-2.5 bg-secondary/50 rounded-xl border border-border group/item hover:border-blue-500/20 transition-all">
+              <div key={idx} className="flex items-center justify-between p-2.5 bg-secondary rounded-xl border border-border group/item hover:border-primary/20 transition-all">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] transition-all group-hover/item:scale-125" style={{ color: COLORS[idx % COLORS.length], backgroundColor: COLORS[idx % COLORS.length] }} />
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                   <span className="nexus-label group-hover/item:text-foreground">{item.name}</span>
                 </div>
                 <span className="nexus-title">{((item.value / currentTotalValue) * 100).toFixed(1)}%</span>
@@ -289,15 +272,14 @@ export function PortfolioSummary() {
 
         {/* Monthly Dividends Chart */}
         <div className="nexus-card">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[50px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 border border-amber-500/20 shrink-0">
                 <Calendar className="w-4 h-4" />
               </div>
               <span className="nexus-label">Proventos</span>
             </div>
-            <Link to="/portfolio/proventos" className="nexus-label text-emerald-500 hover:text-emerald-400">Calendário</Link>
+            <Link to="/portfolio/proventos" className="nexus-label text-amber-600 hover:text-amber-500">Calendário</Link>
           </div>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -308,10 +290,10 @@ export function PortfolioSummary() {
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0.3}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <CartesianGrid strokeDasharray="0" stroke="var(--color-border)" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  stroke="#475569" 
+                  stroke="var(--color-muted-foreground)" 
                   fontSize={8} 
                   fontWeight="700"
                   tickLine={false} 
@@ -323,15 +305,15 @@ export function PortfolioSummary() {
                     return `${months[parseInt(m) - 1]}/${y.slice(2)}`;
                   }} 
                 />
-                <YAxis stroke="#475569" fontSize={9} hide />
+                <YAxis stroke="var(--color-muted-foreground)" fontSize={9} hide />
                 <Tooltip 
-                  cursor={{ fill: 'rgba(59, 130, 246, 0.05)', radius: 8 }}
+                  cursor={{ fill: 'var(--color-secondary)', radius: 8 }}
                   content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-popover/95 border border-border p-3 rounded-2xl shadow-2xl backdrop-blur-3xl">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">Mensal</p>
-                          <p className="text-sm font-black text-emerald-500 italic">{formatNumber(payload[0].value, { style: 'currency' })}</p>
+                        <div className="bg-popover border border-border p-3 rounded-xl shadow-lg">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Mensal</p>
+                          <p className="text-sm font-bold text-emerald-600">{formatNumber(payload[0].value, { style: 'currency' })}</p>
                         </div>
                       );
                     }
@@ -354,10 +336,10 @@ export function PortfolioSummary() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-6 p-4 bg-emerald-500/[0.03] border border-emerald-500/10 rounded-2xl flex items-center justify-between">
+          <div className="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-center justify-between">
             <div>
               <p className="nexus-label mb-1">Média Mensal</p>
-              <p className="nexus-stat text-emerald-500">{formatNumber(totalDividends / 12, { style: 'currency' })}</p>
+              <p className="nexus-stat text-emerald-600">{formatNumber(totalDividends / 12, { style: 'currency' })}</p>
             </div>
             <TrendingUp size={24} className="text-emerald-500/20" />
           </div>
@@ -365,10 +347,9 @@ export function PortfolioSummary() {
 
         {/* Performance Evolution */}
         <div id="evolucao" className="nexus-card">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/5 blur-[60px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-600 border border-blue-600/20">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
                 <BarChart3 className="w-4 h-4" />
               </div>
               <span className="nexus-label">Evolução</span>
@@ -378,18 +359,18 @@ export function PortfolioSummary() {
                 <button
                   key={tf}
                   onClick={() => setTimeFilter(tf)}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-black tracking-widest transition-all ${
+                  className={`px-3 py-1 rounded-lg text-[10px] font-bold tracking-widest transition-all ${
                     timeFilter === tf 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
-                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                    ? 'bg-primary text-white shadow-sm' 
+                    : 'bg-secondary text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
                   {tf === 'ALL' ? 'TUDO' : tf}
                 </button>
               ))}
               <div className="flex items-center gap-1.5 ml-2">
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                <span className="text-[10px] uppercase font-black tracking-widest text-foreground">Live</span>
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                <span className="text-[10px] uppercase font-bold tracking-widest text-foreground">Live</span>
               </div>
             </div>
           </div>
@@ -401,15 +382,11 @@ export function PortfolioSummary() {
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
-                  <filter id="evolutionGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="6" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                  </filter>
                 </defs>
-                <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <CartesianGrid strokeDasharray="0" stroke="var(--color-border)" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  stroke="#475569" 
+                  stroke="var(--color-muted-foreground)" 
                   fontSize={8} 
                   fontWeight="700"
                   tickLine={false} 
@@ -421,20 +398,20 @@ export function PortfolioSummary() {
                     return `${months[date.getMonth()]}/${date.getFullYear().toString().slice(2)}`;
                   }}
                 />
-                <YAxis stroke="#475569" fontSize={9} hide />
+                <YAxis stroke="var(--color-muted-foreground)" fontSize={9} hide />
                 <Tooltip 
-                  cursor={{ fill: 'rgba(59, 130, 246, 0.05)', radius: 8 }}
+                  cursor={{ fill: 'var(--color-secondary)', radius: 8 }}
                   content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-popover/95 border border-border p-3 rounded-2xl shadow-2xl backdrop-blur-3xl space-y-2">
+                        <div className="bg-popover border border-border p-3 rounded-xl shadow-lg space-y-2">
                           <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">Patrimônio</p>
-                            <p className="text-sm font-black text-blue-500 italic">{formatNumber(payload.find((p: any) => p.dataKey === 'totalPatrimony')?.value || 0, { style: 'currency' })}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Patrimônio</p>
+                            <p className="text-sm font-bold text-primary">{formatNumber(payload.find((p: any) => p.dataKey === 'totalPatrimony')?.value || 0, { style: 'currency' })}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">Custo Investido</p>
-                            <p className="text-xs font-black text-slate-400 italic">{formatNumber(payload.find((p: any) => p.dataKey === 'totalInvested')?.value || 0, { style: 'currency' })}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Custo Investido</p>
+                            <p className="text-xs font-bold text-muted-foreground">{formatNumber(payload.find((p: any) => p.dataKey === 'totalInvested')?.value || 0, { style: 'currency' })}</p>
                           </div>
                         </div>
                       );
@@ -444,7 +421,7 @@ export function PortfolioSummary() {
                 />
                 <Bar 
                   dataKey="totalInvested" 
-                  fill="#1e293b" 
+                  fill="var(--color-secondary)" 
                   radius={[6, 6, 0, 0]} 
                   animationDuration={1500}
                 />
@@ -475,70 +452,70 @@ export function PortfolioSummary() {
 
       {/* Performance Highlights - Combined & Compact */}
       <div className="pb-12">
-        <div className="bg-slate-900 border border-white/5 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+          <div className="p-4 border-b border-border bg-secondary/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-500" />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Movimentações de Performance</h3>
+              <Activity className="w-4 h-4 text-primary" />
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Movimentações de Performance</h3>
             </div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Os 3 Melhores e 3 Piores</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Os 3 Melhores e 3 Piores</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/5">
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
             {/* Winners */}
             <div className="p-4 space-y-1">
               <div className="flex items-center gap-2 mb-3">
-                <ArrowUpRight className="w-3 h-3 text-emerald-500" />
-                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Líderes</span>
+                <ArrowUpRight className="w-4 h-4 text-emerald-600" />
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em]">Líderes</span>
               </div>
               {portfolio.length > 0 ? (
                 [...portfolio]
                   .sort((a, b) => (b.profitPercentage || 0) - (a.profitPercentage || 0))
                   .slice(0, 3)
                   .map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02] transition-colors group">
+                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-secondary transition-colors group">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-black text-white uppercase group-hover:text-blue-500 transition-colors">{item.ticker}</span>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{item.assetType}</span>
+                        <span className="text-sm font-bold text-foreground uppercase group-hover:text-primary transition-colors">{item.ticker}</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{item.assetType}</span>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="text-xs font-black text-emerald-500">+{formatNumber(item.profitPercentage || 0)}%</span>
-                        <span className="text-[9px] font-medium text-slate-500 mask-value">
+                        <span className="text-xs font-bold text-emerald-600">+{formatNumber(item.profitPercentage || 0)}%</span>
+                        <span className="text-[9px] font-medium text-muted-foreground mask-value">
                           {showValues ? `+${formatNumber(item.profit || 0, { style: 'currency' })}` : 'R$ •••••'}
                         </span>
                       </div>
                     </div>
                   ))
               ) : (
-                <p className="text-[10px] text-slate-600 uppercase italic p-3">Nenhum dado disponível</p>
+                <p className="text-[10px] text-muted-foreground opacity-60 uppercase italic p-3">Nenhum dado disponível</p>
               )}
             </div>
 
             {/* Losers */}
             <div className="p-4 space-y-1">
               <div className="flex items-center gap-2 mb-3">
-                <ArrowDownRight className="w-3 h-3 text-red-500" />
-                <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Retardatários</span>
+                <ArrowDownRight className="w-4 h-4 text-red-600" />
+                <span className="text-[10px] font-bold text-red-600 uppercase tracking-[0.2em]">Retardatários</span>
               </div>
               {portfolio.length > 0 ? (
                 [...portfolio]
                   .sort((a, b) => (a.profitPercentage || 0) - (b.profitPercentage || 0))
                   .slice(0, 3)
                   .map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02] transition-colors group">
+                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-secondary transition-colors group">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-black text-white uppercase group-hover:text-blue-500 transition-colors">{item.ticker}</span>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{item.assetType}</span>
+                        <span className="text-sm font-bold text-foreground uppercase group-hover:text-primary transition-colors">{item.ticker}</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{item.assetType}</span>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="text-xs font-black text-red-500">{formatNumber(item.profitPercentage || 0)}%</span>
-                        <span className="text-[9px] font-medium text-slate-500 mask-value">
+                        <span className="text-xs font-bold text-red-600">{formatNumber(item.profitPercentage || 0)}%</span>
+                        <span className="text-[9px] font-medium text-muted-foreground mask-value">
                           {showValues ? `${formatNumber(item.profit || 0, { style: 'currency' })}` : 'R$ •••••'}
                         </span>
                       </div>
                     </div>
                   ))
               ) : (
-                <p className="text-[10px] text-slate-600 uppercase italic p-3">Nenhum dado disponível</p>
+                <p className="text-[10px] text-muted-foreground opacity-60 uppercase italic p-3">Nenhum dado disponível</p>
               )}
             </div>
           </div>

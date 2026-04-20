@@ -13,7 +13,7 @@ import { Transaction, PortfolioItem, CorporateEvent, TaxMonth, PortfolioEngineRe
  * Encontra a quantidade de um ativo em uma data específica
  */
 export function getHistoricalQuantity(ticker: string, targetDateStr: string, portfolio: PortfolioItem[]): number {
-  const item = portfolio.find(p => p.ticker === ticker);
+  const item = portfolio.find(p => p.ticker.toUpperCase() === ticker.toUpperCase());
   if (!item || !item.historicalQuantities || item.historicalQuantities.length === 0) return 0;
   
   // Use YYYY-MM-DD for comparison to avoid timezone issues

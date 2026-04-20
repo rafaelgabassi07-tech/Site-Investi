@@ -153,10 +153,10 @@ export default function Screener() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="h-full flex flex-col items-center justify-center py-20 text-center bg-white/5 border border-white/5 rounded-xl md:rounded-2xl shadow-xl"
+                className="h-full flex flex-col items-center justify-center py-20 text-center bg-card border border-border rounded-xl shadow-sm"
               >
-                <h3 className="text-display-tiny text-white mb-2 uppercase italic">Nenhum ativo encontrado</h3>
-                <p className="text-tiny font-bold text-slate-400 max-w-xs mx-auto uppercase tracking-widest leading-relaxed">Tente ajustar seus filtros para obter mais resultados.</p>
+                <h3 className="text-display-tiny text-foreground mb-2 uppercase font-bold">Nenhum ativo encontrado</h3>
+                <p className="text-tiny font-bold text-muted-foreground max-w-xs mx-auto uppercase tracking-widest leading-relaxed">Tente ajustar seus filtros para obter mais resultados.</p>
               </motion.div>
             ) : (
               <motion.div 
@@ -165,55 +165,55 @@ export default function Screener() {
                 className="space-y-4"
               >
                 <div className="flex items-center justify-between px-4">
-                  <span className="text-label text-slate-400 uppercase italic tracking-tight">{results.length} Ativos Encontrados</span>
-                  <div className="flex items-center gap-2 text-tiny font-black text-blue-400/60 uppercase tracking-widest">
+                  <span className="text-label text-muted-foreground uppercase tracking-tight font-bold">{results.length} Ativos Encontrados</span>
+                  <div className="flex items-center gap-2 text-tiny font-bold text-primary/70 uppercase tracking-widest">
                     <ArrowUpDown className="icon-xs" /> Ordenado por {sortConfig.key.toUpperCase()} ({sortConfig.direction === 'asc' ? 'Cresc.' : 'Decresc.'})
                   </div>
                 </div>
 
-                <div className="overflow-hidden bg-white/5 border border-white/5 rounded-xl md:rounded-2xl shadow-2xl">
+                <div className="overflow-hidden bg-card border border-border rounded-xl shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
-                        <tr className="border-b border-white/5 bg-white/5">
-                          <th className="p-6 text-tiny font-black text-slate-500 uppercase tracking-[0.2em] cursor-pointer hover:text-white transition-colors pl-8" onClick={() => handleSort('ticker')}>
-                            <div className="flex items-center gap-2 italic">Ativo {sortConfig.key === 'ticker' && <ArrowUpDown className="icon-xs" />}</div>
+                        <tr className="border-b border-border bg-secondary/50">
+                          <th className="p-4 md:p-6 text-tiny font-bold text-muted-foreground uppercase tracking-[0.2em] cursor-pointer hover:text-foreground transition-colors pl-4 md:pl-8" onClick={() => handleSort('ticker')}>
+                            <div className="flex items-center gap-2">Ativo {sortConfig.key === 'ticker' && <ArrowUpDown className="icon-xs" />}</div>
                           </th>
-                          <th className="p-6 text-tiny font-black text-slate-500 uppercase tracking-[0.2em] text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('price')}>
-                            <div className="flex items-center justify-end gap-2 italic">Preço {sortConfig.key === 'price' && <ArrowUpDown className="icon-xs" />}</div>
+                          <th className="p-4 md:p-6 text-tiny font-bold text-muted-foreground uppercase tracking-[0.2em] text-right cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort('price')}>
+                            <div className="flex items-center justify-end gap-2">Preço {sortConfig.key === 'price' && <ArrowUpDown className="icon-xs" />}</div>
                           </th>
-                          <th className="p-6 text-tiny font-black text-slate-500 uppercase tracking-[0.2em] text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('dy')}>
-                            <div className="flex items-center justify-end gap-2 italic">DY (%) {sortConfig.key === 'dy' && <ArrowUpDown className="icon-xs" />}</div>
+                          <th className="p-4 md:p-6 text-tiny font-bold text-muted-foreground uppercase tracking-[0.2em] text-right cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort('dy')}>
+                            <div className="flex items-center justify-end gap-2">DY (%) {sortConfig.key === 'dy' && <ArrowUpDown className="icon-xs" />}</div>
                           </th>
-                          <th className="p-6 text-tiny font-black text-slate-500 uppercase tracking-[0.2em] text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('pl')}>
-                            <div className="flex items-center justify-end gap-2 italic">P/L {sortConfig.key === 'pl' && <ArrowUpDown className="icon-xs" />}</div>
+                          <th className="p-4 md:p-6 text-tiny font-bold text-muted-foreground uppercase tracking-[0.2em] text-right cursor-pointer hover:text-foreground transition-colors" onClick={() => handleSort('pl')}>
+                            <div className="flex items-center justify-end gap-2">P/L {sortConfig.key === 'pl' && <ArrowUpDown className="icon-xs" />}</div>
                           </th>
-                          <th className="p-6 text-tiny font-black text-slate-500 uppercase tracking-[0.2em] text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('pvp')}>
-                            <div className="flex items-center justify-end gap-2 italic">P/VP {sortConfig.key === 'pvp' && <ArrowUpDown className="icon-xs" />}</div>
+                          <th className="p-4 md:p-6 text-tiny font-bold text-muted-foreground uppercase tracking-[0.2em] text-right cursor-pointer hover:text-foreground transition-colors hidden sm:table-cell" onClick={() => handleSort('pvp')}>
+                            <div className="flex items-center justify-end gap-2">P/VP {sortConfig.key === 'pvp' && <ArrowUpDown className="icon-xs" />}</div>
                           </th>
-                          <th className="p-6 pr-8"></th>
+                          <th className="p-4 md:p-6 pr-4 md:pr-8"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/5">
+                      <tbody className="divide-y divide-border">
                         {sortedResults.map((item, idx) => (
-                          <tr key={idx} className="group hover:bg-white/5 transition-all">
-                            <td className="p-6 pl-8">
-                              <div className="flex items-center gap-5">
-                                <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center p-2 shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-500 shrink-0">
+                          <tr key={idx} className="group hover:bg-secondary/50 transition-all">
+                            <td className="p-4 md:p-6 pl-4 md:pl-8">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-card flex items-center justify-center p-2 shadow-sm border border-border shrink-0">
                                   <AssetIcon assetType={type as any} ticker={item.ticker} className="w-full h-full" />
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-display-tiny text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tight">{item.ticker}</div>
-                                  <div className="text-tiny font-bold text-slate-500 mt-0.5 truncate max-w-[140px] uppercase tracking-widest">{item.name}</div>
+                                  <div className="text-sm md:text-base font-bold text-foreground group-hover:text-primary transition-colors uppercase tracking-tight">{item.ticker}</div>
+                                  <div className="text-[10px] font-bold text-muted-foreground mt-0.5 truncate max-w-[100px] md:max-w-[140px] uppercase tracking-widest">{item.name}</div>
                                 </div>
                               </div>
                             </td>
-                            <td className="p-6 text-right text-display-tiny text-white uppercase italic">R$ {item.results.precoAtual || '0,00'}</td>
-                            <td className="p-6 text-right text-display-tiny text-emerald-400 uppercase italic">{item.results.dividendYield || '0,00%'}</td>
-                            <td className="p-6 text-right text-display-tiny text-slate-300 uppercase italic opacity-60">{item.results.pl || 'N/A'}</td>
-                            <td className="p-6 text-right text-display-tiny text-slate-300 uppercase italic opacity-60">{item.results.pvp || 'N/A'}</td>
-                            <td className="p-6 pr-8 text-right">
-                              <Link to={`/asset/${item.ticker}`} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all text-slate-500 ml-auto border border-white/5 shadow-inner group/btn">
+                            <td className="p-4 md:p-6 text-right text-sm md:text-base font-bold text-foreground uppercase">R$ {item.results.precoAtual || '0,00'}</td>
+                            <td className="p-4 md:p-6 text-right text-sm md:text-base font-bold text-emerald-600 uppercase">{item.results.dividendYield || '0,00%'}</td>
+                            <td className="p-4 md:p-6 text-right text-sm md:text-base font-bold text-muted-foreground uppercase">{item.results.pl || 'N/A'}</td>
+                            <td className="p-4 md:p-6 text-right text-sm md:text-base font-bold text-muted-foreground uppercase hidden sm:table-cell">{item.results.pvp || 'N/A'}</td>
+                            <td className="p-4 md:p-6 pr-4 md:pr-8 text-right">
+                              <Link to={`/asset/${item.ticker}`} className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-primary hover:text-white transition-all text-muted-foreground ml-auto border border-border group/btn">
                                 <ChevronRight className="icon-sm group-hover:translate-x-0.5 transition-transform" />
                               </Link>
                             </td>

@@ -36,7 +36,8 @@ export default function Dividends() {
         type: ticker.toUpperCase().endsWith('11') ? 'FII' : 'ACAO',
         date: new Date(date).toISOString(), 
         amount: parsedAmount, 
-        is_future: new Date(date) > new Date()
+        is_future: new Date(date) > new Date(),
+        is_manual: true
       };
 
       const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -95,12 +96,13 @@ export default function Dividends() {
 
     return uniqueDivs.map(div => {
       // qty calculation is based on Ex-Date (div.date in our schema)
-      const dataCom = new Date(div.date); 
+      const dataCom = div.date ? new Date(div.date) : new Date(); 
       const paymentDate = div.paymentDate ? new Date(div.paymentDate) : dataCom;
       
-      const qtyAtDate = getHistoricalQuantity(div.ticker, div.date, portfolio);
-      const isFuture = paymentDate > new Date() || div.is_future;
-      const amount = Number(div.amount) || 0;
+      const qtyAtDate = getHistoricalQuantity(div.ticker, div.date || '', portfolio);
+      // Consistent future check: if payment is ahead or if explicitly marked future
+      const isFuture = paymentDate.getTime() > Date.now() || div.is_future === true;
+      const amount = typeof div.amount === 'string' ? parseFloat(div.amount.replace(',', '.')) : (Number(div.amount) || 0);
       
       const now = new Date();
       now.setHours(0,0,0,0);
@@ -112,22 +114,20 @@ export default function Dividends() {
          status = 'confirmado';
       }
 
+      const isManual = div.is_manual === true;
+
       return {
         ...div,
         paymentDate: paymentDate.toISOString(),
         isFuture,
         status,
-        quantityAtDate: Math.max(0, qtyAtDate), // Ensure no negative quantities
-        totalAmount: amount * Math.max(0, qtyAtDate)
+        quantityAtDate: isManual ? 1 : Math.max(0, qtyAtDate), // Ensure no negative quantities
+        totalAmount: isManual ? amount : amount * Math.max(0, qtyAtDate)
       };
     }).filter(div => {
-      // Relaxed filter: show if user ever had this asset or if it's manual
-      const divTicker = (div.ticker || '').toUpperCase();
-      const hasAssetInHistory = portfolio.some(p => p.ticker.toUpperCase() === divTicker);
+      // Show if it's manual, or if we actually held the asset at the EX date
       const isManual = div.is_manual === true;
-      
-      // We show it if they have the asset OR if it was accurately tracked (qty > 0) OR if it's future
-      return isManual || hasAssetInHistory || div.quantityAtDate > 0 || div.isFuture;
+      return isManual || div.quantityAtDate > 0;
     });
   }, [dividends, portfolio]);
 
@@ -293,56 +293,52 @@ export default function Dividends() {
         </motion.div>
       )}
 
-      {/* Dividend Executive Summary - Single Card */}
+      {/* Dividend Executive Summary - Compact & Clean */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-slate-900 border border-white/5 rounded-xl overflow-hidden shadow-2xl relative"
+        className="bg-slate-900 border border-white/5 rounded-xl overflow-hidden relative"
       >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] -z-10" />
-        <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-2">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[60px] -z-10" />
+        <div className="p-5 md:p-6 grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
               <DollarSign className="w-3 h-3 text-emerald-500" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total 12 Meses</span>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total 12m</span>
             </div>
-            <div className="text-2xl font-display font-black text-white mask-value">
+            <div className="text-xl font-display font-black text-white mask-value">
               {showValues ? formatNumber(stats.totalReceived, { style: 'currency' }) : 'R$ ••••••'}
             </div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Dividendos Acumulados</p>
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
               <TrendingUp className="w-3 h-3 text-blue-500" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Média Mensal</span>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Média Mensal</span>
             </div>
-            <div className="text-2xl font-display font-black text-white mask-value">
+            <div className="text-xl font-display font-black text-white mask-value">
               {showValues ? formatNumber(stats.avgMonthly, { style: 'currency' }) : 'R$ ••••••'}
             </div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Renda Médica Passiva</p>
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
               <BarChart3 className="w-3 h-3 text-purple-500" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Yield on Cost</span>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Yield On Cost</span>
             </div>
-            <div className="text-2xl font-display font-black text-white mask-value">
+            <div className="text-xl font-display font-black text-white mask-value">
               {showValues ? `${formatNumber(stats.yieldOnCost)}%` : '•••%'}
             </div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Retorno sobre Custo</p>
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
               <PieChart className="w-3 h-3 text-amber-500" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Projetado</span>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Projetado</span>
             </div>
-            <div className="text-2xl font-display font-black text-amber-500 mask-value">
+            <div className="text-xl font-display font-black text-amber-500 mask-value">
               {showValues ? formatNumber(stats.totalFuture, { style: 'currency' }) : 'R$ ••••••'}
             </div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Proventos Futuros</p>
           </div>
         </div>
       </motion.div>
@@ -351,60 +347,67 @@ export default function Dividends() {
         <div className="lg:col-span-2 space-y-6">
           {/* Chart Section - Glassmorphism Bento */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 rounded-3xl bg-slate-900/40 border border-white/5 relative overflow-hidden"
+            className="nexus-card bg-card border border-border"
           >
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex flex-col items-center justify-center shrink-0">
-                <BarChart3 className="w-6 h-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0">
+                <BarChart3 className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-display font-black text-white italic tracking-tighter">
+                <h3 className="text-xl font-display font-black text-foreground tracking-tighter uppercase">
                   Evolução Mensal
                 </h3>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Composição de Dividendos Recebidos e Projetados</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Geração de Renda Passiva</p>
               </div>
             </div>
             
-            <div className="h-[300px] w-full -mx-2 md:mx-0">
+            <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyHistory} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
+                  <CartesianGrid strokeDasharray="0" stroke="rgba(0,0,0,0.05)" vertical={false} />
                   <XAxis 
                     dataKey="month" 
-                    stroke="#475569" 
                     fontSize={10} 
                     fontWeight="700"
                     tickLine={false} 
                     axisLine={false} 
                     dy={10}
-                    tickFormatter={(val) => {
-                      // Already formatted short month in processed logic, but ensuring uppercase
-                      return val.toUpperCase();
-                    }}
-                    tick={{ fill: '#64748b' }}
+                    tickFormatter={(val) => val.toUpperCase()}
+                    tick={{ fill: 'var(--muted-foreground)' }}
                   />
                   <YAxis 
-                    stroke="#475569" 
                     fontSize={10} 
                     fontWeight="bold"
                     tickLine={false} 
                     axisLine={false} 
                     tickFormatter={(v) => `R$ ${v}`} 
-                    tick={{ fill: '#64748b' }}
+                    tick={{ fill: 'var(--muted-foreground)' }}
                   />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
-                    itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}
-                    labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                    formatter={(v: any) => [`R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-popover border border-border p-3 rounded-lg shadow-xl">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                              {payload[0].payload.month}
+                            </p>
+                            {payload.map((entry: any, index: number) => (
+                              <p key={index} className="text-sm font-bold text-foreground flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                {formatNumber(entry.value, { style: 'currency' })}
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
                   <Bar dataKey="recebido" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} name="Recebido" />
                   <Bar dataKey="confirmado" stackId="a" fill="#f59e0b" name="Confirmado" />
-                  <Bar dataKey="futuro" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Futuro/Projetado" />
+                  <Bar dataKey="futuro" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Futuro" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -412,24 +415,24 @@ export default function Dividends() {
 
           {/* List Section - Clean */}
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-slate-900/40 border border-white/5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-secondary border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                  <DollarSign className="w-5 h-5 text-emerald-500" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center shrink-0">
+                  <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
-                <h3 className="text-lg font-black text-white italic tracking-tighter">
+                <h3 className="text-lg font-bold text-foreground tracking-tighter uppercase">
                   Histórico de Entradas
                 </h3>
               </div>
-              <div className="flex gap-1.5 p-1 bg-black/20 border border-white/5 rounded-xl">
+              <div className="flex gap-1.5 p-1 bg-muted border border-border rounded-lg">
                 {['Todos', 'Ações', 'FIIs'].map((type) => (
                   <button 
                     key={type} 
                     onClick={() => setFilter(type)}
-                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
                       filter === type 
-                        ? 'bg-blue-600 shadow-md text-white' 
-                        : 'text-slate-500 hover:text-white hover:bg-white/5'
+                        ? 'bg-primary shadow-sm text-white' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-background'
                     }`}
                   >
                     {type}
@@ -455,10 +458,10 @@ export default function Dividends() {
                   >
                     <div className="flex justify-between items-center mb-4 mt-2">
                        <div className="flex items-center gap-3">
-                         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">{monthYear}</h4>
-                         <div className="h-px bg-white/5 w-12 sm:w-24"></div>
+                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{monthYear}</h4>
+                         <div className="h-px bg-border w-12 sm:w-24"></div>
                        </div>
-                       <div className="text-xs font-black text-blue-400 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full italic mask-value">
+                       <div className="text-xs font-bold text-primary px-3 py-1 bg-primary/5 border border-primary/10 rounded-full">
                         {showValues ? `+ ${formatNumber(group.total, { style: 'currency' })}` : 'R$ ••••••'}
                       </div>
                     </div>
@@ -469,43 +472,35 @@ export default function Dividends() {
                       const day = date.getDate().toString().padStart(2, '0');
                       const month = date.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
                       
-                      const statusColor = item.status === 'futuro' ? 'text-blue-500 border-blue-500/20 bg-blue-500/10' :
-                                          item.status === 'confirmado' ? 'text-amber-500 border-amber-500/20 bg-amber-500/10' :
-                                          'text-emerald-500 border-emerald-500/20 bg-emerald-500/10';
-                      
                       const statusLabel = item.status === 'futuro' ? 'PROJETADO' :
                                           item.status === 'confirmado' ? 'CONFIRMADO' :
                                           'RECEBIDO';
                       
+                      const statusColor = item.status === 'futuro' ? 'text-blue-600' :
+                                          item.status === 'confirmado' ? 'text-amber-600' :
+                                          'text-emerald-600';
+                      
                       return (
                         <div 
                           key={idx}
-                          className="flex items-center justify-between py-2 group border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors px-2 rounded-md"
+                          className="flex items-center justify-between py-3 group border-b border-border last:border-0 hover:bg-secondary/50 transition-colors px-2 rounded-lg"
                         >
                           <div className="flex items-center gap-3 w-1/2">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-foreground uppercase tracking-wider w-14">{item.ticker}</span>
+                              <span className="text-xs font-bold text-foreground uppercase tracking-wider w-14">{item.ticker}</span>
                             </div>
                             <span className="text-[10px] text-muted-foreground uppercase tracking-widest hidden sm:inline-block w-20">{day} {month}</span>
-                            <span className={`text-[9px] font-bold uppercase tracking-widest ${
-                              item.status === 'futuro' ? 'text-blue-500' :
-                              item.status === 'confirmado' ? 'text-amber-500' :
-                              'text-emerald-500'
-                            }`}>
+                            <span className={`text-[9px] font-bold uppercase tracking-widest ${statusColor}`}>
                               {statusLabel}
                             </span>
                           </div>
                           
                           <div className="flex flex-col items-end w-1/2">
-                            <span className={`text-sm font-black mask-value ${
-                              item.status === 'futuro' ? 'text-blue-500' :
-                              item.status === 'confirmado' ? 'text-amber-500' :
-                              'text-emerald-500'
-                            }`}>
+                            <span className={`text-sm font-bold ${statusColor}`}>
                               {showValues ? formatNumber(item.totalAmount, { style: 'currency' }) : 'R$ ••••••'}
                             </span>
-                            <span className="text-[9px] text-muted-foreground uppercase tracking-widest mask-value">
-                              {showValues ? `${item.quantityAtDate} cotas a ${formatNumber(item.amount, { style: 'currency' })}` : '••• cotas'}
+                            <span className="text-[9px] text-muted-foreground uppercase tracking-widest">
+                              {showValues ? `${item.quantityAtDate} cotas em ${day}/${month}` : '••• cotas'}
                             </span>
                           </div>
                         </div>
@@ -514,9 +509,9 @@ export default function Dividends() {
                     </div>
                   </motion.div>
                 )) : (
-                  <div className="p-12 border border-dashed border-white/10 rounded-3xl bg-slate-900/20 text-center flex flex-col items-center justify-center">
-                    <p className="font-black uppercase tracking-widest text-xs italic text-slate-400 mb-2">Nenhum provento recebido</p>
-                    <p className="text-[10px] text-slate-500 font-medium">Seus registros de dividendos aparecerão aqui.</p>
+                  <div className="p-12 border border-dashed border-border rounded-xl bg-secondary/20 text-center flex flex-col items-center justify-center">
+                    <p className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2">Nenhum provento cadastrado</p>
+                    <p className="text-[10px] text-muted-foreground">Seus registros de dividendos aparecerão aqui.</p>
                   </div>
                 )}
               </div>
@@ -525,54 +520,51 @@ export default function Dividends() {
         </div>
 
         <div className="space-y-6">
-          {/* Projeção Section - Glassmorphism Bento */}
-          <div className="p-6 rounded-3xl bg-slate-900/40 border border-white/5 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-32 h-32 bg-purple-500/10 blur-[60px] rounded-full pointer-events-none" />
+          <div className="nexus-card bg-card border border-border">
             <div className="flex items-center gap-3 mb-6 relative">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5 text-purple-500" />
+              <div className="w-10 h-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0">
+                <Calendar className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="text-lg font-black text-white italic tracking-tighter">
+              <h3 className="text-lg font-bold text-foreground uppercase tracking-tighter">
                 Projeção
               </h3>
             </div>
             
             <div className="space-y-6 relative">
-              <div className="py-6 border-b border-white/5">
-                <p className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Renda Mensal Estimada</p>
-                <div className="text-3xl font-display font-black text-white italic tracking-tighter">
+              <div className="py-6 border-b border-border">
+                <p className="text-[10px] font-bold text-muted-foreground mb-2 uppercase tracking-widest">Renda Mensal Estimada</p>
+                <div className="text-3xl font-bold text-foreground tracking-tighter">
                   {formatNumber(stats.avgMonthly, { style: 'currency' })}
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Meta Mensal</span>
-                  <span className="text-xs font-black text-blue-400 italic bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">R$ 5.000,00</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Meta Mensal</span>
+                  <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">R$ 5.000,00</span>
                 </div>
-                <div className="h-2 bg-slate-950 rounded-full overflow-hidden border border-white/5">
+                <div className="h-2 bg-secondary rounded-full overflow-hidden border border-border">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min((stats.avgMonthly / 5000) * 100, 100)}%` }}
-                    className="h-full bg-gradient-to-r from-blue-600 to-purple-600 blur-[0.5px]"
+                    className="h-full bg-primary"
                   />
                 </div>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-right">
+                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest text-right">
                   Alcance: {((stats.avgMonthly / 5000) * 100).toFixed(1)}% do objetivo
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-6 rounded-3xl bg-blue-950/20 border border-blue-500/20 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[50px] group-hover:bg-blue-500/20 transition-colors pointer-events-none" />
+          <div className="p-6 rounded-xl bg-secondary border border-border relative overflow-hidden group">
             <div className="flex items-center gap-3 mb-4 relative">
-              <div className="bg-blue-500 sm p-1.5 rounded-lg text-white">
+              <div className="bg-primary p-1.5 rounded-lg text-white">
                  <ArrowUpRight className="w-4 h-4" />
               </div>
-              <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Nexus Insight</h4>
+              <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest">Nexus Insight</h4>
             </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed font-semibold uppercase tracking-wider relative z-10 hover:text-slate-300 transition-colors">
+            <p className="text-[11px] text-muted-foreground leading-relaxed font-semibold uppercase tracking-wider relative z-10 transition-colors">
               O reinvestimento sistemático acelera a "bola de neve" financeira. Cada provento reaplicado é um novo trabalhador em sua fazenda de dividendos.
             </p>
           </div>

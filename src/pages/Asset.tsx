@@ -5,7 +5,7 @@ import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
-import { formatCompactNumber, parseFinanceValue } from '../lib/utils';
+import { formatCompactNumber, parseFinanceValue, formatNumber } from '../lib/utils';
 import { NexusAIIntel } from '../components/NexusAIIntel';
 
 export default function Asset() {
@@ -82,8 +82,8 @@ export default function Asset() {
           </div>
         </div>
         <div className="text-center space-y-3">
-          <h2 className="text-display-md text-white animate-pulse">Analisando {ticker}</h2>
-          <p className="text-label text-slate-500 uppercase tracking-widest animate-pulse">Processando dados em tempo real...</p>
+          <h2 className="text-display-md text-foreground animate-pulse">Analisando {ticker}</h2>
+          <p className="text-label text-muted-foreground uppercase tracking-widest animate-pulse">Processando dados em tempo real...</p>
         </div>
       </div>
     );
@@ -95,8 +95,8 @@ export default function Asset() {
         <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
           <Info className="text-red-500 icon-lg" />
         </div>
-        <h2 className="text-display-sm text-white uppercase">Ops! Algo deu errado</h2>
-        <p className="text-label text-slate-400 max-w-xs">{error || 'Não foi possível encontrar este ativo.'}</p>
+        <h2 className="text-display-sm text-foreground uppercase tracking-tight">Ops! Algo deu errado</h2>
+        <p className="text-label text-muted-foreground max-w-xs">{error || 'Não foi possível encontrar este ativo.'}</p>
         <button onClick={handleGoBack} className="btn-secondary">Voltar</button>
       </div>
     );
@@ -199,36 +199,36 @@ export default function Asset() {
     <div className="space-y-3 pb-12 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 pt-4 px-1 md:px-0">
-        <button onClick={handleGoBack} className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center hover:bg-slate-800 transition-colors border border-slate-700/50">
-          <ArrowLeft className="text-slate-300 icon-sm" />
+        <button onClick={handleGoBack} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors border border-border">
+          <ArrowLeft className="text-muted-foreground icon-sm" />
         </button>
         <div className="flex-1 flex items-center justify-between">
               <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center p-2 shadow-xl border border-white/10 shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-card flex items-center justify-center p-2 shadow-sm border border-border shrink-0">
               <AssetIcon assetType={(assetData as any).type || "ACAO"} ticker={assetData.ticker} className="w-full h-full" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-display-md text-white">{assetData.ticker}</h1>
-                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-tiny font-black uppercase tracking-widest rounded border border-blue-500/20">
+                <h1 className="text-display-md text-foreground">{assetData.ticker}</h1>
+                <span className="px-2 py-0.5 bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-widest rounded border border-primary/10">
                   {(assetData as any).type || "Ativo"}
                 </span>
               </div>
-              <p className="text-label text-slate-400 uppercase">{results.name || 'Empresa'}</p>
+              <p className="text-label text-muted-foreground uppercase">{results.name || 'Empresa'}</p>
             </div>
           </div>
           <div className="flex gap-2">
             <Link 
               to="/portfolio"
-              className="h-12 px-5 rounded-xl flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/25 border border-blue-400/50"
+              className="btn-primary h-12 px-6"
             >
               + Carteira
             </Link>
             <button 
               onClick={toggleFavorite}
-              className={`w-12 h-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all border group ${isFavorite ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-800/50 border-slate-700'}`}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all border group ${isFavorite ? 'bg-amber-500/5 border-amber-500/20 text-amber-600' : 'bg-secondary border-border hover:bg-muted'}`}
             >
-              <Star className={`icon-md ${isFavorite ? 'text-amber-400 fill-amber-400' : 'text-slate-500 group-hover:text-amber-400 transition-colors'}`} />
+              <Star className={`icon-md ${isFavorite ? 'fill-amber-500' : 'text-muted-foreground group-hover:text-amber-500 transition-colors'}`} />
             </button>
           </div>
         </div>
@@ -237,33 +237,31 @@ export default function Asset() {
       <div className="px-1 md:px-0 grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-3">
         {/* Left Column: Price & Chart */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="relative border-b border-slate-800/50 pb-6">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
+          <div className="relative border-b border-border pb-6">
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
               <div>
-                <div className="text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest italic">Cotação Atual</div>
+                <div className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-widest">Cotação Atual</div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-display-lg text-white tracking-tighter italic">
+                  <span className="text-display-lg text-foreground tracking-tight">
                     {typeof results.precoAtual === 'number' ? formatNumber(results.precoAtual, { style: 'currency' }) : results.precoAtual || '0,00'}
                   </span>
-                  <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest italic ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
                     {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                     {results.variacaoDay || '0.00%'}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center p-1 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-blue-600/5 blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex items-center p-1 bg-secondary border border-border rounded-xl">
                 {['1mo', '3mo', '6mo', '1y', '5y'].map((p) => (
                   <button
                     key={p}
                     onClick={() => setActivePeriod(p)}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all relative z-10 italic ${
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
                       activePeriod === p 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-500/50' 
-                        : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
+                        ? 'bg-primary text-white shadow-sm' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
                   >
                     {p}
@@ -289,12 +287,12 @@ export default function Asset() {
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                       </filter>
                     </defs>
-                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(0,0,0,0.05)" />
                     <XAxis 
                       dataKey="date" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} 
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontWeight: 600 }} 
                       tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}
                       minTickGap={60}
                       dy={10}
@@ -304,19 +302,21 @@ export default function Asset() {
                       domain={['auto', 'auto']} 
                     />
                     <Tooltip 
-                      cursor={{ stroke: isPositive ? '#10b981' : '#ef4444', strokeWidth: 1, strokeDasharray: '4 4' }}
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(11, 15, 25, 0.98)', 
-                        border: `1px solid ${isPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`, 
-                        borderRadius: '16px', 
-                        backdropFilter: 'blur(20px)',
-                        boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9)',
-                        padding: '16px'
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-popover border border-border p-3 rounded-lg shadow-xl">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                                {new Date(payload[0].payload.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </p>
+                              <p className="text-sm font-bold text-foreground">
+                                {formatNumber(payload[0].value, { style: 'currency' })}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
                       }}
-                      itemStyle={{ color: isPositive ? '#10b981' : '#ef4444', fontWeight: '900', textTransform: 'uppercase', fontSize: '13px' }}
-                      labelStyle={{ color: '#64748b', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
-                      labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      formatter={(val: number) => [formatNumber(val, { style: 'currency' }), 'VALOR DE FECHAMENTO']}
                     />
                     <Area 
                       type="monotone" 
@@ -350,7 +350,7 @@ export default function Asset() {
           <NexusAIIntel ticker={ticker!} assetData={assetData} history={history} />
 
           {/* Indicators Grid - Cleaner, No Containers */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 border-t border-white/5">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 border-t border-border mt-8">
             {validIndicators.map((ind, idx) => (
               <motion.div 
                 initial={{ opacity: 0 }}
@@ -358,40 +358,40 @@ export default function Asset() {
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.02 }}
                 key={idx} 
-                className={`py-6 px-4 group border-b border-white/5 relative hover:bg-white/[0.01] transition-colors ${idx % 2 === 0 ? 'border-r md:border-r' : 'md:border-r'} ${idx % 4 === 3 ? 'md:border-r-0' : ''}`}
+                className={`py-6 px-4 group border-b border-border relative hover:bg-secondary transition-colors ${idx % 2 === 0 ? 'border-r md:border-r' : 'md:border-r'} ${idx % 4 === 3 ? 'md:border-r-0' : ''}`}
               >
-                <div className="flex items-center gap-2 mb-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                  <ind.icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">{ind.label}</span>
+                <div className="flex items-center gap-2 mb-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <ind.icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{ind.label}</span>
                 </div>
-                <div className="text-lg font-display font-black text-white italic tracking-tight">{ind.value}</div>
-                <div className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] italic opacity-40 group-hover:opacity-60 transition-opacity">{ind.desc}</div>
+                <div className="text-lg font-bold text-foreground tracking-tight">{ind.value}</div>
+                <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{ind.desc}</div>
               </motion.div>
             ))}
           </div>
 
           {/* About Section */}
-          <div className="border-b border-white/5 pb-8">
+          <div className="pb-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-md shadow-blue-500/5">
+              <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10 shadow-sm">
                 <Info className="w-5 h-5" />
               </div>
-              <h2 className="text-xs font-black text-white uppercase italic tracking-widest">Sobre a {results.name || ticker}</h2>
+              <h2 className="text-xs font-bold text-foreground uppercase tracking-widest">Sobre a {results.name || ticker}</h2>
             </div>
-            <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-medium">
+            <p className="text-xs md:text-sm text-muted-foreground leading-relaxed font-medium">
               {results.about || `A ${results.name || ticker} é uma das principais empresas do seu setor, com forte presença no mercado brasileiro.`}
             </p>
           </div>
         </div>
 
         {/* Right Column: Checklist & News */}
-        <div className="space-y-6 pt-6">
-          <div className="pb-8">
-            <div className="flex items-center gap-3 mb-8 px-2">
+        <div className="space-y-8 lg:border-l lg:border-border lg:pl-8">
+          <div>
+            <div className="flex items-center gap-3 mb-6">
               <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
-              <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] italic">Checklist Nexus</h2>
+              <h2 className="text-[11px] font-bold text-foreground uppercase tracking-widest">Checklist Nexus</h2>
             </div>
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-border">
               {checklistItems.map((item, idx) => {
                 const passed = item.check();
                 return (
@@ -401,19 +401,19 @@ export default function Asset() {
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.03 }}
                     key={idx} 
-                    className="flex items-center justify-between py-4 px-2 hover:bg-white/[0.01] transition-all group"
+                    className="flex items-center justify-between py-4 hover:bg-secondary transition-all group px-2 -mx-2 rounded-lg"
                   >
-                    <span className="text-[10px] font-black text-slate-500 group-hover:text-slate-300 uppercase tracking-widest italic transition-colors">{item.label}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground group-hover:text-foreground uppercase tracking-widest transition-colors">{item.label}</span>
                     <div className="flex items-center gap-3">
-                      <span className={`text-[8px] font-black tracking-widest uppercase italic transition-opacity ${passed ? 'text-emerald-500' : 'text-slate-700 group-hover:text-slate-600'}`}>
+                      <span className={`text-[8px] font-bold tracking-widest uppercase transition-opacity ${passed ? 'text-emerald-600' : 'text-muted-foreground opacity-50 group-hover:opacity-100'}`}>
                         {passed ? 'APROVADO' : 'REVISAR'}
                       </span>
                       {passed ? (
-                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
                           <CheckCircle2 className="w-3 h-3" />
                         </div>
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-slate-700 border border-white/5">
+                        <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-muted-foreground border border-border">
                           <AlertCircle className="w-3 h-3" />
                         </div>
                       )}
@@ -426,14 +426,14 @@ export default function Asset() {
 
           {/* Dividends Summary */}
           {dividends.length > 0 && (
-            <div className="pb-8">
-              <div className="flex items-center justify-between mb-8 px-2">
+            <div>
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                  <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] italic">Proventos</h2>
+                  <div className="w-1.5 h-6 bg-primary rounded-full" />
+                  <h2 className="text-[11px] font-bold text-foreground uppercase tracking-widest">Proventos</h2>
                 </div>
               </div>
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-border">
                 {dividends.slice(0, 5).map((div, idx) => (
                   <motion.div 
                     initial={{ opacity: 0 }}
@@ -441,13 +441,13 @@ export default function Asset() {
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.03 }}
                     key={idx} 
-                    className="flex items-center justify-between py-5 px-2 hover:bg-white/[0.01] transition-all group"
+                    className="flex items-center justify-between py-5 hover:bg-secondary transition-all group px-2 -mx-2 rounded-lg"
                   >
                     <div>
-                      <div className="text-base font-display font-black text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter leading-none mb-1.5">R$ {div.amount.toFixed(3)}</div>
-                      <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">{new Date(div.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                      <div className="text-base font-bold text-foreground group-hover:text-primary transition-colors uppercase tracking-tight leading-none mb-1.5">R$ {div.amount.toFixed(3)}</div>
+                      <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(div.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                     </div>
-                    <span className="px-2.5 py-1 bg-white/[0.03] text-slate-500 text-[9px] font-black uppercase rounded-md border border-white/5 italic group-hover:border-emerald-500/20 group-hover:text-emerald-500 transition-all">EFETIVADO</span>
+                    <span className="px-2.5 py-1 bg-secondary text-muted-foreground text-[9px] font-bold uppercase rounded-md border border-border group-hover:border-emerald-500/20 group-hover:text-emerald-600 transition-all">EFETIVADO</span>
                   </motion.div>
                 ))}
               </div>

@@ -54,7 +54,7 @@ export function MarketMarquee() {
   const isMarketOpen = day >= 1 && day <= 5 && hour >= 10 && hour < 17;
 
   return (
-    <div className="w-full bg-[#0f172a] border-b border-white/5 h-10 flex items-center overflow-hidden relative z-40">
+    <div className="w-full bg-slate-100 dark:bg-[#020617] border-b border-border h-10 flex items-center overflow-hidden relative z-40 transition-colors">
       <motion.div 
         className="flex items-center gap-8 whitespace-nowrap px-4"
         animate={{ x: [0, -1000] }}
@@ -66,8 +66,8 @@ export function MarketMarquee() {
       >
         {doubledStats.map((stat, idx) => (
           <div key={idx} className="flex items-center gap-2 group cursor-default">
-            <span className="text-xxs font-bold text-slate-500 uppercase tracking-wider">{stat.label}</span>
-            <span className="text-xs font-mono text-white font-medium">{stat.value}</span>
+            <span className="text-xxs font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</span>
+            <span className="text-xs font-mono text-foreground font-medium">{stat.value}</span>
             <div className={`flex items-center gap-0.5 text-xxs font-bold ${stat.color === 'emerald' ? 'text-emerald-500' : 'text-red-500'}`}>
               {stat.color === 'emerald' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {stat.change}
@@ -77,9 +77,9 @@ export function MarketMarquee() {
       </motion.div>
       
       {/* Market Status Indicator Overlay */}
-      <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-[#0f172a] via-[#0f172a] to-transparent pl-12 pr-4 flex items-center gap-2 pointer-events-none">
+      <div className="absolute right-0 top-0 bottom-0 bg-slate-100 dark:bg-[#020617] pl-12 pr-4 flex items-center gap-2 pointer-events-none border-l border-border transition-colors">
         <div className={`w-1.5 h-1.5 rounded-full ${isMarketOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
-        <span className={`text-[8px] font-black uppercase tracking-widest`} title="Simulação baseada no horário de Brasília (B3)">
+        <span className={`text-[8px] font-black uppercase tracking-widest text-muted-foreground`} title="Simulação baseada no horário de Brasília (B3)">
           {isMarketOpen ? 'Mercado Aberto' : 'Mercado Fechado'}
         </span>
       </div>

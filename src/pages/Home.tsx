@@ -167,43 +167,38 @@ export default function Home() {
       <header className="px-2 pt-8 space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="nexus-hero !text-foreground">
+            <h2 className="text-display-lg !text-foreground leading-none">
               {greeting},
             </h2>
-            <h1 className="nexus-hero text-blue-500 truncate max-w-[280px]">
+            <h1 className="text-display-lg text-primary truncate max-w-[280px]">
               {displayName}
             </h1>
-            <div className="flex items-center gap-2 pt-1">
-              <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
-                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="nexus-label text-emerald-500 opacity-100">Mercado Monitorado</p>
+            <div className="flex items-center gap-2 pt-2">
+              <div className="px-2.5 py-1 bg-emerald-500/5 border border-emerald-500/10 rounded-full flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Sistemas Estáveis</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 p-3 bg-secondary rounded-2xl border border-border backdrop-blur-md">
+          <div className="flex items-center gap-2 p-3 bg-secondary rounded-2xl border border-border">
              <Logo size={24} showText={false} />
           </div>
         </div>
 
-        {/* Branding Message - Geometric Design */}
-        <div className="relative overflow-hidden bg-card border border-border rounded-2xl md:rounded-xl md:rounded-2xl p-5 text-center space-y-4 shadow-2xl backdrop-blur-xl group hover:border-blue-500/20 transition-all duration-700">
-           {/* Geometric Accents */}
-           <div className="absolute top-0 right-0 w-24 h-24 border-t-2 border-r-2 border-blue-500/10 rounded-tr-2xl md:rounded-tr-[2rem] group-hover:scale-110 transition-transform duration-700" />
-           <div className="absolute bottom-0 left-0 w-24 h-24 border-b-2 border-l-2 border-blue-500/10 rounded-bl-2xl md:rounded-bl-[2rem] group-hover:scale-110 transition-transform duration-700" />
-
-           <div className="mx-auto w-24 h-24 relative flex items-center justify-center">
-             <div className="absolute inset-0 border-2 border-blue-500/10 rotate-45 group-hover:rotate-90 transition-transform duration-1000" />
-             <div className="absolute inset-1 border border-blue-500/5 -rotate-12 group-hover:rotate-12 transition-transform duration-1000" />
-             <Logo size={48} showText={false} className="relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.2)]" />
+        {/* Branding Message - Elegant Design */}
+        <div className="relative overflow-hidden bg-card border border-border rounded-xl p-8 text-center space-y-6 shadow-sm group hover:border-primary/20 transition-all duration-500">
+           <div className="mx-auto w-20 h-20 relative flex items-center justify-center">
+             <div className="absolute inset-0 border border-primary/10 rounded-full group-hover:scale-110 transition-transform duration-1000" />
+             <Logo size={40} showText={false} className="relative z-10" />
            </div>
 
-           <div className="space-y-1">
-             <h3 className="text-xl font-display font-black text-foreground tracking-widest uppercase italic">Terminal <span className="text-blue-500">Nexus</span></h3>
-             <div className="w-8 h-0.5 bg-blue-500/50 mx-auto rounded-full" />
+           <div className="space-y-2">
+             <h3 className="text-2xl font-display font-bold text-foreground tracking-tight">Plataforma de Inteligência <span className="text-primary">Nexus</span></h3>
+             <div className="w-12 h-1 bg-primary/20 mx-auto rounded-full" />
            </div>
            
-           <p className="text-[8px] md:text-[9px] text-muted-foreground font-black max-w-[240px] mx-auto leading-tight uppercase tracking-widest italic">
-             Arquitetura de dados para alta performance em investimentos.
+           <p className="text-sm text-muted-foreground font-medium max-w-[320px] mx-auto leading-relaxed">
+             Sua estrutura centralizada para análise, gestão e otimização de patrimônio em alta performance.
            </p>
         </div>
       </header>
@@ -212,39 +207,38 @@ export default function Home() {
       <main className="px-3 md:px-0 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-        {/* Portfolio Summary Card - PREMIUM REDESIGN */}
+        {/* Portfolio Summary Card */}
         <section className="nexus-card">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/[0.03] via-transparent to-transparent pointer-events-none" />
-          
-          <div className="flex items-center justify-between mb-6 relative z-10">
+          <div className="flex items-center justify-between mb-8 relative z-10">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
-                <Wallet className="w-4 h-4" />
+              <div className="w-10 h-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary border border-primary/10">
+                <Wallet className="w-5 h-5" />
               </div>
-              <h3 className="nexus-label">Patrimônio Total</h3>
+              <div>
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Patrimônio Gerenciado</h3>
+                <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Ativos Verificados</p>
+              </div>
             </div>
             <button 
               onClick={(e) => { e.preventDefault(); toggleHideValues(); }}
-              className="p-2 text-muted-foreground hover:text-foreground transition-all bg-secondary rounded-xl border border-border shadow-sm active:scale-90"
+              className="p-2 text-muted-foreground hover:text-foreground transition-all hover:bg-secondary rounded-lg border border-border bg-background"
             >
-              {showValues ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
           </div>
           
           <div className="flex flex-col gap-1 relative z-10">
-            <span className="nexus-hero leading-tight tracking-tighter">
+            <span className="text-display-lg">
               {showValues ? formatNumber(portfolioStats.total, { style: 'currency' }) : 'R$ ••••••'}
             </span>
-            <div className="flex flex-wrap items-center gap-3 mt-4">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary rounded-xl border border-border shadow-sm">
-                <Briefcase className="w-3.5 h-3.5 text-blue-500" />
-                <span className="nexus-label text-foreground">{portfolioStats.count} Ativos em Custódia</span>
+            <div className="flex flex-wrap items-center gap-4 mt-6">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-primary/60" />
+                <span className="text-sm font-semibold text-foreground">{portfolioStats.count} ativos na carteira</span>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-sm transition-all duration-500 font-bold ${ (portfolioStats.change || 0) >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
-                 <span className="text-xs uppercase tracking-widest italic">
-                   {showValues ? `${(portfolioStats.change || 0) >= 0 ? '+' : ''}${formatNumber(portfolioStats.change || 0)}% Histórico` : '•••%'}
-                 </span>
-                 {(portfolioStats.change || 0) >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold ${ (portfolioStats.change || 0) >= 0 ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-600' : 'bg-red-500/5 border-red-500/10 text-red-600'}`}>
+                 {(portfolioStats.change || 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                 <span>{showValues ? `${(portfolioStats.change || 0) >= 0 ? '+' : ''}${formatNumber(portfolioStats.change || 0)}%` : '•••%'}</span>
               </div>
             </div>
           </div>
@@ -270,24 +264,23 @@ export default function Home() {
           <Link to="/portfolio" className="absolute inset-0 z-0" />
         </section>
 
-        {/* Search Bar */}
-        <section className="relative px-2">
-          <div className="relative flex items-center w-full bg-card border border-border rounded-3xl shadow-2xl focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500/40 transition-all p-2.5 overflow-hidden group">
-            <div className="absolute inset-0 bg-blue-500/[0.01] opacity-0 group-focus-within:opacity-100 transition-opacity" />
-            <div className="relative pl-3 text-muted-foreground group-focus-within:text-blue-500 transition-colors">
-              <Search className="w-6 h-6" />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse opacity-0 group-focus-within:opacity-100" />
+        {/* Search Bar - Professional Refinement */}
+        <section className="px-1">
+          <div className="relative flex items-center w-full bg-card border border-border rounded-xl shadow-sm focus-within:ring-4 focus-within:ring-primary/5 focus-within:border-primary transition-all p-1 group">
+            <div className="relative flex items-center justify-center w-12 text-muted-foreground group-focus-within:text-primary transition-colors">
+              <Search className="w-5 h-5" />
             </div>
             <input 
               type="text" 
-              placeholder="Nexus Search: Pesquisar ativos, BDRs, FIIs..." 
+              placeholder="Pesquisar ativos, BDRs, FIIs ou Stocks..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent border-none outline-none py-3 px-4 text-sm md:text-base text-foreground placeholder:text-muted-foreground/50 font-bold tracking-tight relative z-10"
+              className="flex-1 bg-transparent border-none outline-none py-3 pr-4 text-sm md:text-base text-foreground placeholder:text-muted-foreground/40 font-semibold tracking-tight"
             />
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-secondary border border-border rounded-xl text-[10px] font-black text-muted-foreground uppercase italic opacity-40 group-hover:opacity-100 transition-opacity">
-              <span>⌘ K</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-secondary border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase opacity-40 group-hover:opacity-100 transition-opacity mr-2">
+              <span className="text-xs">⌘</span>
+              <span>K</span>
             </div>
           </div>
           

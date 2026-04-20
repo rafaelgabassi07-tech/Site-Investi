@@ -183,7 +183,7 @@ export default function Layout() {
       <CommandCenter />
       {/* Header Estilo Nexus */}
       <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
-        scrolled ? 'bg-white/90 dark:bg-[#020617]/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 shadow-sm dark:shadow-2xl' : 'bg-transparent dark:bg-[#020617]'
+        scrolled ? 'bg-white dark:bg-[#020617] border-b border-border shadow-md' : 'bg-white dark:bg-[#020617]'
       }`}>
         <div className="py-2.5 md:py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -209,17 +209,17 @@ export default function Layout() {
                     <div key={item.label} className="relative group/nav z-[200]">
                       {item.children ? (
                         <>
-                          <button className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-white rounded-lg transition-colors">
+                          <button className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground rounded-lg transition-colors">
                             {item.label}
                             <ChevronDown className="w-3 h-3 opacity-50 group-hover/nav:rotate-180 transition-transform duration-300" />
                           </button>
                           <div className="absolute top-full left-0 pt-2 w-64 opacity-0 translate-y-2 pointer-events-none group-hover/nav:opacity-100 group-hover/nav:translate-y-0 group-hover/nav:pointer-events-auto transition-all duration-300">
-                            <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col gap-1 backdrop-blur-3xl">
+                            <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col gap-1">
                               {item.children.map(child => (
                                 <Link 
                                   key={child.label}
                                   to={child.to}
-                                  className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all"
                                 >
                                   <child.icon className="w-4 h-4 text-blue-500 shrink-0" />
                                   {child.label}
@@ -231,7 +231,7 @@ export default function Layout() {
                       ) : (
                         <Link 
                           to={item.to!}
-                          className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-white rounded-lg transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground rounded-lg transition-colors"
                         >
                           {item.label}
                         </Link>
@@ -243,24 +243,17 @@ export default function Layout() {
 
             {/* Actions */}
             <div className="flex items-center gap-2 md:gap-4 ml-auto">
-              {/* Search Bar (Desktop) */}
               <div className="hidden lg:block relative">
-                <form onSubmit={handleSearch} className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all duration-300 group">
-                  <div className="relative">
-                    <Search className="icon-sm text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse opacity-0 group-focus-within:opacity-100" />
-                  </div>
+                <form onSubmit={handleSearch} className="flex items-center gap-2 px-4 py-2 bg-secondary border border-border rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-300 group">
+                  <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <input 
                     type="text" 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    placeholder="Nexus Search..." 
-                    className="bg-transparent border-none outline-none text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-500 w-40 xl:w-56"
+                    placeholder="Busca Inteligente..." 
+                    className="bg-transparent border-none outline-none text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 w-48 xl:w-64"
                   />
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-background/50 border border-border rounded text-[9px] font-black text-muted-foreground uppercase italic opacity-40 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[10px]">⌘</span>K
-                  </div>
                 </form>
 
                 <AnimatePresence>
@@ -269,7 +262,7 @@ export default function Layout() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                      className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden"
                     >
                       <div className="max-h-[240px] overflow-y-auto no-scrollbar">
                         {suggestions.map((s) => (
@@ -443,7 +436,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation Bar (Mobile) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#020617]/90 backdrop-blur-2xl border-t border-white/5 z-[100] md:hidden h-[72px] pb-safe flex items-center">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#020617] border-t border-slate-200 dark:border-white/5 z-[100] md:hidden h-[72px] pb-safe flex items-center">
         <div className="flex items-center justify-around w-full px-2">
           <Link to="/" className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 ${location.pathname === '/' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}>
             <LayoutDashboard className={`icon-md ${location.pathname === '/' ? 'stroke-[2.5]' : 'stroke-2'}`} />

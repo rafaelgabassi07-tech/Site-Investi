@@ -13,42 +13,41 @@ interface StatCardProps {
 
 export function StatCard({ label, value, icon: Icon, color, trend, trendIcon: TrendIcon, delay = 0 }: StatCardProps) {
   const colorMap: Record<string, string> = {
-    blue: 'blue',
-    emerald: 'emerald',
-    indigo: 'indigo',
-    orange: 'orange',
-    purple: 'purple',
-    slate: 'slate',
-    red: 'red'
+    blue: 'text-primary bg-primary/5 border-primary/10',
+    emerald: 'text-emerald-600 bg-emerald-500/5 border-emerald-500/10',
+    indigo: 'text-indigo-600 bg-indigo-500/5 border-indigo-500/10',
+    orange: 'text-orange-600 bg-orange-500/5 border-orange-500/10',
+    purple: 'text-purple-600 bg-purple-500/5 border-purple-500/10',
+    slate: 'text-slate-600 bg-slate-500/5 border-slate-500/10',
+    red: 'text-red-600 bg-red-500/5 border-red-500/10'
   };
 
-  const c = colorMap[color] || 'blue';
+  const styleClass = colorMap[color] || colorMap.blue;
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay }}
-      className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6 relative group overflow-hidden shadow-lg"
+      className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300"
     >
-      <div className={`absolute top-0 right-0 w-32 h-32 bg-${c}-600/5 blur-[50px] -z-10 group-hover:bg-${c}-600/10 transition-all duration-500`} />
-      
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-slate-400">{label}</p>
-        <div className={`w-10 h-10 bg-${c}-500/10 rounded-xl flex items-center justify-center text-${c}-400`}>
-          <Icon size={20} />
+      <div className="flex items-start justify-between mb-4">
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">{label}</p>
+          <h3 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+            {value}
+          </h3>
+        </div>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${styleClass}`}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
 
-      <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">
-        {value}
-      </h3>
-
       {trend && (
-        <div className={`flex items-center gap-1.5 text-sm font-medium ${c === 'emerald' ? 'text-emerald-400' : c === 'red' ? 'text-red-400' : 'text-slate-400'}`}>
-          {TrendIcon && <TrendIcon size={16} />}
-          <span>{trend}</span>
+        <div className={`flex items-center gap-1 text-xs font-bold ${color === 'emerald' ? 'text-emerald-600' : color === 'red' ? 'text-red-600' : 'text-muted-foreground'}`}>
+          {TrendIcon && <TrendIcon className="w-3.5 h-3.5" />}
+          <span className="uppercase tracking-widest">{trend}</span>
         </div>
       )}
     </motion.div>

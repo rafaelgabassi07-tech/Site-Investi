@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Briefcase, ChevronDown } from 'lucide-react';

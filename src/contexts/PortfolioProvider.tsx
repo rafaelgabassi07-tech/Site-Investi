@@ -16,7 +16,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [quotaHistory, setQuotaHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingDividends, setSyncingDividends] = useState(false);
-  const [lastSyncRef] = useState(React.useRef<number>(0));
+  const lastSyncRef = React.useRef<number>(0);
 
   const loadDividendsFromCloud = useCallback(loadDividendsFromCloudDeclaration, []);
 
