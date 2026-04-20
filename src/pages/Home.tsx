@@ -242,7 +242,7 @@ export default function Home() {
               </div>
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-sm transition-all duration-500 font-bold ${ (portfolioStats.change || 0) >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
                  <span className="text-xs uppercase tracking-widest italic">
-                   {showValues ? `${(portfolioStats.change || 0) >= 0 ? '+' : ''}${formatNumber(portfolioStats.change || 0)}% All-time` : '•••%'}
+                   {showValues ? `${(portfolioStats.change || 0) >= 0 ? '+' : ''}${formatNumber(portfolioStats.change || 0)}% Histórico` : '•••%'}
                  </span>
                  {(portfolioStats.change || 0) >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
               </div>
@@ -339,25 +339,32 @@ export default function Home() {
                 </div>
               ) : (
                 [...(rankings['ACAO'] || []), ...(rankings['FII'] || [])]
-                  .sort((a, b) => (b.dy || 0) - (a.dy || 0))
+                  .sort((a, b) => {
+                    const dyA = parseFloat((a.raw?.dividendYield || a.value || '0').toString().replace('%', '').replace(',', '.')) || 0;
+                    const dyB = parseFloat((b.raw?.dividendYield || b.value || '0').toString().replace('%', '').replace(',', '.')) || 0;
+                    return dyB - dyA;
+                  })
                   .slice(0, 4)
-                  .map((item, idx) => (
-                    <Link key={idx} to={`/asset/${item.ticker}`} className="flex items-center justify-between p-5 px-6 hover:bg-secondary transition-colors group/item">
-                      <div className="flex items-center gap-4">
+                  .map((item, idx) => {
+                    const dyValue = parseFloat((item.raw?.dividendYield || item.value || '0').toString().replace('%', '').replace(',', '.')) || 0;
+                    return (
+                    <Link key={idx} to={`/asset/${item.ticker}`} className="flex items-center justify-between p-5 px-6 hover:bg-secondary transition-colors group/item relative">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-4 relative z-10">
                         <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center border border-border text-muted-foreground group-hover/item:text-blue-500 group-hover/item:border-blue-500/20 transition-all shadow-inner">
                           {item.type === 'ACAO' ? <TrendingUp className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                         </div>
                         <div>
-                          <span className="nexus-title text-sm group-hover:text-blue-400 block">{item.ticker}</span>
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{item.name}</span>
+                          <span className="nexus-title text-sm group-hover/item:text-blue-400 block transition-colors">{item.ticker}</span>
+                          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block truncate max-w-[120px] sm:max-w-xs">{item.name}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black text-emerald-500 italic uppercase">DY {formatNumber(item.dy || 0)}%</p>
-                        <ChevronRight className="w-3 h-3 text-muted-foreground float-right group-hover/item:text-foreground group-hover/item:translate-x-1 transition-all mt-1" />
+                      <div className="text-right relative z-10">
+                        <p className="text-[12px] font-black text-emerald-500 italic uppercase">DY {formatNumber(dyValue)}%</p>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground float-right group-hover/item:text-foreground group-hover/item:translate-x-1 transition-all mt-1" />
                       </div>
                     </Link>
-                  ))
+                  )})
               )}
            </div>
         </section>

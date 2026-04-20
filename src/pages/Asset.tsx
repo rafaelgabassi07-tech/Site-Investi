@@ -22,7 +22,7 @@ export default function Asset() {
   const [isFavorite, setIsFavorite] = useState(false);
 
   const handleGoBack = () => {
-    if (window.history.state && window.history.state.idx > 0) {
+    if (window.history.length > 2 || (window.history.state && window.history.state.idx > 0)) {
       navigate(-1);
     } else {
       navigate('/');

@@ -203,11 +203,11 @@ export default function Profitability() {
                     dataKey="month" 
                     stroke="#475569" 
                     fontSize={10} 
-                    fontWeight="bold"
+                    fontWeight="700"
                     tickLine={false} 
                     axisLine={false} 
                     dy={10}
-                    tickFormatter={(val, idx) => idx % 2 === 0 ? val.toUpperCase() : ''}
+                    tickFormatter={(val) => val.toUpperCase()}
                     tick={{ fill: '#64748b' }}
                   />
                   <YAxis 

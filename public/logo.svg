@@ -1,33 +1,23 @@
 <svg width="512" height="512" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100" height="100" fill="#020617"/>
+  <rect width="100" height="100" rx="20" fill="#020617"/>
   <defs>
-    <linearGradient id="nexusMetal" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f8fafc" />
-      <stop offset="25%" stop-color="#94a3b8" />
-      <stop offset="50%" stop-color="#f1f5f9" />
-      <stop offset="75%" stop-color="#475569" />
-      <stop offset="100%" stop-color="#0f172a" />
+    <linearGradient id="metalN" x1="0" y1="0" x2="0" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" /> 
+      <stop offset="50%" stop-color="#94a3b8" /> 
+      <stop offset="100%" stop-color="#475569" /> 
     </linearGradient>
-    
-    <linearGradient id="nexusAccent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2563eb" />
-      <stop offset="100%" stop-color="#06b6d4" />
-    </linearGradient>
-
-    <filter id="nexusGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="2" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
   </defs>
-
-  <g transform="translate(5, 2) scale(0.9)">
-    <g stroke-linejoin="round" stroke-linecap="round" filter="url(#nexusGlow)">
-      <path d="M25 15 L40 15 L40 60 L25 75 Z" fill="url(#nexusMetal)" stroke="url(#nexusAccent)" stroke-width="0.5"/>
-      <path d="M40 15 L75 70 L75 75 L60 75 L25 20 L25 15 Z" fill="url(#nexusMetal)" opacity="0.95" stroke="url(#nexusAccent)" stroke-width="0.5"/>
-      <path d="M60 15 L75 15 L75 75 L60 30 Z" fill="url(#nexusMetal)" stroke="url(#nexusAccent)" stroke-width="0.5"/>
-    </g>
-    <text x="50" y="92" text-anchor="middle" fill="url(#nexusAccent)" font-size="12" font-weight="900" letter-spacing="0.1em" font-family="sans-serif" font-style="italic">INVEST</text>
-    <circle cx="25" cy="15" r="1.5" fill="#2563eb"/>
-    <circle cx="75" cy="75" r="1.5" fill="#06b6d4"/>
-  </g>
+  <path d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" fill="url(#metalN)"/>
+  <text 
+    x="50" y="93" 
+    text-anchor="middle" 
+    fill="#94a3b8" 
+    font-size="10" 
+    font-weight="900" 
+    letter-spacing="0.1em" 
+    font-family="sans-serif"
+    font-style="italic"
+  >
+    INVEST
+  </text>
 </svg>

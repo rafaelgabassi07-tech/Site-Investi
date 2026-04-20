@@ -1,3 +1,4 @@
+import React, { useState, useEffect, Suspense } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -30,7 +31,6 @@ import {
   Moon
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useState, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -86,6 +86,19 @@ export default function Layout() {
     navigate('/login');
   };
 
+  const handleGoBack = () => {
+    if (window.history.length > 2 || (window.history.state && window.history.state.idx > 0)) {
+      navigate(-1);
+    } else {
+      const parts = location.pathname.split('/').filter(Boolean);
+      if (parts.length > 1) {
+        navigate(`/${parts[0]}`);
+      } else {
+        navigate('/');
+      }
+    }
+  };
+
   const navItems = [
     { 
       label: 'Ideias', 
@@ -114,7 +127,7 @@ export default function Layout() {
         { label: 'Busca Avançada', to: '/screener', icon: Filter },
         { label: 'Minha Carteira', to: '/portfolio', icon: Briefcase },
         { label: 'Calculadoras', to: '/calculators', icon: BarChart3 },
-        { label: 'Imposto de Renda', to: '/taxes', icon: Shield },
+        { label: 'Nexus IA', to: '/nexus-ia', icon: Zap },
       ]
     },
     { label: 'Notícias', to: '/news', icon: Newspaper },
@@ -179,7 +192,7 @@ export default function Layout() {
                 <div className="flex items-center gap-3">
                   {location.pathname !== '/' && (
                     <button 
-                      onClick={() => navigate(-1)}
+                      onClick={handleGoBack}
                       className="p-2 sm:p-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all mr-2"
                       title="Voltar"
                     >
@@ -405,15 +418,24 @@ export default function Layout() {
         <div className="max-w-7xl mx-auto px-2 md:px-4">
           <AnimatePresence mode="wait">
             <motion.div
-              key={location.pathname.startsWith('/portfolio') ? 'portfolio-section' : location.pathname}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              key={location.pathname}
+              initial={{ opacity: 0, filter: 'blur(4px)', scale: 0.98 }}
+              animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+              exit={{ opacity: 0, filter: 'blur(4px)', scale: 0.98 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
               className="origin-center"
             >
               <ErrorBoundary>
-                <Outlet />
+                <Suspense fallback={
+                  <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 opacity-50">
+                    <div className="w-8 h-8 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      Nexus Sync...
+                    </span>
+                  </div>
+                }>
+                  <Outlet />
+                </Suspense>
               </ErrorBoundary>
             </motion.div>
           </AnimatePresence>

@@ -68,12 +68,14 @@ export function NewsWidget({ limit = 3, compact = false }: NewsWidgetProps) {
         </div>
         {analysis && !compact && (
           <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${
-            analysis.sentiment === 'Bullish' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
-            analysis.sentiment === 'Bearish' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+            ['Bullish', 'Otimista'].includes(analysis.sentiment) ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+            ['Bearish', 'Pessimista'].includes(analysis.sentiment) ? 'bg-red-500/10 border-red-500/20 text-red-500' :
             'bg-slate-500/10 border-slate-500/20 text-slate-400'
           }`}>
             <Brain size={12} className="animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-widest">{analysis.sentiment}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">
+              {analysis.sentiment === 'Bullish' ? 'Otimista' : analysis.sentiment === 'Bearish' ? 'Pessimista' : analysis.sentiment}
+            </span>
           </div>
         )}
       </div>

@@ -74,10 +74,10 @@ export default function Search() {
   };
 
   const navItems = [
-    { label: 'Ações BR', icon: TrendingUp, color: 'text-blue-500', active: 'bg-blue-600/20 border-blue-500/50', query: 'Ações BR' },
-    { label: 'FIIs', icon: Layers, color: 'text-emerald-500', active: 'bg-emerald-600/20 border-emerald-500/50', query: 'FIIs' },
-    { label: 'Stocks', icon: Globe, color: 'text-cyan-500', active: 'bg-cyan-600/20 border-cyan-500/50', query: 'Stocks' },
-    { label: 'BDRs', icon: Activity, color: 'text-purple-500', active: 'bg-purple-600/20 border-purple-500/50', query: 'BDRs' },
+    { label: 'Ações BR', icon: TrendingUp, color: 'text-blue-500', active: 'bg-blue-600/20 border-blue-500/50', query: 'ações' },
+    { label: 'FIIs', icon: Layers, color: 'text-emerald-500', active: 'bg-emerald-600/20 border-emerald-500/50', query: 'fiis' },
+    { label: 'Stocks', icon: Globe, color: 'text-cyan-500', active: 'bg-cyan-600/20 border-cyan-500/50', query: 'stocks' },
+    { label: 'BDRs', icon: Activity, color: 'text-purple-500', active: 'bg-purple-600/20 border-purple-500/50', query: 'bdrs' },
   ];
 
   return (

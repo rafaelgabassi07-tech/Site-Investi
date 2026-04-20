@@ -1,22 +1,16 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { Suspense } from 'react';
+import { Outlet } from 'react-router-dom';
 
 export default function PortfolioLayout() {
-  const location = useLocation();
-
   return (
     <div className="section-spacing space-y-4">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
-        >
-          <Outlet />
-        </motion.div>
-      </AnimatePresence>
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center min-h-[30vh] gap-4 opacity-50">
+          <div className="w-8 h-8 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
+        </div>
+      }>
+        <Outlet />
+      </Suspense>
     </div>
   );
 }

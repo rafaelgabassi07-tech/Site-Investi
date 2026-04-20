@@ -126,7 +126,7 @@ export default function AssetAnalysis() {
   const [loading, setLoading] = useState(true);
 
   const handleGoBack = () => {
-    if (window.history.state && window.history.state.idx > 0) {
+    if (window.history.length > 2 || (window.history.state && window.history.state.idx > 0)) {
       navigate(-1);
     } else {
       navigate('/portfolio/resumo');

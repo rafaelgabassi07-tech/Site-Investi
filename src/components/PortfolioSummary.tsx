@@ -1,6 +1,6 @@
 import { usePortfolio } from '../hooks/usePortfolio';
 import { Link } from 'react-router-dom';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar, ReferenceLine } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar, ReferenceLine, ComposedChart, Line } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, PieChart as PieIcon, Calendar, BarChart3, ArrowUpRight, ArrowDownRight, Target, Briefcase, Layers, Cpu, Activity } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
@@ -52,6 +52,53 @@ export function PortfolioSummary() {
   }, 0);
   const dividendYield = currentTotalValue > 0 ? (totalDividends / currentTotalValue) * 100 : 0;
 
+  const [timeFilter, setTimeFilter] = useState<'1M' | '6M' | '1Y' | 'ALL'>('ALL');
+
+  const filteredQuotaHistory = useMemo(() => {
+    if (!quotaHistory || !quotaHistory.length) return [];
+    
+    const sorted = [...quotaHistory].sort((a,b) => a.date.localeCompare(b.date));
+    
+    if (timeFilter === 'ALL') return sorted;
+    
+    // We compare strings like '2023-10-01'. Let's calculate the cutoff date string.
+    const now = new Date();
+    const months = timeFilter === '1M' ? 1 : timeFilter === '6M' ? 6 : 12;
+    now.setMonth(now.getMonth() - months);
+    
+    const cutoffDateStr = now.toISOString().split('T')[0];
+    
+    let lastBeforeIndex = -1;
+    for (let i = 0; i < sorted.length; i++) {
+       if (sorted[i].date < cutoffDateStr) {
+           lastBeforeIndex = i;
+       } else {
+           break;
+       }
+    }
+    
+    const filtered = sorted.filter(q => q.date >= cutoffDateStr);
+    
+    if (lastBeforeIndex >= 0 && (filtered.length === 0 || filtered[0].date !== cutoffDateStr)) {
+       // Insert a dummy point exactly at cutoff with the previous known values, so the chart line continues seamlessly
+       filtered.unshift({
+           ...sorted[lastBeforeIndex],
+           date: cutoffDateStr
+       });
+    }
+    
+    // Always ensure the current day is in the chart to show a flat line continuing up to today
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (filtered.length > 0 && filtered[filtered.length - 1].date.split('T')[0] < todayStr) {
+        filtered.push({
+           ...filtered[filtered.length - 1],
+           date: todayStr
+        });
+    }
+
+    return filtered;
+  }, [quotaHistory, timeFilter]);
+
   const allocationData = useMemo(() => {
     return portfolio.reduce((acc: any[], item) => {
       const existing = acc.find(a => a.name === item.assetType);
@@ -88,82 +135,82 @@ export function PortfolioSummary() {
         </div>
         <div className="flex items-center gap-3">
             <div className="px-3 py-1 bg-secondary border border-border rounded-lg text-[9px] font-bold text-muted-foreground uppercase italic tracking-widest">
-              Live Telemetry
+              Telemetria Viva
             </div>
             <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/10 rounded-lg text-[9px] font-bold text-emerald-500 uppercase italic tracking-widest">
-              Optimized
+              Otimizado
             </div>
         </div>
       </motion.div>
 
-      {/* Top Cards - Investidor10 Style */}
-      <div className="nexus-grid">
-        <div className="nexus-card">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity dark:text-white text-slate-900">
-            <Briefcase size={64} />
+      {/* Top Cards - Formal & Professional */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-blue-500/30 transition-all">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+              <Briefcase className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Patrimônio Total</span>
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <Briefcase className="w-3 h-3 text-slate-500" />
-            <span className="nexus-label">Patrimônio Total</span>
-          </div>
-          <p className="nexus-hero mb-2 tracking-tighter mask-value">
+          <p className="text-2xl font-display font-black text-white tracking-tighter mask-value">
             {showValues ? formatNumber(currentTotalValue, { style: 'currency' }) : 'R$ ••••••'}
           </p>
-          <div className="flex items-center gap-2 mask-value">
-            <span className="nexus-label opacity-60">Custo: {showValues ? formatNumber(totalInvested, { style: 'currency' }) : '••••••'}</span>
-            <div className="w-1 h-1 bg-slate-800 rounded-full" />
-            <span className="nexus-label text-blue-500/60">{portfolio.length} ATIVOS</span>
+          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{portfolio.length} ATIVOS</span>
+            <span className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest">Nexus Verified</span>
           </div>
         </div>
 
-        <div className="nexus-card group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity dark:text-white text-slate-900">
-            <TrendingUp size={64} />
+        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Lucro Total</span>
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-3 h-3 text-slate-500" />
-            <span className="nexus-label">Rentabilidade</span>
-          </div>
-          <p className={`nexus-hero mb-2 tracking-tighter mask-value ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-            {showValues ? `${totalProfit >= 0 ? '+' : ''}${formatNumber(totalProfitPercentage)}%` : '•••%'}
+          <p className={`text-2xl font-display font-black tracking-tighter mask-value ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+            {showValues ? formatNumber(totalProfit, { style: 'currency' }) : 'R$ •••••'}
           </p>
-          <div className="flex items-center gap-2 mask-value">
-            <span className={`nexus-label ${totalProfit >= 0 ? 'text-emerald-500/60' : 'text-red-500/60'}`}>
-              Lucro: {showValues ? formatNumber(totalProfit, { style: 'currency' }) : '••••••'}
+          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">RENTABILIDADE</span>
+            <span className={`text-[9px] font-black ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              {totalProfit >= 0 ? '+' : ''}{formatNumber(totalProfitPercentage)}%
             </span>
           </div>
         </div>
 
-        <div className="nexus-card group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity dark:text-white text-slate-900">
-            <Calendar size={64} />
+        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-amber-500/30 transition-all">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Dividendos</span>
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="w-3 h-3 text-slate-500" />
-            <span className="nexus-label">Proventos Acumulados</span>
-          </div>
-          <p className="nexus-hero mb-2 tracking-tighter mask-value">
+          <p className="text-2xl font-display font-black text-white tracking-tighter mask-value">
             {showValues ? formatNumber(totalDividends, { style: 'currency' }) : 'R$ ••••••'}
           </p>
-          <div className="flex items-center gap-2 mask-value">
-            <span className="nexus-label opacity-60">Yield On Cost: {showValues ? `${formatNumber(dividendYield)}%` : '•••%'}</span>
+          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">YIELD ON COST</span>
+            <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest">{formatNumber(dividendYield)}%</span>
           </div>
         </div>
 
-        <div className="nexus-card">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity dark:text-white text-slate-900">
-            <Target size={64} />
+        <div className="p-6 bg-slate-900 border border-white/5 rounded-xl relative overflow-hidden group hover:border-purple-500/30 transition-all">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
+              <Target className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Progresso</span>
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <Target className="w-3 h-3 text-slate-500" />
-            <span className="nexus-label">Progresso da Meta</span>
+          <div className="flex items-end justify-between mb-2">
+            <p className="text-2xl font-display font-black text-white tracking-tighter">
+              {Math.min(100, (currentTotalValue / 100000) * 100).toFixed(1)}%
+            </p>
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Meta: R$ 100K</span>
           </div>
-          <p className="nexus-hero mb-2">
-            {((currentTotalValue / 100000) * 100).toFixed(1)}%
-          </p>
-          <div className="w-full bg-slate-800 h-1 rounded-full mt-2 overflow-hidden">
+          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
             <div 
-              className="bg-blue-600 h-full transition-all duration-1000" 
+              className="bg-purple-500 h-full transition-all duration-1000 shadow-[0_0_10px_rgba(168,85,247,0.4)]" 
               style={{ width: `${Math.min(100, (currentTotalValue / 100000) * 100)}%` }} 
             />
           </div>
@@ -265,12 +312,16 @@ export function PortfolioSummary() {
                 <XAxis 
                   dataKey="date" 
                   stroke="#475569" 
-                  fontSize={9} 
-                  fontWeight="900"
+                  fontSize={8} 
+                  fontWeight="700"
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(val) => (typeof val === 'string' ? val.split('-')[1] : '')} 
-                  className="uppercase italic"
+                  tickFormatter={(val) => {
+                    const [y, m] = (val || '').split('-');
+                    if (!m) return '';
+                    const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+                    return `${months[parseInt(m) - 1]}/${y.slice(2)}`;
+                  }} 
                 />
                 <YAxis stroke="#475569" fontSize={9} hide />
                 <Tooltip 
@@ -315,23 +366,36 @@ export function PortfolioSummary() {
         {/* Performance Evolution */}
         <div id="evolucao" className="nexus-card">
           <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/5 blur-[60px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-600 border border-blue-600/20">
                 <BarChart3 className="w-4 h-4" />
               </div>
               <span className="nexus-label">Evolução</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              {(['1M', '6M', '1Y', 'ALL'] as const).map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeFilter(tf)}
+                  className={`px-3 py-1 rounded-lg text-[10px] font-black tracking-widest transition-all ${
+                    timeFilter === tf 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
+                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {tf === 'ALL' ? 'TUDO' : tf}
+                </button>
+              ))}
+              <div className="flex items-center gap-1.5 ml-2">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                <span className="nexus-label text-foreground">Carteira</span>
+                <span className="text-[10px] uppercase font-black tracking-widest text-foreground">Live</span>
               </div>
             </div>
           </div>
-          <div className="h-56">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={quotaHistory} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <ComposedChart data={filteredQuotaHistory} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorPatrimony" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -346,38 +410,55 @@ export function PortfolioSummary() {
                 <XAxis 
                   dataKey="date" 
                   stroke="#475569" 
-                  fontSize={9} 
-                  fontWeight="900"
+                  fontSize={8} 
+                  fontWeight="700"
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(val) => (typeof val === 'string' ? val.split('-')[1] : '')}
-                  className="uppercase italic"
+                  tickFormatter={(val) => {
+                    const date = new Date(val);
+                    if (isNaN(date.getTime())) return '';
+                    const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+                    return `${months[date.getMonth()]}/${date.getFullYear().toString().slice(2)}`;
+                  }}
                 />
                 <YAxis stroke="#475569" fontSize={9} hide />
                 <Tooltip 
+                  cursor={{ fill: 'rgba(59, 130, 246, 0.05)', radius: 8 }}
                   content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-popover/95 border border-border p-3 rounded-2xl shadow-2xl backdrop-blur-3xl">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">Patrimônio</p>
-                          <p className="text-sm font-black text-blue-500 italic">{formatNumber(payload[0].value, { style: 'currency' })}</p>
+                        <div className="bg-popover/95 border border-border p-3 rounded-2xl shadow-2xl backdrop-blur-3xl space-y-2">
+                          <div>
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">Patrimônio</p>
+                            <p className="text-sm font-black text-blue-500 italic">{formatNumber(payload.find((p: any) => p.dataKey === 'totalPatrimony')?.value || 0, { style: 'currency' })}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">Custo Investido</p>
+                            <p className="text-xs font-black text-slate-400 italic">{formatNumber(payload.find((p: any) => p.dataKey === 'totalInvested')?.value || 0, { style: 'currency' })}</p>
+                          </div>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <Area 
+                <Bar 
+                  dataKey="totalInvested" 
+                  fill="#1e293b" 
+                  radius={[6, 6, 0, 0]} 
+                  animationDuration={1500}
+                />
+                <Line 
                   type="monotone" 
                   dataKey="totalPatrimony" 
                   stroke="#3b82f6" 
                   strokeWidth={3} 
-                  fillOpacity={1} 
-                  fill="url(#colorPatrimony)" 
+                  dot={false}
+                  activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
                   filter="url(#evolutionGlow)"
                   animationDuration={2000}
                 />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-6 p-4 bg-secondary/50 border border-border rounded-2xl flex items-center justify-between group/perf">
@@ -392,63 +473,74 @@ export function PortfolioSummary() {
         </div>
       </div>
 
-      {/* Top Assets Insight */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="nexus-card bg-emerald-500/[0.02] border-emerald-500/10">
-          <div className="flex items-center gap-2 mb-4">
-            <ArrowUpRight className="w-3 h-3 text-emerald-500" />
-            <span className="nexus-label text-emerald-500 italic">Top 3 Performance</span>
+      {/* Performance Highlights - Combined & Compact */}
+      <div className="pb-12">
+        <div className="bg-slate-900 border border-white/5 rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-blue-500" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Movimentações de Performance</h3>
+            </div>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Os 3 Melhores e 3 Piores</span>
           </div>
-          <div className="space-y-3">
-            {portfolio.length > 0 ? (
-              [...portfolio]
-                .sort((a, b) => (b.profitPercentage || 0) - (a.profitPercentage || 0))
-                .slice(0, 3)
-                .map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/10 group hover:border-emerald-500/30 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center font-black text-[10px] text-emerald-500 italic">
-                        {item.ticker.slice(0, 2)}
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/5">
+            {/* Winners */}
+            <div className="p-4 space-y-1">
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Líderes</span>
+              </div>
+              {portfolio.length > 0 ? (
+                [...portfolio]
+                  .sort((a, b) => (b.profitPercentage || 0) - (a.profitPercentage || 0))
+                  .slice(0, 3)
+                  .map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02] transition-colors group">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-black text-white uppercase group-hover:text-blue-500 transition-colors">{item.ticker}</span>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{item.assetType}</span>
                       </div>
-                      <span className="text-xs font-black text-foreground uppercase italic">{item.ticker}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs font-black text-emerald-500">+{formatNumber(item.profitPercentage || 0)}%</span>
+                        <span className="text-[9px] font-medium text-slate-500 mask-value">
+                          {showValues ? `+${formatNumber(item.profit || 0, { style: 'currency' })}` : 'R$ •••••'}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-xs font-black text-emerald-500 italic">
-                      +{formatNumber(item.profitPercentage || 0)}%
-                    </span>
-                  </div>
-                ))
-            ) : (
-              <p className="text-[10px] text-slate-500 italic">Aguardando dados...</p>
-            )}
-          </div>
-        </div>
+                  ))
+              ) : (
+                <p className="text-[10px] text-slate-600 uppercase italic p-3">Nenhum dado disponível</p>
+              )}
+            </div>
 
-        <div className="nexus-card bg-red-500/[0.02] border-red-500/10">
-          <div className="flex items-center gap-2 mb-4">
-            <ArrowDownRight className="w-3 h-3 text-red-500" />
-            <span className="nexus-label text-red-500 italic">Menores Performances</span>
-          </div>
-          <div className="space-y-3">
-            {portfolio.length > 0 ? (
-              [...portfolio]
-                .sort((a, b) => (a.profitPercentage || 0) - (b.profitPercentage || 0))
-                .slice(0, 3)
-                .map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-red-500/5 rounded-xl border border-red-500/10 group hover:border-red-500/30 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center font-black text-[10px] text-red-500 italic">
-                        {item.ticker.slice(0, 2)}
+            {/* Losers */}
+            <div className="p-4 space-y-1">
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowDownRight className="w-3 h-3 text-red-500" />
+                <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Retardatários</span>
+              </div>
+              {portfolio.length > 0 ? (
+                [...portfolio]
+                  .sort((a, b) => (a.profitPercentage || 0) - (b.profitPercentage || 0))
+                  .slice(0, 3)
+                  .map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02] transition-colors group">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-black text-white uppercase group-hover:text-blue-500 transition-colors">{item.ticker}</span>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{item.assetType}</span>
                       </div>
-                      <span className="text-xs font-black text-foreground uppercase italic">{item.ticker}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs font-black text-red-500">{formatNumber(item.profitPercentage || 0)}%</span>
+                        <span className="text-[9px] font-medium text-slate-500 mask-value">
+                          {showValues ? `${formatNumber(item.profit || 0, { style: 'currency' })}` : 'R$ •••••'}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-xs font-black text-red-500 italic">
-                      {formatNumber(item.profitPercentage || 0)}%
-                    </span>
-                  </div>
-                ))
-            ) : (
-              <p className="text-[10px] text-slate-500 italic">Aguardando dados...</p>
-            )}
+                  ))
+              ) : (
+                <p className="text-[10px] text-slate-600 uppercase italic p-3">Nenhum dado disponível</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

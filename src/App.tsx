@@ -1,31 +1,35 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
-import Portfolio from './pages/Portfolio';
-import PortfolioSummaryPage from './pages/PortfolioSummaryPage';
-import Transactions from './pages/Transactions';
-import News from './pages/News';
-import Settings from './pages/Settings';
-import Login from './pages/Login';
-import Home from './pages/Home';
-import Search from './pages/Search';
-import Ranking from './pages/Ranking';
-import Screener from './pages/Screener';
-import Menu from './pages/Menu';
-import Dividends from './pages/Dividends';
-import Calculators from './pages/Calculators';
-import RecommendedPortfolios from './pages/RecommendedPortfolios';
-import Asset from './pages/Asset';
-import AssetAnalysis from './pages/AssetAnalysis';
-import FixedIncome from './pages/FixedIncome';
-import Compare from './pages/Compare';
-import Rebalance from './pages/Rebalance';
-import Taxes from './pages/Taxes';
-import About from './pages/About';
-import Profitability from './pages/Profitability';
-import Favorites from './pages/Favorites';
-import BeginnersGuide from './pages/BeginnersGuide';
+
+// Lazy loaded pages to optimize bundle size
+const Portfolio = lazy(() => import('./pages/Portfolio'));
+const PortfolioSummaryPage = lazy(() => import('./pages/PortfolioSummaryPage'));
+const Patrimony = lazy(() => import('./pages/Patrimony'));
+const Transactions = lazy(() => import('./pages/Transactions'));
+const News = lazy(() => import('./pages/News'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Login = lazy(() => import('./pages/Login'));
+const Home = lazy(() => import('./pages/Home'));
+const Search = lazy(() => import('./pages/Search'));
+const Ranking = lazy(() => import('./pages/Ranking'));
+const Screener = lazy(() => import('./pages/Screener'));
+const Menu = lazy(() => import('./pages/Menu'));
+const Dividends = lazy(() => import('./pages/Dividends'));
+const Calculators = lazy(() => import('./pages/Calculators'));
+const RecommendedPortfolios = lazy(() => import('./pages/RecommendedPortfolios'));
+const Asset = lazy(() => import('./pages/Asset'));
+const AssetAnalysis = lazy(() => import('./pages/AssetAnalysis'));
+const FixedIncome = lazy(() => import('./pages/FixedIncome'));
+const Compare = lazy(() => import('./pages/Compare'));
+const Rebalance = lazy(() => import('./pages/Rebalance'));
+const Taxes = lazy(() => import('./pages/Taxes'));
+const About = lazy(() => import('./pages/About'));
+const Profitability = lazy(() => import('./pages/Profitability'));
+const Favorites = lazy(() => import('./pages/Favorites'));
+const BeginnersGuide = lazy(() => import('./pages/BeginnersGuide'));
+const NexusIAPanel = lazy(() => import('./pages/NexusIAPanel'));
 
 import { PortfolioProvider } from './contexts/PortfolioProvider';
 import { PrivacyProvider } from './contexts/PrivacyContext';
@@ -107,47 +111,58 @@ export default function App() {
     <ThemeProvider defaultTheme="dark" storageKey="nexus-theme">
       <PrivacyProvider>
         <ErrorBoundary>
-          <Router>
-            <ScrollToTop />
-            <Routes>
-          <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-          <Route path="/" element={user ? <PortfolioProvider><Layout /></PortfolioProvider> : <Navigate to="/login" />}>
-            <Route index element={<Home />} />
-            
-            {/* Portfolio Section with Shared Layout */}
-            <Route path="portfolio" element={<PortfolioLayout />}>
-              <Route index element={<Portfolio />} />
-              <Route path="resumo" element={<PortfolioSummaryPage />} />
-              <Route path="lancamentos" element={<Transactions />} />
-              <Route path="proventos" element={<Dividends />} />
-              <Route path="rentabilidade" element={<Profitability />} />
+          <PortfolioProvider>
+            <Router>
+              <ScrollToTop />
+              <Routes>
+            <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+            <Route path="/" element={user ? <Layout /> : <Navigate to="/login" />}>
+              <Route index element={<Home />} />
+              
+              {/* Portfolio Section with Shared Layout */}
+              <Route path="portfolio" element={<PortfolioLayout />}>
+                <Route index element={<Portfolio />} />
+                <Route path="resumo" element={<PortfolioSummaryPage />} />
+                <Route path="patrimonio" element={<Patrimony />} />
+                <Route path="lancamentos" element={<Transactions />} />
+                <Route path="proventos" element={<Dividends />} />
+                <Route path="rentabilidade" element={<Profitability />} />
+              </Route>
+  
+              <Route path="search" element={<Search />} />
+              <Route path="ranking" element={<Ranking />} />
+              <Route path="screener" element={<Screener />} />
+              <Route path="menu" element={<Menu />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="news" element={<News />} />
+              <Route path="dividends" element={<Navigate to="/portfolio/proventos" replace />} />
+              <Route path="profitability" element={<Navigate to="/portfolio/rentabilidade" replace />} />
+              <Route path="calculators" element={<Calculators />} />
+              <Route path="recommended" element={<RecommendedPortfolios />} />
+              <Route path="asset/:ticker" element={<Asset />} />
+              <Route path="renda-fixa" element={<FixedIncome />} />
+              <Route path="compare" element={<Compare />} />
+              <Route path="rebalance" element={<Rebalance />} />
+              <Route path="taxes" element={<Taxes />} />
+              <Route path="about" element={<About />} />
+              <Route path="favorites" element={<Favorites />} />
+              <Route path="guide" element={<BeginnersGuide />} />
+              <Route path="nexus-ia" element={<NexusIAPanel />} />
             </Route>
-
-            <Route path="search" element={<Search />} />
-            <Route path="ranking" element={<Ranking />} />
-            <Route path="screener" element={<Screener />} />
-            <Route path="menu" element={<Menu />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="news" element={<News />} />
-            <Route path="dividends" element={<Navigate to="/portfolio/proventos" replace />} />
-            <Route path="profitability" element={<Navigate to="/portfolio/rentabilidade" replace />} />
-            <Route path="calculators" element={<Calculators />} />
-            <Route path="recommended" element={<RecommendedPortfolios />} />
-            <Route path="asset/:ticker" element={<Asset />} />
-            <Route path="renda-fixa" element={<FixedIncome />} />
-            <Route path="compare" element={<Compare />} />
-            <Route path="rebalance" element={<Rebalance />} />
-            <Route path="taxes" element={<Taxes />} />
-            <Route path="about" element={<About />} />
-            <Route path="favorites" element={<Favorites />} />
-            <Route path="guide" element={<BeginnersGuide />} />
-          </Route>
-          <Route 
-            path="/portfolio/analise/:ticker" 
-            element={user ? <PortfolioProvider><AssetAnalysis /></PortfolioProvider> : <Navigate to="/login" />} 
-          />
-        </Routes>
-          </Router>
+            <Route 
+              path="/portfolio/analise/:ticker" 
+              element={user ? <Suspense fallback={
+                <div className="flex flex-col items-center justify-center min-h-[100vh] bg-[#020617] gap-4">
+                  <div className="w-12 h-12 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+                    Analisando Ativo...
+                  </span>
+                </div>
+              }><AssetAnalysis /></Suspense> : <Navigate to="/login" />} 
+            />
+          </Routes>
+            </Router>
+          </PortfolioProvider>
         </ErrorBoundary>
       </PrivacyProvider>
     </ThemeProvider>

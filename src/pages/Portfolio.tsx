@@ -68,8 +68,8 @@ export default function Portfolio() {
     { 
       title: 'Detalhes do Patrimônio', 
       icon: Briefcase, 
-      to: '/portfolio/resumo', 
-      description: 'Análise aprofundada da sua evolução patrimonial.',
+      to: '/portfolio/patrimonio', 
+      description: 'Análise aprofundada da sua evolução patrimonial e alocação.',
       color: 'amber',
       bg: 'bg-amber-500/10',
       border: 'border-amber-500/20',
@@ -141,7 +141,7 @@ export default function Portfolio() {
               <div className="flex items-center gap-2">
                 <h3 className="nexus-title mb-1 group-hover:text-blue-400 transition-colors truncate">{item.title}</h3>
                 {item.isComingSoon && (
-                  <span className="text-[8px] px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded-full text-slate-400 font-black">SOON</span>
+                  <span className="text-[8px] px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded-full text-slate-400 font-black">EM BREVE</span>
                 )}
               </div>
               <p className="nexus-description opacity-70 group-hover:opacity-100 transition-opacity line-clamp-2">{item.description}</p>

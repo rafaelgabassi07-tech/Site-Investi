@@ -1902,12 +1902,12 @@ export class NexusEngine {
     try {
       const genericQuery = query.toLowerCase().trim();
       const genericMap: Record<string, string[]> = {
-        'ações': ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'BBAS3.SA', 'WEGE3.SA'],
-        'fiis': ['MXRF11.SA', 'HGLG11.SA', 'BTLG11.SA', 'CPTS11.SA', 'KNRI11.SA', 'VISC11.SA'],
-        'bdr': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA'],
-        'bdrs': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA'],
-        'stocks': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA'],
-        'cripto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD']
+        'ações': ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'BBAS3.SA', 'WEGE3.SA', 'ELET3.SA', 'ABEV3.SA', 'RENT3.SA', 'B3SA3.SA'],
+        'fiis': ['MXRF11.SA', 'HGLG11.SA', 'BTLG11.SA', 'CPTS11.SA', 'KNRI11.SA', 'VISC11.SA', 'XPLG11.SA', 'IRDM11.SA', 'BCFF11.SA', 'VRTA11.SA'],
+        'bdr': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA', 'META34.SA', 'NFLX34.SA'],
+        'bdrs': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA', 'META34.SA', 'NFLX34.SA'],
+        'stocks': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK-B', 'UNH', 'JNJ'],
+        'cripto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'DOT-USD']
       };
 
       if (genericMap[genericQuery]) {
@@ -1934,7 +1934,7 @@ export class NexusEngine {
       const searchQuery = isBrazilian ? `${query}.SA` : query;
       
       const result = await yahooFinance.search(searchQuery, {
-        quotesCount: 6,
+        quotesCount: 12,
         newsCount: 0
       });
       
@@ -1947,7 +1947,7 @@ export class NexusEngine {
       // If no results and we tried with .SA, try without .SA
       if (quotes.length === 0 && isBrazilian) {
         const fallbackResult = await yahooFinance.search(query, {
-          quotesCount: 6,
+          quotesCount: 12,
           newsCount: 0
         }) as any;
         

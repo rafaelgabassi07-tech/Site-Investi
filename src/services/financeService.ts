@@ -146,8 +146,41 @@ export const financeService = {
   },
 
   async analyzeNews(news: NewsItem[], ticker?: string): Promise<any> {
-    // Gemini removed due to quota limits, returning fallback
-    return { sentiment: "Neutral", score: 50, summary: "Análise de sentimentos indisponível no momento" };
+    if (!news || news.length === 0) return { sentiment: "Neutro", score: 50, summary: "Baixo volume de informações no radar para uma análise direcional." };
+    
+    // Algoritmo interno de NLP Heurística simplificada
+    const textualData = news.map(n => (n.title || '').toLowerCase()).join(' ');
+    
+    const bullishWords = ['alta', 'lucro', 'crescimento', 'dividendos', 'recorde', 'compra', 'positivo', 'avança', 'supera', 'dispara', 'otimismo', 'salto', 'aprovado'];
+    const bearishWords = ['queda', 'prejuízo', 'crise', 'venda', 'negativo', 'recua', 'perde', 'despenca', 'rebaixado', 'risco', 'pessimismo', 'investigação', 'cai'];
+    
+    let score = 50;
+    
+    bullishWords.forEach(w => { 
+      // Conta ocorrências simples
+      const matches = textualData.split(w).length - 1;
+      score += (matches * 10); 
+    });
+    
+    bearishWords.forEach(w => { 
+      const matches = textualData.split(w).length - 1;
+      score -= (matches * 10);
+    });
+    
+    score = Math.max(0, Math.min(100, score));
+    
+    let sentiment = 'Neutro';
+    let summary = 'Mercado lateralizado. As notícias indicam estabilidade e volume informacional neutro no momento.';
+    
+    if (score >= 65) {
+      sentiment = 'Otimista';
+      summary = 'Forte vetor de otimismo estrutural detectado. O fluxo de informações aponta crescimento ativo e dados sistêmicos favoráveis na rede.';
+    } else if (score <= 35) {
+      sentiment = 'Pessimista';
+      summary = 'Alerta direcional: Indicadores pessimistas detectados no fluxo matriz das notícias recentes, apontando turbulências no espectro.';
+    }
+    
+    return { sentiment, score, summary };
   },
 
   async getRanking(category: string, type: string = 'ACAO'): Promise<any[]> {

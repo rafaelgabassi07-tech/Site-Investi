@@ -8,7 +8,8 @@ export function PortfolioNav() {
     { label: 'Resumo', to: '/portfolio/resumo', icon: PieChart },
     { label: 'Proventos', to: '/portfolio/proventos', icon: DollarSign },
     { label: 'Rentabilidade', to: '/portfolio/rentabilidade', icon: TrendingUp },
-    { label: 'Patrimônio', to: '/portfolio', icon: List },
+    { label: 'Patrimônio', to: '/portfolio/patrimonio', icon: List },
+    { label: 'Gerenciar', to: '/portfolio', icon: List },
     { label: 'Lançamentos', to: '/portfolio/lancamentos', icon: History },
   ];
 

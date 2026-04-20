@@ -57,7 +57,7 @@ export function calculateAdvancedPortfolio(
   let totalQuotas = 1000; // Start with 1000 quotas
   let quotaValue = 1.0; // Initial quota value
   let previousPatrimony = 0;
-  const quotaHistory: { date: string; quotaValue: number; totalPatrimony: number }[] = [];
+  const quotaHistory: { date: string; quotaValue: number; totalPatrimony: number; totalInvested?: number }[] = [];
 
   // Helper to get or create tax month
   const getTaxMonth = (dateStr: string): TaxMonth => {
@@ -181,16 +181,19 @@ export function calculateAdvancedPortfolio(
 
       // Record TWR History
       let currentPatrimonyAfterTx = 0;
+      let currentInvestedAfterTx = 0;
       positions.forEach(p => {
         const priceAtTime = currentPrices[p.ticker] || p.averagePrice; 
         currentPatrimonyAfterTx += p.totalQuantity * priceAtTime;
+        currentInvestedAfterTx += p.totalInvested;
       });
       previousPatrimony = currentPatrimonyAfterTx;
 
       quotaHistory.push({
         date: tx.date,
         quotaValue,
-        totalPatrimony: currentPatrimonyAfterTx
+        totalPatrimony: currentPatrimonyAfterTx,
+        totalInvested: currentInvestedAfterTx
       });
     }
   }
@@ -238,16 +241,19 @@ export function calculateAdvancedPortfolio(
   const today = new Date().toISOString();
   if (quotaHistory.length > 0) {
     let todayPatrimony = 0;
+    let todayInvested = 0;
     positions.forEach(p => {
       const priceAtTime = currentPrices[p.ticker] || p.averagePrice; 
       todayPatrimony += p.totalQuantity * priceAtTime;
+      todayInvested += p.totalInvested;
     });
     
     if (quotaHistory[quotaHistory.length - 1].date.split('T')[0] !== today.split('T')[0]) {
       quotaHistory.push({
         date: today,
         quotaValue,
-        totalPatrimony: todayPatrimony
+        totalPatrimony: todayPatrimony,
+        totalInvested: todayInvested
       });
     }
   }

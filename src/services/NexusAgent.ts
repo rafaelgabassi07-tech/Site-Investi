@@ -38,114 +38,124 @@ class NexusDividendAgent {
     if (this.status.state === 'syncing' || this.status.state === 'analyzing') return;
     if (portfolio.length === 0) return;
 
-    this.updateStatus({ state: 'syncing', currentTask: 'Iniciando busca sincronizada...', progress: 0 });
+    this.updateStatus({ state: 'syncing', currentTask: 'Iniciando telemetria avançada...', progress: 0 });
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.warn('[Robot Agent] Usuário não logado. Sincronização em nuvem desativada.');
+        console.warn('[Nexus Brain] Usuário não logado. Sincronização em nuvem desativada.');
         this.updateStatus({ state: 'error', currentTask: 'Usuário não autenticado.', progress: 0 });
         return;
       }
 
-      console.log(`[Robot Agent] Iniciando varredura para ${portfolio.length} ativos...`);
+      console.log(`[Nexus Brain] Iniciando matriz de processamento paralelo para ${portfolio.length} ativos...`);
       const totalItems = portfolio.length;
       let completed = 0;
-      let totalFound = 0;
+      let totalInserted = 0;
       const anomalies: string[] = [];
 
-      for (const item of portfolio) {
-        this.updateStatus({ 
-          currentTask: `Sincronizando ${item.ticker}...`, 
-          progress: Math.floor((completed / totalItems) * 100) 
-        });
+      // 1. Puxa todo o cache de proventos do usuário em um única query para evitar sobrecarga no DB
+      this.updateStatus({ currentTask: 'Mapeando espectro de custódia na nuvem...', progress: 5 });
+      const { data: existingUserDivs, error: fetchError } = await supabase
+        .from('dividends')
+        .select('ticker, date')
+        .eq('user_id', user.id);
 
-        try {
-          // 1. Fetch from Multiple Sources via Nexus Engine
-          const divs = await financeService.getAssetDividends(item.ticker);
-          
-          if (divs && Array.isArray(divs) && divs.length > 0) {
-            console.log(`[Robot Agent] ${item.ticker}: Encontrados ${divs.length} proventos.`);
-            totalFound += divs.length;
+      if (fetchError) throw fetchError;
 
-            // Anomaly Check Logic
-            const lastYearDivs = divs.filter(d => {
-              const dDate = new Date(d.date || d.dataCom);
-              return dDate > new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-            });
+      const existingDivsMap = new Set(
+        (existingUserDivs || []).map(d => `${d.ticker}-${d.date.split('T')[0]}`)
+      );
 
-            if (lastYearDivs.length > 2) {
-              const amounts = lastYearDivs.map(d => typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount);
-              const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-              const latest = amounts[0];
-              
-              if (latest < avg * 0.4) {
-                anomalies.push(`${item.ticker}: Queda severa identificada (R$ ${latest.toFixed(2)} vs méd. R$ ${avg.toFixed(2)})`);
-              }
-            }
+      // 2. Busca de dados paralelizada em blocos controlados (Chunking / Concurrency Control)
+      const CHUNK_SIZE = 4; // Ajustável de acordo com o limite de conexões
+      const allNewDivsToInsert: any[] = [];
+
+      for (let i = 0; i < portfolio.length; i += CHUNK_SIZE) {
+        const chunk = portfolio.slice(i, i + CHUNK_SIZE);
+        
+        await Promise.all(chunk.map(async (item) => {
+          try {
+            const divs = await financeService.getAssetDividends(item.ticker);
             
-            const formattedDivs = divs.map(d => ({
-              user_id: user.id,
-              ticker: item.ticker.toUpperCase(),
-              type: d.type || (item.ticker.toUpperCase().endsWith('11') ? 'Rendimento' : 'Dividendo'),
-              date: d.date || d.dataCom,
-              amount: typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount,
-              is_future: new Date(d.paymentDate || d.date) > new Date()
-            })).filter(d => d.date && !isNaN(d.amount) && d.amount > 0);
+            if (divs && Array.isArray(divs) && divs.length > 0) {
+              // Anomaly Analysis (Heurística)
+              const lastYearDivs = divs.filter(d => {
+                const dDate = new Date(d.date || d.dataCom);
+                return dDate > new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+              });
 
-            // 2. Save to Supabase
-            for (const div of formattedDivs) {
-              const divDate = new Date(div.date);
-              const startOfDay = new Date(divDate);
-              startOfDay.setUTCHours(0,0,0,0);
-              const endOfDay = new Date(divDate);
-              endOfDay.setUTCHours(23,59,59,999);
-
-              const { data: existing, error: checkError } = await supabase.from('dividends')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('ticker', div.ticker)
-                .gte('date', startOfDay.toISOString())
-                .lte('date', endOfDay.toISOString())
-                .limit(1);
-              
-              if (checkError) {
-                console.error(`[Robot Agent] Falha ao verificar existência (${div.ticker}):`, checkError);
-                continue;
+              if (lastYearDivs.length > 2) {
+                const amounts = lastYearDivs.map(d => typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount);
+                const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+                const latest = amounts[0];
+                
+                if (latest < avg * 0.4) {
+                  anomalies.push(`${item.ticker}: Queda severa identificada (R$ ${latest.toFixed(2)} vs méd. R$ ${avg.toFixed(2)})`);
+                } else if (latest > avg * 1.5) {
+                  anomalies.push(`${item.ticker}: Salto explosivo de dividendos detectado! (R$ ${latest.toFixed(2)})`);
+                }
               }
+              
+              const formattedDivs = divs.map(d => {
+                const dateVal = d.date || d.dataCom;
+                return {
+                  user_id: user.id,
+                  ticker: item.ticker.toUpperCase(),
+                  type: d.type || (item.ticker.toUpperCase().endsWith('11') ? 'Rendimento' : 'Dividendo'),
+                  date: new Date(dateVal).toISOString(),
+                  amount: typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount,
+                  is_future: new Date(d.paymentDate || dateVal) > new Date()
+                };
+              }).filter(d => d.date && !isNaN(d.amount) && d.amount > 0);
 
-              if (!existing || existing.length === 0) {
-                const { error: insertError } = await supabase.from('dividends').insert(div);
-                if (insertError) {
-                  console.error(`[Robot Agent] Falha ao inserir:`, insertError);
-                } else {
-                  console.log(`[Robot Agent] Novo registro: ${div.ticker} - R$ ${div.amount}`);
+              // 3. Checagem em memória (O(1) lookups)
+              for (const div of formattedDivs) {
+                const datePart = div.date.split('T')[0];
+                const key = `${div.ticker}-${datePart}`;
+                
+                if (!existingDivsMap.has(key)) {
+                  allNewDivsToInsert.push(div);
+                  existingDivsMap.add(key); // Evita duplicatas locais entre a mesma execução
                 }
               }
             }
-          } else {
-            console.log(`[Robot Agent] ${item.ticker}: Nenhum provento recente encontrado.`);
+          } catch (err) {
+            console.error(`[Nexus Brain] Erro no nó de processamento ${item.ticker}:`, err);
+          } finally {
+            completed++;
+            this.updateStatus({ 
+              currentTask: `Sintetizando ${item.ticker}...`, 
+              progress: 10 + Math.floor((completed / totalItems) * 80) 
+            });
           }
-        } catch (err) {
-          console.error(`[Robot Agent] Erro ao processar ${item.ticker}:`, err);
-        }
+        }));
+      }
 
-        completed++;
+      // 4. Batch Insert
+      if (allNewDivsToInsert.length > 0) {
+        this.updateStatus({ currentTask: 'Consolidando base de dados central...', progress: 95 });
+        const { error: insertError } = await supabase.from('dividends').insert(allNewDivsToInsert);
+        if (insertError) {
+          console.error(`[Nexus Brain] Falha na compressão do Batch DB:`, insertError);
+        } else {
+          totalInserted = allNewDivsToInsert.length;
+          console.log(`[Nexus Brain] Propulsão concluída. ${totalInserted} novos nós inseridos.`);
+        }
       }
 
       this.updateStatus({ 
         state: 'complete', 
-        currentTask: `Sincronização concluída! ${totalFound} registros processados.${anomalies.length > 0 ? ` [!] Detectadas ${anomalies.length} anomalias.` : ''}`, 
+        currentTask: `Análise quântica concluída. ${totalInserted > 0 ? `+${totalInserted} registros adicionados.` : 'Tudo atualizado.'}${anomalies.length > 0 ? ` | ${anomalies.length} anomalias sistêmicas.` : ''}`, 
         progress: 100,
-        lastInsight: anomalies.length > 0 ? `Alerta: ${anomalies[0]}${anomalies.length > 1 ? ` (+${anomalies.length - 1})` : ''}` : undefined
+        lastInsight: anomalies.length > 0 ? `${anomalies[0]}` : 'Nenhuma anomalia crítica na malha.'
       });
       
-      // Auto-reset after a few seconds
-      setTimeout(() => this.updateStatus({ state: 'idle', currentTask: '' }), 5000);
+      setTimeout(() => this.updateStatus({ state: 'idle', currentTask: '' }), 6000);
 
     } catch (error) {
-      console.error('[Robot Agent] Erro crítico:', error);
-      this.updateStatus({ state: 'error', currentTask: 'Falha na operação do robô.', progress: 0 });
+      console.error('[Nexus Brain] Falha Crítica do Sistema Neural:', error);
+      this.updateStatus({ state: 'error', currentTask: 'Desalinhamento no banco de dados.', progress: 0 });
     }
   }
 }
