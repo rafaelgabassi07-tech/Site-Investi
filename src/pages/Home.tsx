@@ -15,7 +15,7 @@ import { usePortfolio } from '../hooks/usePortfolio';
 import { Logo } from '../components/ui/Logo';
 import { parseFinanceValue, formatNumber } from '../lib/utils';
 import { nexusAI } from '../services/nexusAIService';
-import { usePrivacy } from '../contexts/PrivacyContext';
+import { usePrivacy } from '../hooks/usePrivacy';
 
 export default function Home() {
   const { user } = useAuth();
@@ -209,8 +209,9 @@ export default function Home() {
       </header>
 
       {/* Main Content Area */}
-      <main className="px-3 space-y-6">
-        
+      <main className="px-3 md:px-0 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
         {/* Portfolio Summary Card - PREMIUM REDESIGN */}
         <section className="nexus-card">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/[0.03] via-transparent to-transparent pointer-events-none" />
@@ -360,7 +361,9 @@ export default function Home() {
               )}
            </div>
         </section>
+        </div> {/* End of lg:col-span-2 */}
 
+        <div className="space-y-6">
         {/* News Section */}
         <section className="nexus-card !p-0 overflow-hidden">
            <div className="p-5 border-b border-border flex items-center justify-between">
@@ -377,6 +380,8 @@ export default function Home() {
               <NewsWidget limit={4} compact />
            </div>
         </section>
+        </div> {/* End of lg:col-span-1 */}
+        </div> {/* End of grid grid-cols-1 lg:grid-cols-3 */}
 
         {/* Meus Recursos Section */}
         <section className="space-y-6 pt-4">

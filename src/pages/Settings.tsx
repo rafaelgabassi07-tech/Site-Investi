@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { useTheme } from '../hooks/useTheme';
 import { useState } from 'react';
 
-import { usePrivacy } from '../contexts/PrivacyContext';
+import { usePrivacy } from '../hooks/usePrivacy';
 
 export default function Settings() {
   const { user } = useAuth();

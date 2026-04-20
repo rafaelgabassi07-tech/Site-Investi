@@ -8,7 +8,7 @@ import { AssetIcon } from '../components/ui/AssetIcon';
 import { PortfolioNav } from '../components/PortfolioNav';
 import * as XLSX from 'xlsx';
 import { formatNumber } from '../lib/utils';
-import { usePrivacy } from '../contexts/PrivacyContext';
+import { usePrivacy } from '../hooks/usePrivacy';
 
 export default function Transactions() {
   const { transactions } = usePortfolio();

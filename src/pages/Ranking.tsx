@@ -208,25 +208,25 @@ export default function Ranking() {
                     >
                       <Link 
                         to={`/asset/${item.ticker}`}
-                        className="group bg-[#0f172a] border border-white/10 rounded-2xl p-6 transition-all duration-300 hover:border-blue-500/50 hover:bg-[#1e293b] flex flex-col gap-6 h-full"
+                        className="group card flex flex-col gap-6 h-full border border-white/5 hover:border-blue-500/30 transition-all p-5 md:p-6"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-blue-600/20 group-hover:border-blue-500/50 transition-all">
+                          <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900/40 flex items-center justify-center border border-white/10 group-hover:bg-blue-600/20 group-hover:border-blue-500/50 transition-all">
                              <AssetIcon assetType={selectedType as any} ticker={item.ticker} className="w-8 h-8" />
                           </div>
-                          <div className="flex flex-col gap-0.5">
-                            <h3 className="text-white text-xl font-display font-black tracking-tighter uppercase italic">{item.ticker}</h3>
-                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest truncate">{item.name}</p>
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <h3 className="text-white text-lg md:text-xl font-display font-black tracking-tighter uppercase italic truncate">{item.ticker}</h3>
+                            <p className="text-[10px] md:text-[11px] text-slate-400 font-bold uppercase tracking-widest truncate">{item.name}</p>
                           </div>
                         </div>
 
                         <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
-                           <div className="flex flex-col gap-1">
-                              <span className="text-white text-lg font-black italic">{item.value}</span>
-                              <span className="text-[10px] text-slate-500 uppercase tracking-widest italic">{item.subValue || 'Métrica'}</span>
+                           <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-white text-base md:text-lg font-black italic truncate">{item.value}</span>
+                              <span className="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-widest italic truncate">{item.subValue || 'Métrica'}</span>
                            </div>
-                           <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-blue-600 group-hover:border-blue-500 transition-all">
-                             <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
+                           <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10 group-hover:bg-blue-600 group-hover:border-blue-500 transition-all">
+                             <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 text-slate-400 group-hover:text-white transition-colors" />
                            </div>
                         </div>
                       </Link>

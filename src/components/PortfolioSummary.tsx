@@ -10,7 +10,7 @@ import { getHistoricalQuantity } from '../lib/portfolioCalc';
 import { nexusAI } from '../services/nexusAIService';
 
 import { formatNumber } from '../lib/utils';
-import { usePrivacy } from '../contexts/PrivacyContext';
+import { usePrivacy } from '../hooks/usePrivacy';
 
 export function PortfolioSummary() {
   const { portfolio, quotaHistory, transactions, dividends } = usePortfolio();

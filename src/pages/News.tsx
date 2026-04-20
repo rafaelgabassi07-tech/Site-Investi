@@ -133,7 +133,7 @@ export default function News() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {Array.isArray(filteredNews) && filteredNews.length > 0 ? filteredNews.map((item, index) => {
           const displayTitle = item.title;
           const displayLink = item.link;
@@ -146,59 +146,55 @@ export default function News() {
               href={displayLink}
               target="_blank"
               rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-slate-900/20 border border-white/5 rounded-xl md:rounded-2xl md:rounded-2xl group hover:border-blue-500/30 transition-all duration-700 flex flex-col relative overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] hover:shadow-blue-500/10"
+              transition={{ delay: Math.min(index * 0.05, 0.5) }}
+              className="card group flex flex-col hover:border-blue-500/30 overflow-hidden !rounded-2xl"
             >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10 group-hover:bg-blue-600/10 transition-all duration-1000" />
-              
               {item.thumbnail ? (
-                <div className="h-64 overflow-hidden relative">
+                <div className="h-40 overflow-hidden relative border-b border-white/5">
                   <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent z-10" />
                   <img
                     src={item.thumbnail.resolutions[0]?.url}
                     alt={displayTitle}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 grayscale-[20%] group-hover:grayscale-0"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute top-8 left-8 z-20">
-                    <span className="px-6 py-2.5 bg-blue-600/90 text-white text-[9px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-2xl border border-blue-400/30 backdrop-blur-xl italic">
+                  <div className="absolute top-4 left-4 z-20">
+                    <span className="px-3 py-1 bg-blue-600/90 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-xl border border-blue-400/30 backdrop-blur-xl">
                       {displaySource}
                     </span>
                   </div>
                 </div>
               ) : (
-                <div className="h-64 bg-slate-900/40 flex items-center justify-center relative overflow-hidden">
+                 <div className="h-40 bg-slate-900/40 flex items-center justify-center relative overflow-hidden border-b border-white/5">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
-                  <Newspaper className="w-24 h-24 text-slate-800 opacity-30" />
-                  <div className="absolute top-8 left-8 z-20">
-                    <span className="px-6 py-2.5 bg-blue-600/90 text-white text-[9px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-2xl border border-blue-400/30 backdrop-blur-xl italic">
+                  <Newspaper className="w-12 h-12 text-slate-800 opacity-50" />
+                  <div className="absolute top-4 left-4 z-20">
+                    <span className="px-3 py-1 bg-blue-600/90 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-xl border border-blue-400/30 backdrop-blur-xl">
                       {displaySource}
                     </span>
                   </div>
                 </div>
               )}
               
-              <div className="p-5 md:p-10 flex-1 flex flex-col pt-6 md:pt-6">
-                <div className="flex items-center gap-4 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-8 italic">
-                  <Clock className="text-blue-500 w-4 h-4" />
+              <div className="p-4 flex-1 flex flex-col">
+                <div className="flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-widest mb-3">
+                  <Clock className="text-blue-500 w-3 h-3" />
                   {formatDistanceToNow(displayDate, { addSuffix: true, locale: ptBR })}
                 </div>
                 
-                <h3 className="text-display-tiny text-slate-100 mb-8 line-clamp-3 uppercase italic tracking-tighter group-hover:text-white transition-colors duration-700 leading-[1.3] group-hover:underline decoration-blue-500/40 decoration-2 underline-offset-8">
+                <h3 className="text-sm font-bold text-slate-100 mb-4 line-clamp-3 group-hover:text-blue-400 transition-colors leading-snug">
                   {displayTitle}
                 </h3>
                 
-                <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-4 group/read">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-[0.3em] group-hover:text-slate-300 transition-colors duration-500 italic">Terminal Access</span>
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2 group/read">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-400 transition-colors">Acessar</span>
                   </div>
-                  <div className="w-14 h-14 bg-white/5 rounded-[1.25rem] flex items-center justify-center text-slate-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-700 group-hover:shadow-[0_15px_30px_rgba(37,99,235,0.4)] group-hover:scale-110 border border-white/5 group-hover:border-blue-400/40">
-                    <ArrowUpRight className="w-5 h-5" />
-                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-blue-500 transition-colors" />
                 </div>
               </div>
             </motion.a>

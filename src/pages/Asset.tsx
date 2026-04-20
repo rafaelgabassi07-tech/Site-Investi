@@ -217,12 +217,20 @@ export default function Asset() {
               <p className="text-label text-slate-400 uppercase">{results.name || 'Empresa'}</p>
             </div>
           </div>
-          <button 
-            onClick={toggleFavorite}
-            className={`w-12 h-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all border group ${isFavorite ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-800/50 border-slate-700'}`}
-          >
-            <Star className={`icon-md ${isFavorite ? 'text-amber-400 fill-amber-400' : 'text-slate-500 group-hover:text-amber-400 transition-colors'}`} />
-          </button>
+          <div className="flex gap-2">
+            <Link 
+              to="/portfolio"
+              className="h-12 px-5 rounded-xl flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/25 border border-blue-400/50"
+            >
+              + Carteira
+            </Link>
+            <button 
+              onClick={toggleFavorite}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all border group ${isFavorite ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-800/50 border-slate-700'}`}
+            >
+              <Star className={`icon-md ${isFavorite ? 'text-amber-400 fill-amber-400' : 'text-slate-500 group-hover:text-amber-400 transition-colors'}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -272,9 +280,9 @@ export default function Asset() {
                   <AreaChart data={history} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="60%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="0%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0.3}/>
+                        <stop offset="60%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0.1}/>
+                        <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0}/>
                       </linearGradient>
                       <filter id="chartGlowPremium" x="-20%" y="-20%" width="140%" height="140%">
                         <feGaussianBlur stdDeviation="8" result="blur" />
@@ -286,7 +294,7 @@ export default function Asset() {
                       dataKey="date" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#475569', fontSize: 10, fontWeight: 700 }} 
+                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} 
                       tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}
                       minTickGap={60}
                       dy={10}
@@ -296,16 +304,16 @@ export default function Asset() {
                       domain={['auto', 'auto']} 
                     />
                     <Tooltip 
-                      cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      cursor={{ stroke: isPositive ? '#10b981' : '#ef4444', strokeWidth: 1, strokeDasharray: '4 4' }}
                       contentStyle={{ 
                         backgroundColor: 'rgba(11, 15, 25, 0.98)', 
-                        border: '1px solid rgba(59, 130, 246, 0.2)', 
+                        border: `1px solid ${isPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`, 
                         borderRadius: '16px', 
                         backdropFilter: 'blur(20px)',
                         boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9)',
                         padding: '16px'
                       }}
-                      itemStyle={{ color: '#3b82f6', fontWeight: '900', textTransform: 'uppercase', fontSize: '13px' }}
+                      itemStyle={{ color: isPositive ? '#10b981' : '#ef4444', fontWeight: '900', textTransform: 'uppercase', fontSize: '13px' }}
                       labelStyle={{ color: '#64748b', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
                       labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
                       formatter={(val: number) => [formatNumber(val, { style: 'currency' }), 'VALOR DE FECHAMENTO']}
@@ -313,16 +321,16 @@ export default function Asset() {
                     <Area 
                       type="monotone" 
                       dataKey="close" 
-                      stroke="#3b82f6" 
+                      stroke={isPositive ? "#10b981" : "#ef4444"} 
                       fillOpacity={1} 
                       fill="url(#colorPrice)" 
-                      strokeWidth={4} 
+                      strokeWidth={3} 
                       filter="url(#chartGlowPremium)"
                       animationDuration={2000}
                       animationEasing="ease-in-out"
                       activeDot={{ 
                         r: 6, 
-                        stroke: '#3b82f6', 
+                        stroke: isPositive ? '#10b981' : '#ef4444', 
                         strokeWidth: 3, 
                         fill: '#fff',
                         className: 'animate-pulse' 

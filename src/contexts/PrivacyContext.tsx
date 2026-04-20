@@ -1,14 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface PrivacyContextType {
-  hideValues: boolean;
-  toggleHideValues: () => void;
-}
-
-const PrivacyContext = createContext<PrivacyContextType>({
-  hideValues: false,
-  toggleHideValues: () => {},
-});
+import React, { useState, useEffect } from 'react';
+import { PrivacyContext } from './PrivacyContextDefinition';
 
 export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hideValues, setHideValues] = useState(() => {
@@ -47,5 +38,3 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     </PrivacyContext.Provider>
   );
 };
-
-export const usePrivacy = () => useContext(PrivacyContext);

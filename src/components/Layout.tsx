@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronLeft,
   Search,
   Award,
   Calendar,
@@ -174,10 +175,58 @@ export default function Layout() {
         <div className="py-2.5 md:py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
-              {/* Logo Professional Style */}
-              <Link to="/" className="flex items-center gap-3 group">
-                <Logo size={40} showText />
-              </Link>
+              <div className="flex items-center">
+                <div className="flex items-center gap-3">
+                  {location.pathname !== '/' && (
+                    <button 
+                      onClick={() => navigate(-1)}
+                      className="p-2 sm:p-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all mr-2"
+                      title="Voltar"
+                    >
+                      <ChevronLeft className="icon-md" />
+                    </button>
+                  )}
+                  <Link to="/" className="flex items-center gap-3 group">
+                    <Logo size={40} showText />
+                  </Link>
+                </div>
+
+                <nav className="hidden lg:flex items-center gap-1 ml-6">
+                  {navItems.map((item) => (
+                    <div key={item.label} className="relative group/nav z-[200]">
+                      {item.children ? (
+                        <>
+                          <button className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-white rounded-lg transition-colors">
+                            {item.label}
+                            <ChevronDown className="w-3 h-3 opacity-50 group-hover/nav:rotate-180 transition-transform duration-300" />
+                          </button>
+                          <div className="absolute top-full left-0 pt-2 w-64 opacity-0 translate-y-2 pointer-events-none group-hover/nav:opacity-100 group-hover/nav:translate-y-0 group-hover/nav:pointer-events-auto transition-all duration-300">
+                            <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col gap-1 backdrop-blur-3xl">
+                              {item.children.map(child => (
+                                <Link 
+                                  key={child.label}
+                                  to={child.to}
+                                  className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                                >
+                                  <child.icon className="w-4 h-4 text-blue-500 shrink-0" />
+                                  {child.label}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <Link 
+                          to={item.to!}
+                          className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-white rounded-lg transition-colors"
+                        >
+                          {item.label}
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+                </nav>
+              </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2 md:gap-4 ml-auto">
@@ -352,15 +401,16 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 pt-28 md:pt-32 pb-24 md:pb-16">
+      <main className="flex-1 pt-28 md:pt-32 pb-24 md:pb-16 perspective-[1200px]">
         <div className="max-w-7xl mx-auto px-2 md:px-4">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname.startsWith('/portfolio') ? 'portfolio-section' : location.pathname}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="origin-center"
             >
               <ErrorBoundary>
                 <Outlet />

@@ -10,7 +10,7 @@ import { PortfolioNav } from '../components/PortfolioNav';
 import { getHistoricalQuantity } from '../lib/portfolioCalc';
 import { NexusAgentUI } from '../components/NexusAgentUI';
 import { formatNumber } from '../lib/utils';
-import { usePrivacy } from '../contexts/PrivacyContext';
+import { usePrivacy } from '../hooks/usePrivacy';
 
 export default function Dividends() {
   const { portfolio, transactions, loading: contextLoading, dividends, fetchDividends, syncingDividends } = usePortfolio();

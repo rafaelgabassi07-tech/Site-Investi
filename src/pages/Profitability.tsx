@@ -6,7 +6,7 @@ import { usePortfolio } from '../hooks/usePortfolio';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { useState, useEffect, useMemo } from 'react';
 import { formatNumber } from '../lib/utils';
-import { usePrivacy } from '../contexts/PrivacyContext';
+import { usePrivacy } from '../hooks/usePrivacy';
 import { financeService } from '../services/financeService';
 import { PortfolioNav } from '../components/PortfolioNav';
 
