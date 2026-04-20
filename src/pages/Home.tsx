@@ -2,7 +2,7 @@ import {
   TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, 
   Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, 
   HelpCircle, Filter, Star, TrendingDown, Building2, DollarSign, 
-  Globe, X, Eye, EyeOff, Wallet, PieChart, Activity, BookOpen, Calculator, Layers
+  Globe, X, Eye, EyeOff, Wallet, PieChart, Activity, BookOpen, Calculator, Layers, Cpu
 } from 'lucide-react';
 import { NewsWidget } from '../components/NewsWidget';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,22 +13,39 @@ import { financeService } from '../services/financeService';
 import { usePortfolio } from '../hooks/usePortfolio';
 
 import { Logo } from '../components/ui/Logo';
-import { parseFinanceValue } from '../lib/utils';
+import { parseFinanceValue, formatNumber } from '../lib/utils';
+import { nexusAI } from '../services/nexusAIService';
+import { usePrivacy } from '../contexts/PrivacyContext';
 
 export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { portfolio, loading: loadingPortfolio } = usePortfolio();
-
-  // Removed hardcoded light theme
+  const { hideValues, toggleHideValues } = usePrivacy();
+  const showValues = !hideValues;
 
   const [topGainers, setTopGainers] = useState<any[]>([]);
   const [rankings, setRankings] = useState<Record<string, any[]>>({});
   const [loadingRankings, setLoadingRankings] = useState(true);
   const [loadingGainers, setLoadingGainers] = useState(true);
-  const [showValues, setShowValues] = useState(true);
+  const [aiInsight, setAiInsight] = useState('Nexus Engine sincronizando telemetria de mercado...');
+  
+  useEffect(() => {
+    async function fetchAI() {
+      const insight = await nexusAI.getMarketSentiment();
+      setAiInsight(insight);
+    }
+    fetchAI();
+  }, []);
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Investidor';
+  
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }, []);
 
   // Portfolio Stats
   const portfolioStats = useMemo(() => {
@@ -144,106 +161,133 @@ export default function Home() {
   ];
 
   return (
-    <div className="bg-slate-950 min-h-screen text-slate-100">
-      <div className="max-w-lg mx-auto md:max-w-4xl lg:max-w-5xl space-y-6 pb-20">
+    <div className="bg-background min-h-screen text-foreground transition-colors duration-500">
+      <div className="space-y-6 pb-20">
       {/* Header / Greeting */}
-      <header className="px-3 pt-8 space-y-8">
+      <header className="px-2 pt-8 space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-2xl md:text-3xl font-display font-black text-white tracking-tight italic uppercase">
-              Bem-vindo,
+            <h2 className="nexus-hero !text-foreground">
+              {greeting},
             </h2>
-            <h1 className="text-3xl md:text-4xl font-display font-black text-blue-500 tracking-tight italic uppercase truncate max-w-[280px]">
+            <h1 className="nexus-hero text-blue-500 truncate max-w-[280px]">
               {displayName}
             </h1>
-            <div className="flex items-center gap-2 pt-2">
-              <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] italic">Mercado Monitorado</p>
+            <div className="flex items-center gap-2 pt-1">
+              <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="nexus-label text-emerald-500 opacity-100">Mercado Monitorado</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 p-3 bg-white/5 rounded-3xl border border-white/5 backdrop-blur-md">
+          <div className="flex items-center gap-2 p-3 bg-secondary rounded-2xl border border-border backdrop-blur-md">
              <Logo size={24} showText={false} />
           </div>
         </div>
 
         {/* Branding Message - Geometric Design */}
-        <div className="relative overflow-hidden bg-slate-900/50 border border-white/10 rounded-[2rem] p-8 text-center space-y-4 shadow-2xl backdrop-blur-xl">
+        <div className="relative overflow-hidden bg-card border border-border rounded-2xl md:rounded-xl md:rounded-2xl p-5 text-center space-y-4 shadow-2xl backdrop-blur-xl group hover:border-blue-500/20 transition-all duration-700">
            {/* Geometric Accents */}
-           <div className="absolute top-0 right-0 w-24 h-24 border-t-2 border-r-2 border-blue-500/30 rounded-tr-[2rem]" />
-           <div className="absolute bottom-0 left-0 w-24 h-24 border-b-2 border-l-2 border-blue-500/30 rounded-bl-[2rem]" />
+           <div className="absolute top-0 right-0 w-24 h-24 border-t-2 border-r-2 border-blue-500/10 rounded-tr-2xl md:rounded-tr-[2rem] group-hover:scale-110 transition-transform duration-700" />
+           <div className="absolute bottom-0 left-0 w-24 h-24 border-b-2 border-l-2 border-blue-500/10 rounded-bl-2xl md:rounded-bl-[2rem] group-hover:scale-110 transition-transform duration-700" />
 
-           <div className="mx-auto w-32 h-32 relative flex items-center justify-center">
-             <div className="absolute inset-0 border-2 border-blue-500/20 rotate-45" />
-             <Logo size={64} showText={false} className="relative z-10" />
+           <div className="mx-auto w-24 h-24 relative flex items-center justify-center">
+             <div className="absolute inset-0 border-2 border-blue-500/10 rotate-45 group-hover:rotate-90 transition-transform duration-1000" />
+             <div className="absolute inset-1 border border-blue-500/5 -rotate-12 group-hover:rotate-12 transition-transform duration-1000" />
+             <Logo size={48} showText={false} className="relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.2)]" />
            </div>
 
            <div className="space-y-1">
-             <h3 className="text-2xl font-display font-black text-white tracking-[0.05em] uppercase italic">Terminal <span className="text-blue-500">Nexus</span></h3>
-             <div className="w-12 h-0.5 bg-blue-500/50 mx-auto" />
+             <h3 className="text-xl font-display font-black text-foreground tracking-widest uppercase italic">Terminal <span className="text-blue-500">Nexus</span></h3>
+             <div className="w-8 h-0.5 bg-blue-500/50 mx-auto rounded-full" />
            </div>
            
-           <p className="text-[11px] text-slate-400 font-bold max-w-[280px] mx-auto leading-relaxed uppercase tracking-[0.25em] italic">
+           <p className="text-[8px] md:text-[9px] text-muted-foreground font-black max-w-[240px] mx-auto leading-tight uppercase tracking-widest italic">
              Arquitetura de dados para alta performance em investimentos.
            </p>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="px-1 space-y-4">
+      <main className="px-3 space-y-6">
         
-        {/* Portfolio Summary Card */}
-        <section className="bg-slate-950/50 border border-white/10 rounded-[2rem] p-4 relative overflow-hidden group hover:border-blue-500/30 transition-all duration-300 shadow-xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-transparent pointer-events-none" />
+        {/* Portfolio Summary Card - PREMIUM REDESIGN */}
+        <section className="nexus-card">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/[0.03] via-transparent to-transparent pointer-events-none" />
           
-          <div className="flex items-center justify-between mb-4 relative z-10">
-            <div className="flex items-center gap-2">
-              <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic tracking-wide">Patrimônio</h3>
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                <Wallet className="w-4 h-4" />
+              </div>
+              <h3 className="nexus-label">Patrimônio Total</h3>
             </div>
             <button 
-              onClick={(e) => { e.preventDefault(); setShowValues(!showValues); }}
-              className="p-1.5 text-slate-500 hover:text-white transition-all bg-white/5 rounded-full border border-white/10"
+              onClick={(e) => { e.preventDefault(); toggleHideValues(); }}
+              className="p-2 text-muted-foreground hover:text-foreground transition-all bg-secondary rounded-xl border border-border shadow-sm active:scale-90"
             >
               {showValues ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
             </button>
           </div>
           
-          <div className="flex flex-col gap-0.5 relative z-10">
-            <span className="text-3xl md:text-4xl font-display font-black text-white leading-none tracking-tighter italic">
-              {showValues ? `R$ ${portfolioStats.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'R$ ••••••'}
+          <div className="flex flex-col gap-1 relative z-10">
+            <span className="nexus-hero leading-tight tracking-tighter">
+              {showValues ? formatNumber(portfolioStats.total, { style: 'currency' }) : 'R$ ••••••'}
             </span>
-            <div className="flex items-center gap-3 mt-3">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                <Briefcase className="w-3 h-3 text-blue-500" />
-                <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-wider">{portfolioStats.count} Ativos</span>
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary rounded-xl border border-border shadow-sm">
+                <Briefcase className="w-3.5 h-3.5 text-blue-500" />
+                <span className="nexus-label text-foreground">{portfolioStats.count} Ativos em Custódia</span>
               </div>
-              <div className={`flex items-center gap-1 px-3 py-1 rounded-full border shadow-sm ${portfolioStats.change >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                 <span className="text-[9px] font-black italic">
-                   {showValues ? `${portfolioStats.change >= 0 ? '+' : ''}${portfolioStats.change.toFixed(2)}%` : '•••%'}
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-sm transition-all duration-500 font-bold ${ (portfolioStats.change || 0) >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                 <span className="text-xs uppercase tracking-widest italic">
+                   {showValues ? `${(portfolioStats.change || 0) >= 0 ? '+' : ''}${formatNumber(portfolioStats.change || 0)}% All-time` : '•••%'}
                  </span>
-                 {portfolioStats.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                 {(portfolioStats.change || 0) >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
               </div>
             </div>
           </div>
+          
+          {portfolio && portfolio.length > 0 && showValues && (
+            <div className="mt-8 pt-8 border-t border-border flex gap-3 overflow-x-auto pb-4 scrollbar-hide no-scrollbar relative z-10">
+              {portfolio.slice(0, 4).map((item, idx) => (
+                <div key={idx} className="flex-shrink-0 px-5 py-3 bg-secondary rounded-2xl border border-border flex items-center gap-4 hover:border-blue-500/20 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-background flex items-center justify-center border border-border">
+                     <span className="text-[9px] font-black italic">{item.ticker.slice(0, 2)}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-foreground italic uppercase">{item.ticker}</p>
+                    <p className={`text-[9px] font-bold ${(item.profitPercentage || 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {(item.profitPercentage || 0) >= 0 ? '+' : ''}{formatNumber(item.profitPercentage || 0)}%
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           
           <Link to="/portfolio" className="absolute inset-0 z-0" />
         </section>
 
         {/* Search Bar */}
-        <section className="relative">
-          <div className="relative flex items-center w-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm focus-within:bg-white dark:focus-within:bg-slate-900/60 focus-within:border-blue-500/30 transition-all p-2 overflow-hidden group">
-            <div className="pl-3 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors">
-              <Search className="w-5 h-5" />
+        <section className="relative px-2">
+          <div className="relative flex items-center w-full bg-card border border-border rounded-3xl shadow-2xl focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500/40 transition-all p-2.5 overflow-hidden group">
+            <div className="absolute inset-0 bg-blue-500/[0.01] opacity-0 group-focus-within:opacity-100 transition-opacity" />
+            <div className="relative pl-3 text-muted-foreground group-focus-within:text-blue-500 transition-colors">
+              <Search className="w-6 h-6" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse opacity-0 group-focus-within:opacity-100" />
             </div>
             <input 
               type="text" 
-              placeholder="Pesquisar ativos na B3 ou Exterior..." 
+              placeholder="Nexus Search: Pesquisar ativos, BDRs, FIIs..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent border-none outline-none py-2 px-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-bold tracking-tight"
+              className="flex-1 bg-transparent border-none outline-none py-3 px-4 text-sm md:text-base text-foreground placeholder:text-muted-foreground/50 font-bold tracking-tight relative z-10"
             />
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-secondary border border-border rounded-xl text-[10px] font-black text-muted-foreground uppercase italic opacity-40 group-hover:opacity-100 transition-opacity">
+              <span>⌘ K</span>
+            </div>
           </div>
           
           {/* Suggestions */}
@@ -253,19 +297,19 @@ export default function Home() {
                  initial={{ opacity: 0, scale: 0.95 }}
                  animate={{ opacity: 1, scale: 1 }}
                  exit={{ opacity: 0, scale: 0.95 }}
-                 className="absolute w-full mt-2 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                 className="absolute w-full mt-2 bg-popover border border-border rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-3xl"
                >
                  {suggestions.map((s, idx) => (
                    <Link 
                      key={s.ticker} 
                      to={`/asset/${s.ticker}`}
-                     className={`flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:bg-white/5 transition-all ${selectedIndex === idx ? 'bg-slate-50 dark:bg-white/5' : ''}`}
+                     className={`flex items-center justify-between px-6 py-4 hover:bg-secondary transition-all ${selectedIndex === idx ? 'bg-secondary' : ''}`}
                    >
                      <div className="flex items-center gap-4">
-                       <span className="font-display font-black text-slate-900 dark:text-white text-base italic uppercase">{s.ticker}</span>
-                       <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[200px]">{s.name}</span>
+                       <span className="font-display font-black text-foreground text-base italic uppercase">{s.ticker}</span>
+                       <span className="text-[10px] text-muted-foreground font-bold uppercase truncate max-w-[200px]">{s.name}</span>
                      </div>
-                     <ChevronRight className="icon-sm text-slate-200" />
+                     <ChevronRight className="icon-sm text-muted-foreground" />
                    </Link>
                  ))}
                </motion.div>
@@ -274,59 +318,79 @@ export default function Home() {
         </section>
 
         {/* Rankings Quick Card */}
-        <section className="bg-slate-950/40 border border-white/10 rounded-[2rem] overflow-hidden shadow-sm hover:border-white/20 transition-all">
-           <div className="p-6 border-b border-white/5 flex items-center justify-between">
+        <section className="nexus-card !p-0 overflow-hidden">
+           <div className="p-5 border-b border-border flex items-center justify-between">
              <div className="flex items-center gap-3">
-               <Award className="w-5 h-5 text-amber-500" />
-               <h3 className="text-[10px] font-black text-white uppercase tracking-widest italic">Rankings</h3>
+               <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                 <Award className="w-4 h-4" />
+               </div>
+               <h3 className="nexus-label">Top Dividendos (Nexus Engine)</h3>
              </div>
-             <ChevronRight className="w-4 h-4 text-slate-600" />
+             <Link to="/ranking" className="px-3 py-1 bg-secondary rounded-full border border-border">
+                <p className="nexus-label opacity-60">Filtrar Rankings</p>
+             </Link>
            </div>
            
-           <div className="divide-y divide-white/5">
-              {[
-                { label: 'Ações BR', icon: TrendingUp, to: '/ranking?type=ACAO' },
-                { label: 'Fundos Imobiliários', icon: Building2, to: '/ranking?type=FII' },
-                { label: 'Stocks (EUA)', icon: BarChart3, to: '/ranking?type=STOCK' },
-              ].map((item, idx) => (
-                <Link key={idx} to={item.to} className="flex items-center justify-between p-5 px-6 hover:bg-white/5 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-slate-400 group-hover:text-blue-500 transition-colors">
-                      <item.icon className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-bold text-white transition-colors">{item.label}</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-white transition-colors" />
-                </Link>
-              ))}
+           <div className="divide-y divide-border">
+              {loadingRankings ? (
+                <div className="p-8 flex justify-center">
+                  <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                </div>
+              ) : (
+                [...(rankings['ACAO'] || []), ...(rankings['FII'] || [])]
+                  .sort((a, b) => (b.dy || 0) - (a.dy || 0))
+                  .slice(0, 4)
+                  .map((item, idx) => (
+                    <Link key={idx} to={`/asset/${item.ticker}`} className="flex items-center justify-between p-5 px-6 hover:bg-secondary transition-colors group/item">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center border border-border text-muted-foreground group-hover/item:text-blue-500 group-hover/item:border-blue-500/20 transition-all shadow-inner">
+                          {item.type === 'ACAO' ? <TrendingUp className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                        </div>
+                        <div>
+                          <span className="nexus-title text-sm group-hover:text-blue-400 block">{item.ticker}</span>
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{item.name}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-emerald-500 italic uppercase">DY {formatNumber(item.dy || 0)}%</p>
+                        <ChevronRight className="w-3 h-3 text-muted-foreground float-right group-hover/item:text-foreground group-hover/item:translate-x-1 transition-all mt-1" />
+                      </div>
+                    </Link>
+                  ))
+              )}
            </div>
         </section>
 
         {/* News Section */}
-        <section className="bg-slate-950/40 border border-white/10 rounded-[2rem] overflow-hidden shadow-sm hover:border-white/20 transition-all">
-           <div className="p-6 border-b border-white/5 flex items-center justify-between">
+        <section className="nexus-card !p-0 overflow-hidden">
+           <div className="p-5 border-b border-border flex items-center justify-between">
              <div className="flex items-center gap-3">
-               <Newspaper className="w-5 h-5 text-blue-500" />
-               <h3 className="text-[10px] font-black text-white uppercase tracking-widest italic">Radar do Mercado</h3>
+               <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                 <Newspaper className="w-4 h-4" />
+               </div>
+               <h3 className="nexus-label">Radar do Mercado</h3>
              </div>
-             <ChevronRight className="w-4 h-4 text-slate-600" />
+             <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-all" />
            </div>
            
-           <div className="p-2">
+           <div className="p-1">
               <NewsWidget limit={4} compact />
            </div>
         </section>
 
         {/* Meus Recursos Section */}
-        <section className="space-y-6">
-           <h3 className="text-[10px] font-black text-slate-500 tracking-[0.3em] italic uppercase px-2">Navegação Rápida</h3>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <section className="space-y-6 pt-4">
+           <div className="flex items-center justify-between px-2">
+             <h3 className="nexus-label tracking-[0.3em] italic uppercase">Ferramentas</h3>
+             <div className="w-8 h-0.5 bg-blue-500/20 rounded-full" />
+           </div>
+           <div className="nexus-grid">
               {resourceItems.slice(0, 8).map((item, idx) => (
-                <Link key={idx} to={item.to} className="bg-slate-900/50 border border-white/5 rounded-3xl p-6 flex flex-col items-center justify-center gap-4 hover:border-blue-500/30 hover:bg-slate-900/80 transition-all text-center group">
-                  <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors shadow-inner">
+                <Link key={idx} to={item.to} className="nexus-card flex flex-col items-center justify-center gap-4 hover:border-blue-500/30 hover:bg-slate-900/40 text-center group shadow-md hover:shadow-xl hover:-translate-y-1 duration-300">
+                  <div className="w-14 h-14 bg-secondary rounded-[1.25rem] flex items-center justify-center text-muted-foreground group-hover:text-blue-500 group-hover:scale-110 transition-all shadow-inner border border-border group-hover:border-blue-500/20">
                     <item.icon className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest leading-tight">{item.label}</span>
+                  <span className="nexus-title leading-tight transition-colors">{item.label}</span>
                 </Link>
               ))}
            </div>

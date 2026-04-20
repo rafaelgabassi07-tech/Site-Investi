@@ -1,16 +1,11 @@
-<svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" rx="20" fill="#020617"/>
   <defs>
-    <linearGradient id="nexusMetal" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f8fafc" />
-      <stop offset="50%" stop-color="#94a3b8" />
-      <stop offset="100%" stop-color="#1e293b" />
-    </linearGradient>
-    <linearGradient id="nexusAccent" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2563eb" />
-      <stop offset="100%" stop-color="#06b6d4" />
+    <linearGradient id="metalN" x1="0" y1="0" x2="0" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" /> 
+      <stop offset="50%" stop-color="#94a3b8" /> 
+      <stop offset="100%" stop-color="#475569" /> 
     </linearGradient>
   </defs>
-  <path d="M25 20 L40 20 L40 65 L25 80 Z" fill="url(#nexusMetal)" stroke="url(#nexusAccent)" stroke-width="1"/>
-  <path d="M40 20 L75 75 L75 80 L60 80 L25 25 L25 20 Z" fill="url(#nexusMetal)" stroke="url(#nexusAccent)" stroke-width="1"/>
-  <path d="M60 20 L75 20 L75 80 L60 35 Z" fill="url(#nexusMetal)" stroke="url(#nexusAccent)" stroke-width="1"/>
+  <path d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" fill="url(#metalN)"/>
 </svg>

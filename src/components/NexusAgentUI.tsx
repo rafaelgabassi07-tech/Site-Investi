@@ -14,10 +14,10 @@ export function NexusAgentUI() {
     <AnimatePresence>
       {status.state !== 'idle' && (
         <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-black/80 backdrop-blur-md border border-white/10 p-3 pr-4 rounded-full shadow-2xl"
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-black/80 backdrop-blur-md border border-white/10 p-3 pr-4 rounded-full shadow-2xl"
         >
           <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
             {status.state === 'syncing' && <Loader2 className="w-4 h-4 animate-spin" />}

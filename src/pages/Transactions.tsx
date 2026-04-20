@@ -7,9 +7,13 @@ import { usePortfolio } from '../hooks/usePortfolio';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { PortfolioNav } from '../components/PortfolioNav';
 import * as XLSX from 'xlsx';
+import { formatNumber } from '../lib/utils';
+import { usePrivacy } from '../contexts/PrivacyContext';
 
 export default function Transactions() {
   const { transactions } = usePortfolio();
+  const { hideValues } = usePrivacy();
+  const showValues = !hideValues;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [ticker, setTicker] = useState('');
   const [type, setType] = useState<'BUY' | 'SELL'>('BUY');
@@ -22,6 +26,7 @@ export default function Transactions() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [filterQuery, setFilterQuery] = useState('');
 
   const generateId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -590,15 +595,24 @@ export default function Transactions() {
           <div className="relative flex flex-col min-h-[600px]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[80px] -z-10" />
             
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <h3 className="text-display-sm text-white flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/20">
                   <History className="icon-md" />
                 </div>
                 Histórico de Operações
               </h3>
-              <div className="text-label text-slate-500">
-                {transactions.length} Lançamentos
+              <div className="flex items-center gap-4">
+                <input 
+                  type="text"
+                  placeholder="Filtrar por Ativo..."
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.target.value)}
+                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-blue-500 transition-colors w-full sm:w-48 placeholder:text-slate-600 font-bold"
+                />
+                <div className="text-label text-slate-500 whitespace-nowrap">
+                  {transactions.filter(t => !filterQuery || t.ticker.includes(filterQuery.toUpperCase())).length} Lançamentos
+                </div>
               </div>
             </div>
 
@@ -613,7 +627,9 @@ export default function Transactions() {
                   <div className="w-16 text-right"></div>
                 </div>
                 <div className="divide-y divide-white/5">
-                  {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
+                  {transactions
+                    .filter(t => !filterQuery || t.ticker.includes(filterQuery.toUpperCase()))
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
                     <motion.div 
                       key={tx.id}
                       initial={{ opacity: 0 }}
@@ -621,6 +637,7 @@ export default function Transactions() {
                       transition={{ delay: idx * 0.01 }}
                       className="flex items-center px-6 py-5 hover:bg-white/[0.03] transition-all group"
                     >
+                      <div className={`absolute left-0 top-1 bottom-1 w-0.5 rounded-full ${tx.type === 'BUY' ? 'bg-blue-600' : 'bg-red-600'} opacity-0 group-hover:opacity-100 transition-opacity`} />
                       <div className="flex-1 flex items-center gap-4">
                         <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-white p-1" />
                         <div>
@@ -637,12 +654,12 @@ export default function Transactions() {
                           {tx.type === 'BUY' ? 'Compra' : 'Venda'}
                         </span>
                       </div>
-                      <div className="w-40 text-right">
-                        <div className="text-[11px] font-black text-slate-300">{tx.quantity} <span className="opacity-40">UND</span></div>
-                        <div className="text-[10px] font-black text-slate-600 italic">@ R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                      <div className="w-40 text-right mask-value">
+                        <div className="text-[11px] font-black text-slate-300">{showValues ? tx.quantity : '•••'} <span className="opacity-40">UND</span></div>
+                        <div className="text-[10px] font-black text-slate-600 italic">@ {showValues ? formatNumber(tx.price, { style: 'currency' }) : '••••••'}</div>
                       </div>
-                      <div className="w-48 text-right">
-                        <div className="text-display-tiny text-white uppercase italic">R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                      <div className="w-48 text-right mask-value">
+                        <div className="text-display-tiny text-white uppercase italic">{showValues ? formatNumber(tx.quantity * tx.price, { style: 'currency' }) : 'R$ ••••••'}</div>
                       </div>
                       <div className="w-16 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                         <button 
@@ -664,13 +681,16 @@ export default function Transactions() {
               </div>
 
                 <div className="md:hidden divide-y divide-white/5 border-t border-white/5">
-                  {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
+                  {transactions
+                    .filter(t => !filterQuery || t.ticker.includes(filterQuery.toUpperCase()))
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((tx, idx) => (
                     <motion.div 
                       key={tx.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.01 }}
-                      className="p-5 space-y-4 hover:bg-white/[0.02] transition-all"
+                      className="p-5 space-y-4 hover:bg-white/[0.02] transition-all relative border-l-2 border-transparent group"
+                      style={{ borderLeftColor: tx.type === 'BUY' ? 'rgba(37, 99, 235, 0.3)' : 'rgba(220, 38, 38, 0.3)' }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -690,13 +710,13 @@ export default function Transactions() {
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="mask-value">
                           <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-0.5">Qtd / Preço</p>
-                          <p className="text-xs font-bold text-slate-300 italic">{tx.quantity} x R$ {tx.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-xs font-bold text-slate-300 italic">{showValues ? tx.quantity : '•••'} x {showValues ? formatNumber(tx.price, { style: 'currency' }) : '••••••'}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right mask-value">
                           <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic mb-0.5">Total</p>
-                          <p className="text-display-tiny text-white italic tracking-tight">R$ {(tx.quantity * tx.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-display-tiny text-white italic tracking-tight">{showValues ? formatNumber(tx.quantity * tx.price, { style: 'currency' }) : 'R$ ••••••'}</p>
                         </div>
                       </div>
 

@@ -9,9 +9,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { PortfolioNav } from '../components/PortfolioNav';
 import { getHistoricalQuantity } from '../lib/portfolioCalc';
 import { NexusAgentUI } from '../components/NexusAgentUI';
+import { formatNumber } from '../lib/utils';
+import { usePrivacy } from '../contexts/PrivacyContext';
 
 export default function Dividends() {
   const { portfolio, transactions, loading: contextLoading, dividends, fetchDividends, syncingDividends } = usePortfolio();
+  const { hideValues } = usePrivacy();
+  const showValues = !hideValues;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [filter, setFilter] = useState('Todos');
   const [ticker, setTicker] = useState('');
@@ -183,6 +187,26 @@ export default function Dividends() {
     return true;
   });
 
+  const groupedDividends = useMemo(() => {
+    const groups: Record<string, { items: typeof filteredDividends, total: number }> = {};
+    
+    [...filteredDividends]
+      .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .forEach(div => {
+      const dt = new Date(div.paymentDate || div.date);
+      const m = dt.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+      const monthYear = m.charAt(0).toUpperCase() + m.slice(1);
+      
+      if (!groups[monthYear]) {
+        groups[monthYear] = { items: [], total: 0 };
+      }
+      groups[monthYear].items.push(div);
+      groups[monthYear].total += div.totalAmount;
+    });
+    
+    return Object.entries(groups);
+  }, [filteredDividends]);
+
   return (
     <div className="space-y-6 pb-24">
       <PageHeader 
@@ -247,10 +271,10 @@ export default function Dividends() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-white/5">
         {[
-          { label: 'Total 12m', value: `R$ ${stats.totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'emerald' },
-          { label: 'Média Mensal', value: `R$ ${stats.avgMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'blue' },
-          { label: 'Yield on Cost', value: `${stats.yieldOnCost.toFixed(2)}%`, icon: BarChart3, color: 'purple' },
-          { label: 'Proventos Futuros', value: `R$ ${stats.totalFuture.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: PieChart, color: 'amber' },
+          { label: 'Total 12m', value: showValues ? formatNumber(stats.totalReceived, { style: 'currency' }) : 'R$ ••••••', icon: DollarSign, color: 'emerald' },
+          { label: 'Média Mensal', value: showValues ? formatNumber(stats.avgMonthly, { style: 'currency' }) : 'R$ ••••••', icon: TrendingUp, color: 'blue' },
+          { label: 'Yield on Cost', value: showValues ? `${formatNumber(stats.yieldOnCost)}%` : '•••%', icon: BarChart3, color: 'purple' },
+          { label: 'Proventos Futuros', value: showValues ? formatNumber(stats.totalFuture, { style: 'currency' }) : 'R$ ••••••', icon: PieChart, color: 'amber' },
         ].map((stat, idx) => (
           <motion.div
             key={idx}
@@ -344,70 +368,88 @@ export default function Dividends() {
                 ))}
               </div>
             </div>
-
+            
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Loader2 className="animate-spin text-blue-500 icon-xl" />
                 <p className="text-label text-slate-500 uppercase">Buscando proventos...</p>
               </div>
             ) : (
-              <div className="border-t border-white/5">
-                <div className="divide-y divide-white/5">
-                {filteredDividends.length > 0 ? filteredDividends.slice(0, 20).map((item, idx) => {
-                  const date = new Date(item.date);
-                  const day = date.getDate().toString().padStart(2, '0');
-                  const month = date.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
-                  
-                  return (
-                    <motion.div 
-                      key={idx}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: idx * 0.02 }}
-                      className="py-5 px-4 flex items-center justify-between group hover:bg-white/[0.01] transition-all"
-                    >
-                      <div className="flex items-center gap-6">
-                        <div className="w-12 h-12 bg-white/5 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-blue-500/30 transition-colors">
-                          <span className="text-[10px] font-black text-slate-500 leading-none mb-1">{month}</span>
-                          <span className="text-lg font-black text-white leading-none">{day}</span>
-                        </div>
-                        <div>
-                          <div className="text-display-tiny text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter">
-                            {item.ticker}
-                          </div>
-                          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic group-hover:text-slate-400">Data Ex: {date.toLocaleDateString('pt-BR')}</span>
-                            {item.type && !['ACAO', 'FII'].includes(item.type.toUpperCase()) && (
-                              <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-black uppercase tracking-widest rounded-full italic">
-                                {item.type}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+              <div className="space-y-6">
+                {groupedDividends.length > 0 ? groupedDividends.map(([monthYear, group], groupIdx) => (
+                  <motion.div 
+                    key={monthYear}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: groupIdx * 0.1 }}
+                    className="nexus-card"
+                  >
+                    <div className="flex justify-between items-center mb-4 px-2 border-b border-white/5 pb-4">
+                      <h4 className="text-sm font-black text-slate-300 uppercase italic tracking-widest">{monthYear}</h4>
+                      <div className="text-sm font-black text-blue-400 italic mask-value">
+                        {showValues ? `+ ${formatNumber(group.total, { style: 'currency' })}` : 'R$ ••••••'}
                       </div>
-                      <div className="flex items-center gap-6 text-right">
-                        <div>
-                          <div className="text-lg font-display font-black text-white italic leading-none">R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                          <div className="flex items-center gap-2 mt-1.5 justify-end">
-                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">{item.quantityAtDate} cotas</span>
-                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">• R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/cota</span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="p-2 text-slate-800 hover:text-red-500 transition-colors"
+                    </div>
+                    
+                    <div className="divide-y divide-white/5">
+                    {group.items.map((item, idx) => {
+                      const date = new Date(item.date);
+                      const day = date.getDate().toString().padStart(2, '0');
+                      const month = date.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
+                      
+                      return (
+                        <div 
+                          key={idx}
+                          className="py-4 px-2 flex flex-col md:flex-row md:items-center justify-between group hover:bg-white/[0.02] transition-colors rounded-xl"
                         >
-                          <Trash2 className="icon-sm" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                }) : (
-                  <div className="p-20 text-center">
-                    <p className="font-black uppercase tracking-[0.2em] text-xs italic opacity-20 text-white">Vazio</p>
+                          <div className="flex items-center gap-4 mb-3 md:mb-0">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-800/50 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-blue-500/30 transition-colors shrink-0">
+                              <span className="text-[9px] md:text-[10px] font-black text-slate-500 leading-none mb-1">{month}</span>
+                              <span className="text-base md:text-lg font-black text-white leading-none">{day}</span>
+                            </div>
+                            <div>
+                              <div className="text-xs md:text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter">
+                                {item.ticker}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className="text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-widest italic group-hover:text-slate-400">Data Ex: {date.toLocaleDateString('pt-BR')}</span>
+                                {item.type && !['ACAO', 'FII'].includes(item.type.toUpperCase()) && (
+                                  <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-black uppercase tracking-widest rounded-full italic">
+                                    {item.type}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between md:justify-end gap-6 text-right w-full md:w-auto mt-2 md:mt-0 pl-14 md:pl-0">
+                            <div className="flex-1 md:flex-none">
+                              <div className="text-base md:text-lg font-display font-black text-emerald-400 italic leading-none mask-value">
+                                {showValues ? formatNumber(item.totalAmount, { style: 'currency' }) : 'R$ ••••••'}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1.5 justify-start md:justify-end mask-value">
+                                <span className="text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-widest italic">{showValues ? item.quantityAtDate : '•••'} cotas</span>
+                                <span className="text-[8px] md:text-[9px] font-black text-slate-600 uppercase tracking-widest italic">• {showValues ? `${formatNumber(item.amount, { style: 'currency' })}/cota` : '•••/cota'}</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="p-2 text-slate-700 hover:text-red-500 transition-colors bg-white/5 md:bg-transparent rounded-lg"
+                              title="Remover"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    </div>
+                  </motion.div>
+                )) : (
+                  <div className="nexus-card p-12 text-center flex flex-col items-center justify-center">
+                    <p className="font-black uppercase tracking-[0.2em] text-xs italic opacity-40 text-slate-400 mb-2">Nenhum provento recebido</p>
+                    <p className="text-[10px] text-slate-500">Seus registros de dividendos aparecerão aqui.</p>
                   </div>
                 )}
-                </div>
               </div>
             )}
           </div>
@@ -427,7 +469,7 @@ export default function Dividends() {
               <div className="py-6 border-b border-white/5">
                 <p className="text-[10px] font-black text-slate-500 mb-2 uppercase tracking-[0.2em] italic">Renda Mensal Estimada</p>
                 <h4 className="text-4xl font-display font-black text-white italic tracking-tighter">
-                  R$ {stats.avgMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatNumber(stats.avgMonthly, { style: 'currency' })}
                 </h4>
               </div>
 

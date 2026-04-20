@@ -2,6 +2,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { Calculator, DollarSign, TrendingUp, ArrowRight, Target, Percent, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { formatNumber } from '../lib/utils';
 
 type CalcType = 'COMPOUND' | 'BAZIN' | 'GRAHAM' | 'FIRE';
 
@@ -211,7 +212,7 @@ export default function Calculators() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] -z-10" />
                 <h3 className="text-label text-blue-400 mb-2">Valor Total Final</h3>
                 <div className="text-display-xl text-white tracking-tighter">
-                  R$ {compoundResults.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatNumber(compoundResults.total, { style: 'currency' })}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
@@ -221,7 +222,7 @@ export default function Calculators() {
                       <span className="text-label text-slate-500">Total Investido</span>
                     </div>
                     <div className="text-display-sm text-white">
-                      R$ {compoundResults.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatNumber(compoundResults.totalInvested, { style: 'currency' })}
                     </div>
                   </div>
                   <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20">
@@ -230,7 +231,7 @@ export default function Calculators() {
                       <span className="text-label text-emerald-500">Total em Juros</span>
                     </div>
                     <div className="text-display-sm text-emerald-400">
-                      R$ {compoundResults.totalInterest.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatNumber(compoundResults.totalInterest, { style: 'currency' })}
                     </div>
                   </div>
                 </div>
@@ -247,7 +248,7 @@ export default function Calculators() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] -z-10" />
                 <h3 className="text-label text-emerald-400 mb-2">Preço Teto Estimado</h3>
                 <div className="text-display-xl text-white tracking-tighter">
-                  R$ {bazinResults.ceilingPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatNumber(bazinResults.ceilingPrice, { style: 'currency' })}
                 </div>
                 <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg italic font-medium">
                   O Método de Bazin sugere que este é o valor máximo a ser pago por uma ação para garantir o yield desejado, baseado na média de dividendos.
@@ -265,7 +266,7 @@ export default function Calculators() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] -z-10" />
                 <h3 className="text-label text-amber-400 mb-2">Preço Justo (Graham)</h3>
                 <div className="text-display-xl text-white tracking-tighter">
-                  R$ {grahamResults.fairPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatNumber(grahamResults.fairPrice, { style: 'currency' })}
                 </div>
                 <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg italic font-medium">
                   A Fórmula de Graham calcula o preço intrínseco de uma ação considerando que o produto do P/L pelo P/VP não deve ultrapassar 22,5.
@@ -283,7 +284,7 @@ export default function Calculators() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[80px] -z-10" />
                 <h3 className="text-label text-purple-400 mb-2">Patrimônio Necessário</h3>
                 <div className="text-display-xl text-white tracking-tighter">
-                  R$ {fireResults.targetNetWorth.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {formatNumber(fireResults.targetNetWorth, { style: 'currency', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </div>
                 <p className="mt-6 text-slate-400 text-sm leading-relaxed max-w-lg italic font-medium">
                   Este é o montante total necessário investido para que você possa retirar mensalmente o valor desejado indefinidamente, seguindo a regra dos 4% (ou sua taxa personalizada).

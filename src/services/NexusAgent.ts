@@ -1,4 +1,3 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { supabase } from "../lib/supabase";
 import { financeService } from "./financeService";
 
@@ -21,18 +20,6 @@ type StatusCallback = (status: AgentStatus) => void;
 class NexusDividendAgent {
   private status: AgentStatus = { state: 'idle', currentTask: '', progress: 0 };
   private callbacks: StatusCallback[] = [];
-  private aiInstance: GoogleGenAI | null = null;
-
-  private getAi() {
-    if (!this.aiInstance) {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("GEMINI_API_KEY is not configured");
-      }
-      this.aiInstance = new GoogleGenAI({ apiKey });
-    }
-    return this.aiInstance;
-  }
 
   subscribe(callback: StatusCallback) {
     this.callbacks.push(callback);
@@ -51,37 +38,62 @@ class NexusDividendAgent {
     if (this.status.state === 'syncing' || this.status.state === 'analyzing') return;
     if (portfolio.length === 0) return;
 
-    this.updateStatus({ state: 'syncing', currentTask: 'Iniciando busca no Investidor10...', progress: 0 });
+    this.updateStatus({ state: 'syncing', currentTask: 'Iniciando busca sincronizada...', progress: 0 });
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      if (!user) {
+        console.warn('[Robot Agent] Usuário não logado. Sincronização em nuvem desativada.');
+        this.updateStatus({ state: 'error', currentTask: 'Usuário não autenticado.', progress: 0 });
+        return;
+      }
 
+      console.log(`[Robot Agent] Iniciando varredura para ${portfolio.length} ativos...`);
       const totalItems = portfolio.length;
       let completed = 0;
+      let totalFound = 0;
+      const anomalies: string[] = [];
 
       for (const item of portfolio) {
         this.updateStatus({ 
-          currentTask: `Buscando proventos de ${item.ticker}...`, 
+          currentTask: `Sincronizando ${item.ticker}...`, 
           progress: Math.floor((completed / totalItems) * 100) 
         });
 
         try {
-          // 1. Fetch from Investidor10 via Backend Scraper
+          // 1. Fetch from Multiple Sources via Nexus Engine
           const divs = await financeService.getAssetDividends(item.ticker);
           
-          if (divs && Array.isArray(divs)) {
+          if (divs && Array.isArray(divs) && divs.length > 0) {
+            console.log(`[Robot Agent] ${item.ticker}: Encontrados ${divs.length} proventos.`);
+            totalFound += divs.length;
+
+            // Anomaly Check Logic
+            const lastYearDivs = divs.filter(d => {
+              const dDate = new Date(d.date || d.dataCom);
+              return dDate > new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+            });
+
+            if (lastYearDivs.length > 2) {
+              const amounts = lastYearDivs.map(d => typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount);
+              const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+              const latest = amounts[0];
+              
+              if (latest < avg * 0.4) {
+                anomalies.push(`${item.ticker}: Queda severa identificada (R$ ${latest.toFixed(2)} vs méd. R$ ${avg.toFixed(2)})`);
+              }
+            }
+            
             const formattedDivs = divs.map(d => ({
               user_id: user.id,
               ticker: item.ticker.toUpperCase(),
-              type: d.type || d.tipo || (item.ticker.toUpperCase().endsWith('11') ? 'Rendimento' : 'Dividendo'),
-              date: d.dataCom || d.date,
-              paymentDate: d.paymentDate || d.date,
+              type: d.type || (item.ticker.toUpperCase().endsWith('11') ? 'Rendimento' : 'Dividendo'),
+              date: d.date || d.dataCom,
               amount: typeof d.amount === 'string' ? parseFloat(d.amount) : d.amount,
               is_future: new Date(d.paymentDate || d.date) > new Date()
-            })).filter(d => d.date && d.amount > 0);
+            })).filter(d => d.date && !isNaN(d.amount) && d.amount > 0);
 
-            // 2. Save to Supabase (Avoiding duplicates with robust date matching)
+            // 2. Save to Supabase
             for (const div of formattedDivs) {
               const divDate = new Date(div.date);
               const startOfDay = new Date(divDate);
@@ -98,31 +110,35 @@ class NexusDividendAgent {
                 .limit(1);
               
               if (checkError) {
-                console.error(`[Robot Agent] Error checking existence for ${div.ticker}:`, checkError);
+                console.error(`[Robot Agent] Falha ao verificar existência (${div.ticker}):`, checkError);
                 continue;
               }
 
               if (!existing || existing.length === 0) {
-                console.log(`[Robot Agent] Inserindo novo provento para ${div.ticker}: R$ ${div.amount} em ${div.date}`);
                 const { error: insertError } = await supabase.from('dividends').insert(div);
-                if (insertError) console.error(`[Robot Agent] Error inserting dividend for ${div.ticker}:`, insertError);
+                if (insertError) {
+                  console.error(`[Robot Agent] Falha ao inserir:`, insertError);
+                } else {
+                  console.log(`[Robot Agent] Novo registro: ${div.ticker} - R$ ${div.amount}`);
+                }
               }
             }
-
-            // 3. AI Analysis if we have enough history
-            if (formattedDivs.length > 3) {
-              this.updateStatus({ state: 'analyzing', lastInsight: `Analisando padrões de ${item.ticker}...` });
-              await this.generateAiInsights(item.ticker, formattedDivs, user.id);
-            }
+          } else {
+            console.log(`[Robot Agent] ${item.ticker}: Nenhum provento recente encontrado.`);
           }
         } catch (err) {
-          console.error(`[Robot Agent] Erro em ${item.ticker}:`, err);
+          console.error(`[Robot Agent] Erro ao processar ${item.ticker}:`, err);
         }
 
         completed++;
       }
 
-      this.updateStatus({ state: 'complete', currentTask: 'Sincronização finalizada com sucesso!', progress: 100 });
+      this.updateStatus({ 
+        state: 'complete', 
+        currentTask: `Sincronização concluída! ${totalFound} registros processados.${anomalies.length > 0 ? ` [!] Detectadas ${anomalies.length} anomalias.` : ''}`, 
+        progress: 100,
+        lastInsight: anomalies.length > 0 ? `Alerta: ${anomalies[0]}${anomalies.length > 1 ? ` (+${anomalies.length - 1})` : ''}` : undefined
+      });
       
       // Auto-reset after a few seconds
       setTimeout(() => this.updateStatus({ state: 'idle', currentTask: '' }), 5000);
@@ -130,53 +146,6 @@ class NexusDividendAgent {
     } catch (error) {
       console.error('[Robot Agent] Erro crítico:', error);
       this.updateStatus({ state: 'error', currentTask: 'Falha na operação do robô.', progress: 0 });
-    }
-  }
-
-  private async generateAiInsights(ticker: string, history: any[], userId: string) {
-    try {
-      // Limit history to last 2 years for analysis
-      const recentHistory = history
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 15);
-
-      const historySummary = recentHistory.map(h => `${h.date}: R$${h.amount} (${h.type})`).join('\n');
-      
-      const prompt = `Analise o histórico de dividendos de ${ticker} e identifique a sazonalidade. 
-      Com base nessas datas:
-      ${historySummary}
-      
-      Qual é o provável próximo mês de pagamento? Existe algum padrão de crescimento? 
-      Responda em PORTUGUÊS um JSON curto: {"message": "string de 1 frase", "nextMonth": string, "pattern": "string"}.`;
-
-      const ai = this.getAi();
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              message: { type: Type.STRING },
-              nextMonth: { type: Type.STRING },
-              pattern: { type: Type.STRING }
-            },
-            required: ["message"]
-          }
-        }
-      });
-
-      const insight = JSON.parse(response.text);
-      this.updateStatus({ lastInsight: `${ticker}: ${insight.message}` });
-
-      // If AI predicts a next month that we don't have recorded, add a "placeholder" prediction
-      if (insight.nextMonth) {
-        // Logic for adding a future placeholder could go here if needed
-      }
-
-    } catch (e) {
-      console.warn(`[Robot Agent] AI Analysis failed for ${ticker}`, e);
     }
   }
 }

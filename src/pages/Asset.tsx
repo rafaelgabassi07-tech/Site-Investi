@@ -6,6 +6,7 @@ import { financeService, AssetDetails, HistoryPoint } from '../services/financeS
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatCompactNumber, parseFinanceValue } from '../lib/utils';
+import { NexusAIIntel } from '../components/NexusAIIntel';
 
 export default function Asset() {
   const { ticker } = useParams();
@@ -236,7 +237,7 @@ export default function Asset() {
                 <div className="text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest italic">Cotação Atual</div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-display-lg text-white tracking-tighter italic">
-                    R$ {typeof results.precoAtual === 'number' ? results.precoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : results.precoAtual || '0,00'}
+                    {typeof results.precoAtual === 'number' ? formatNumber(results.precoAtual, { style: 'currency' }) : results.precoAtual || '0,00'}
                   </span>
                   <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest italic ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
                     {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -264,28 +265,30 @@ export default function Asset() {
             </div>
             
             {/* Chart */}
-            <div className="h-[220px] md:h-[320px] w-full -mx-4 md:mx-0">
+            <div className="h-[250px] md:h-[350px] w-full -mx-4 md:mx-0 relative">
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-500/[0.02] to-transparent pointer-events-none rounded-xl md:rounded-2xl" />
               {history.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <AreaChart data={history} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="60%" stopColor="#3b82f6" stopOpacity={0.1}/>
                         <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
                       </linearGradient>
-                      <filter id="chartGlow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="6" result="blur" />
+                      <filter id="chartGlowPremium" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="8" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                       </filter>
                     </defs>
-                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(255,255,255,0.02)" />
+                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(255,255,255,0.03)" />
                     <XAxis 
                       dataKey="date" 
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fill: '#475569', fontSize: 10, fontWeight: 700 }} 
-                      tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { month: 'short' })}
-                      minTickGap={40}
+                      tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}
+                      minTickGap={60}
                       dy={10}
                     />
                     <YAxis 
@@ -293,18 +296,19 @@ export default function Asset() {
                       domain={['auto', 'auto']} 
                     />
                     <Tooltip 
+                      cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4' }}
                       contentStyle={{ 
-                        backgroundColor: 'rgba(11, 15, 25, 0.95)', 
-                        border: '1px solid rgba(255, 255, 255, 0.08)', 
-                        borderRadius: '12px', 
-                        backdropFilter: 'blur(16px)',
-                        boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.8)',
-                        padding: '12px'
+                        backgroundColor: 'rgba(11, 15, 25, 0.98)', 
+                        border: '1px solid rgba(59, 130, 246, 0.2)', 
+                        borderRadius: '16px', 
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9)',
+                        padding: '16px'
                       }}
-                      itemStyle={{ color: '#3b82f6', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}
-                      labelStyle={{ color: '#64748b', marginBottom: '6px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '800' }}
+                      itemStyle={{ color: '#3b82f6', fontWeight: '900', textTransform: 'uppercase', fontSize: '13px' }}
+                      labelStyle={{ color: '#64748b', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
                       labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      formatter={(val: number) => [`R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'FECHAMENTO']}
+                      formatter={(val: number) => [formatNumber(val, { style: 'currency' }), 'VALOR DE FECHAMENTO']}
                     />
                     <Area 
                       type="monotone" 
@@ -312,20 +316,30 @@ export default function Asset() {
                       stroke="#3b82f6" 
                       fillOpacity={1} 
                       fill="url(#colorPrice)" 
-                      strokeWidth={2} 
-                      filter="url(#chartGlow)"
-                      animationDuration={2000} 
-                      activeDot={{ r: 5, stroke: '#3b82f6', strokeWidth: 2, fill: '#fff' }}
+                      strokeWidth={4} 
+                      filter="url(#chartGlowPremium)"
+                      animationDuration={2000}
+                      animationEasing="ease-in-out"
+                      activeDot={{ 
+                        r: 6, 
+                        stroke: '#3b82f6', 
+                        strokeWidth: 3, 
+                        fill: '#fff',
+                        className: 'animate-pulse' 
+                      }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center bg-white/[0.01] rounded-3xl border border-dashed border-white/5">
-                  <p className="text-slate-700 text-[10px] font-black uppercase tracking-[0.3em] italic opacity-40">Nenhum dado histórico encontrado</p>
+                <div className="h-full flex items-center justify-center bg-white/[0.01] rounded-xl md:rounded-2xl border border-dashed border-white/5">
+                  <p className="text-slate-700 text-[10px] font-black uppercase tracking-[0.3em] italic opacity-40">Motor Nexus aguardando telemetria...</p>
                 </div>
               )}
             </div>
           </div>
+
+          {/* AI Intelligence Section */}
+          <NexusAIIntel ticker={ticker!} assetData={assetData} history={history} />
 
           {/* Indicators Grid - Cleaner, No Containers */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 border-t border-white/5">

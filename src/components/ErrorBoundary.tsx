@@ -32,8 +32,8 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-[#020617] border border-red-500/20 rounded-[2.5rem] m-4 shadow-2xl">
-          <div className="w-20 h-20 bg-red-500/10 rounded-[2rem] flex items-center justify-center mb-8 border border-red-500/20 animate-pulse">
+        <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-[#020617] border border-red-500/20 rounded-xl md:rounded-2xl m-4 shadow-2xl">
+          <div className="w-20 h-20 bg-red-500/10 rounded-xl md:rounded-2xl flex items-center justify-center mb-8 border border-red-500/20 animate-pulse">
             <AlertTriangle size={36} className="text-red-500" />
           </div>
           <h2 className="text-3xl font-display font-black text-white mb-4 tracking-tighter uppercase italic">Ops! Algo deu errado.</h2>

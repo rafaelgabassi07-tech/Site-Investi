@@ -777,7 +777,7 @@ interface YahooFundamentalsData {
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   ensureYahooConfig();
   
-  const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]$/.test(ticker);
+  const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(ticker);
   const symbols = isBRLSymbol ? [`${ticker.replace(RE_SA, '')}.SA`] : [ticker.toUpperCase()];
   
   // For cryptos, maybe they need -USD suffix
@@ -794,8 +794,6 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
       }
       
       const q = quote as any;
-      console.log(`[Nexus Debug] Yahoo Quote for ${symbol}: Price=${q.regularMarketPrice}, Currency=${q.currency}`);
-      
       if (!q.regularMarketPrice) continue;
       
       return {
@@ -820,6 +818,48 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
   return null;
 }
 
+async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuoteData>> {
+  ensureYahooConfig();
+  const results = new Map<string, YahooQuoteData>();
+  if (tickers.length === 0) return results;
+
+  const symbols = tickers.map(t => {
+    const isBRLSymbol = t.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(t);
+    return isBRLSymbol ? `${t.replace(RE_SA, '')}.SA` : t.toUpperCase();
+  });
+
+  try {
+    const quotes = await yahooFinance.quote(symbols);
+    const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+    
+    quoteList.forEach((q: any) => {
+      if (!q || !q.symbol) return;
+      
+      const data: YahooQuoteData = {
+        regularMarketPrice:          q.regularMarketPrice,
+        regularMarketChangePercent:  q.regularMarketChangePercent,
+        trailingPE:                  q.trailingPE,
+        priceToBook:                 q.priceToBook,
+        bookValue:                   q.bookValue,
+        epsTrailingTwelveMonths:     q.epsTrailingTwelveMonths,
+        trailingAnnualDividendYield: q.trailingAnnualDividendYield,
+        marketCap:                   q.marketCap,
+        longName:                    q.longName,
+        shortName:                   q.shortName,
+        currency:                    q.currency,
+      };
+      
+      const baseTicker = q.symbol.replace(RE_SA, '');
+      results.set(baseTicker, data);
+      if (q.symbol.includes('-')) results.set(q.symbol.split('-')[0], data);
+    });
+  } catch (e) {
+    console.error('[Nexus Bulk] Error in bulk quote:', e);
+  }
+  
+  return results;
+}
+
 async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<YahooFundamentalsData> {
   ensureYahooConfig();
   const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
@@ -827,8 +867,7 @@ async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<Ya
   for (const symbol of symbols) {
     try {
       const result = await yahooFinance.quoteSummary(symbol, {
-        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile'],
-        validate: false
+        modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
       } as any);
       
       if (!result) continue;
@@ -974,8 +1013,7 @@ export class NexusEngine {
     for (const symbol of symbols) {
       try {
         const result = await yahooFinance.quoteSummary(symbol, {
-          modules: ['incomeStatementHistory', 'balanceSheetHistory', 'earningsHistory', 'defaultKeyStatistics'],
-          validate: false
+          modules: ['incomeStatementHistory', 'balanceSheetHistory', 'earningsHistory', 'defaultKeyStatistics']
         } as any);
 
         if (!result) continue;
@@ -1170,19 +1208,24 @@ export class NexusEngine {
   static async fetchNews(ticker: string): Promise<NewsItem[]> {
     const clean = canonicalizeTicker(ticker);
     try {
-      // Usando um timeout menor e headers mais realistas
-      const res = await fetch(`https://news.google.com/rss/search?q=${clean}+acao+OR+fii+OR+b3&hl=pt-BR&gl=BR&ceid=BR:pt-419`, {
+      const isGlobal = clean === 'IBOVESPA';
+      const query = isGlobal 
+        ? `mercado financeiro OR bolsa de valores OR ibovespa+when:15d`
+        : `${clean}+acao OR fii OR b3+when:15d`;
+        
+      const res = await fetch(`https://news.google.com/rss/search?q=${query}&hl=pt-BR&gl=BR&ceid=BR:pt-419`, {
         headers: { 'User-Agent': getRandomAgent() }
       });
       if (!res.ok) return [];
       const xml = await res.text();
       
       const items: NewsItem[] = [];
-      // Regex mais robusto para capturar itens
       const itemRegex = /<item>([\s\S]*?)<\/item>/g;
       let match;
       
-      while ((match = itemRegex.exec(xml)) !== null && items.length < 8) {
+      const maxItems = isGlobal ? 30 : 8;
+      
+      while ((match = itemRegex.exec(xml)) !== null) {
         const itemXml = match[1];
         const titleMatch = /<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/.exec(itemXml);
         const linkMatch = /<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/.exec(itemXml);
@@ -1190,24 +1233,34 @@ export class NexusEngine {
         const sourceMatch = /<source[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/source>/.exec(itemXml);
         
         if (titleMatch && linkMatch) {
-          // Limpeza básica de HTML entities
           const cleanTitle = titleMatch[1]
             .replace(/&amp;/g, '&')
             .replace(/&quot;/g, '"')
             .replace(/&apos;/g, "'")
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
-            .replace(/ - [^-]+$/, ''); // Remove o nome da fonte do título se estiver no final (padrão Google News)
+            .replace(/ - [^-]+$/, '');
 
-          items.push({
-            title: cleanTitle,
-            link: linkMatch[1],
-            pubDate: pubDateMatch ? new Date(pubDateMatch[1]) : undefined,
-            source: sourceMatch ? sourceMatch[1] : undefined,
-          });
+          const pubDate = pubDateMatch ? new Date(pubDateMatch[1]) : new Date();
+          
+          // Only keep news from last 15 days
+          const diffDays = (new Date().getTime() - pubDate.getTime()) / (1000 * 3600 * 24);
+          
+          if (diffDays <= 15) {
+            items.push({
+              title: cleanTitle,
+              link: linkMatch[1],
+              pubDate: pubDate,
+              source: sourceMatch ? sourceMatch[1] : undefined,
+            });
+          }
         }
       }
-      return items;
+      
+      // Sort newest to oldest
+      items.sort((a, b) => (b.pubDate as Date).getTime() - (a.pubDate as Date).getTime());
+      
+      return items.slice(0, maxItems);
     } catch (e) {
       console.error(`[Nexus] Error fetching news for ${ticker}:`, e);
       return [];
@@ -1251,10 +1304,37 @@ export class NexusEngine {
 
       const tickers = popularTickers[type] || popularTickers.ACAO;
       
-      // Buscamos dados básicos para esses ativos
+      // Step 1: Bulk Fetch from Yahoo (Fast)
+      const bulkQuotes = await yahooQuoteBulk(tickers);
+
+      // Step 2: Complement with individual fetches only if missing
       const results = await this.executeBatch(
         tickers.map((ticker: string) => async () => {
           try {
+            const q = bulkQuotes.get(ticker);
+            
+            // If we have Yahoo data, use it to avoid slow scraper hits in ranking
+            if (q) {
+              const rawData = {
+                precoAtual: q.regularMarketPrice,
+                variacaoDay: q.regularMarketChangePercent != null ? `${q.regularMarketChangePercent > 0 ? '+' : ''}${q.regularMarketChangePercent.toFixed(2)}%` : '0,00%',
+                dividendYield: q.trailingAnnualDividendYield != null ? `${(q.trailingAnnualDividendYield * 100).toFixed(2)}%` : '0,00%',
+                pl: q.trailingPE != null ? q.trailingPE.toFixed(2) : '0,00',
+                pvp: q.priceToBook != null ? q.priceToBook.toFixed(2) : '0,00',
+                marketCap: q.marketCap,
+                name: q.longName || q.shortName || ticker,
+                currency: q.currency || 'BRL'
+              };
+
+              return {
+                ticker: ticker,
+                name: rawData.name,
+                value: 'N/A',
+                subValue: `R$ ${rawData.precoAtual || '0,00'}`,
+                raw: rawData
+              };
+            }
+
             const data = await this.fetchAtivo(ticker, type);
             if (!data || !data.results) return null;
             return {
@@ -1580,25 +1660,18 @@ export class NexusEngine {
       // but keep Yahoo as a fallback for missing fields or real-time price updates if Scraper hasn't updated recently.
       const combined = { ...scrape.data } as Record<string, any>;
       
-      console.log(`[Nexus Debug] Fetching ${ticker}: Scraper=${Object.keys(combined).length} keys, Yahoo=${quote ? 'Yes':'No'}`);
-
       if (quote) {
         const q = quote as any;
-        // Fallback-only fill (only if scraper didn't provide specific value)
-        if (combined['precoAtual'] === undefined && q.regularMarketPrice != null) {
+        // Priority: Real-time price from Yahoo over scraper
+        if (q.regularMarketPrice != null) {
           combined['precoAtual'] = q.regularMarketPrice;
         }
         if (combined['currency'] === undefined) combined['currency'] = q.currency;
-        if (combined['variacaoDay'] === undefined && q.regularMarketChangePercent != null) {
-          combined['variacaoDay'] = q.regularMarketChangePercent.toFixed(2) + '%';
+        if (q.regularMarketChangePercent != null) {
+          combined['variacaoDay'] = (q.regularMarketChangePercent > 0 ? '+' : '') + q.regularMarketChangePercent.toFixed(2) + '%';
         }
         if (combined['name'] === undefined) combined['name'] = q.longName || q.shortName;
       }
-      
-      // ... (rest of the logic keeps filled fields)
-      
-      // Enhanced diagnostic log
-      console.log(`[Nexus Debug] Final result for ${ticker}: Price=${combined['precoAtual']}, Currency=${combined['currency']}`);
 
       // Prefer scraped market properties over Yahoo as they are usually more specific to the B3 market
       if (combined['valorMercado']) combined['marketCap'] = combined['valorMercado'];
@@ -1722,89 +1795,106 @@ export class NexusEngine {
   static async fetchDividends(ticker: string): Promise<any[]> {
     const cleanTicker = canonicalizeTicker(ticker);
     const assetType = inferAssetType(cleanTicker);
-    const isBrazilian = /^[A-Z]{4}[0-9]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
-
-    if (isBrazilian) {
-      try {
-        const scrapeResult = await this.fetchAtivo(cleanTicker, assetType);
-        const htmlTable = scrapeResult.results?.dividendosRaw;
+    
+    // Primary source: Scraping (resilient)
+    try {
+      const scrapeResult = await this.fetchAtivo(cleanTicker, assetType);
+      let htmlTable = scrapeResult.results?.dividendosRaw;
+      
+      // Secondary attempt if primary scraper failed to find the specific table ID
+      if (!htmlTable && scrapeResult.results?.html) {
+        const tableMatch = scrapeResult.results.html.match(/<table[^>]*>(?:[\s\S]*?)(?:Data COM|Pagamento)(?:[\s\S]*?)<\/table>/i);
+        if (tableMatch) htmlTable = tableMatch[0];
+      }
+      
+      if (htmlTable) {
+        const dividends: any[] = [];
+        const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+        const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
         
-        if (htmlTable) {
-          const dividends: any[] = [];
-          const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
-          const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
+        let rowMatch;
+        // Skip header if it exists
+        const rows = [...htmlTable.matchAll(rowRegex)];
+        for (const rowMatch of rows) {
+          const cells: string[] = [];
+          let cellMatch;
+          const rowHtml = rowMatch[1];
+          while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
+            cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
+          }
           
-          let rowMatch;
-          while ((rowMatch = rowRegex.exec(htmlTable)) !== null) {
-            const cells: string[] = [];
-            let cellMatch;
-            const rowHtml = rowMatch[1];
-            while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-              cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
-            }
+          if (cells.length >= 4) {
+            // Investidor10 table variants
+            // Common: [Tipo, Data COM, Pagamento, Valor]
+            // FII: [Rendimento, Data Base, Pagamento, Valor]
+            const tipo = cells[0];
+            const dataComRaw = cells[1];
+            const pagamentoRaw = cells[2];
+            const valorRaw = cells[3];
             
-            if (cells.length >= 4) {
-              // Investidor10 table: [Tipo, Data COM, Pagamento, Valor]
-              const tipo = cells[0];
-              const dataComRaw = cells[1];
-              const pagamentoRaw = cells[2];
-              const valorRaw = cells[3];
-              
+            if (dataComRaw.includes('/')) {
               const [d, m, y] = dataComRaw.split('/');
-              if (d && m && y) {
+              if (d && m && y && y.length === 4) {
                 const date = new Date(`${y}-${m}-${d}T12:00:00Z`);
                 
                 let paymentDate = date.toISOString();
-                if (pagamentoRaw && pagamentoRaw !== '-') {
+                if (pagamentoRaw && pagamentoRaw.includes('/')) {
                   const [pd, pm, py] = pagamentoRaw.split('/');
-                  if (pd && pm && py) paymentDate = new Date(`${py}-${pm}-${pd}T12:00:00Z`).toISOString();
+                  if (pd && pm && py && py.length === 4) paymentDate = new Date(`${py}-${pm}-${pd}T12:00:00Z`).toISOString();
                 }
                 
-                const amount = parseFloat(valorRaw.replace('R$', '').replace(/\./g, '').replace(',', '.').trim());
+                const amountClean = valorRaw.replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+                const amount = parseFloat(amountClean);
                 
-                dividends.push({
-                  date: date.toISOString(),
-                  paymentDate,
-                  dataCom: date.toISOString(),
-                  amount: isNaN(amount) ? 0 : amount,
-                  type: tipo || 'Dividendo'
-                });
+                if (!isNaN(amount) && amount > 0) {
+                  dividends.push({
+                    date: date.toISOString(),
+                    paymentDate,
+                    dataCom: date.toISOString(),
+                    amount: amount,
+                    type: tipo || (cleanTicker.endsWith('11') ? 'Rendimento' : 'Dividendo')
+                  });
+                }
               }
             }
           }
-          
-          if (dividends.length > 0) {
-            return dividends.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          }
         }
-      } catch (err) {
-        console.warn(`[SCRAPER] Falha ao raspar dividendos para ${cleanTicker}:`, err);
-      }
-    }
-
-    // Fallback ou padrão para ativos internacionais: Yahoo Finance
-    const symbols = [isBrazilian ? `${cleanTicker}.SA` : cleanTicker, cleanTicker];
-    for (const symbol of symbols) {
-      try {
-        const result = await yahooFinance.historical(symbol, {
-          period1: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          events: 'dividends',
-          validate: false
-        } as any);
         
-        if (!result || !Array.isArray(result) || result.length === 0) continue;
-
-        return result.map((d: any) => ({
-          date: new Date(d.date).toISOString(),
-          paymentDate: new Date(d.date).toISOString(), // YF generally provides Ex-Date for events.
-          dataCom: new Date(d.date).toISOString(),
-          amount: d.dividends || d.amount || 0,
-          type: 'VALOR'
-        })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      } catch (e) {
-        continue;
+        if (dividends.length > 0) {
+          return dividends.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        }
       }
+    } catch (err) {
+      console.warn(`[Nexus] Dividend scraping failed for ${ticker}`, err);
     }
+
+    // Secondary source: Yahoo Finance (Historical Dividends)
+    try {
+      ensureYahooConfig();
+      const symbol = cleanTicker.endsWith('.SA') ? cleanTicker : (assetType === 'ACAO' || assetType === 'FII' ? `${cleanTicker}.SA` : cleanTicker);
+      const today = new Date();
+      const fiveYearsAgo = new Date();
+      fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+
+      const historical = await yahooFinance.historical(symbol, {
+        period1: fiveYearsAgo,
+        period2: today,
+        events: 'dividends'
+      } as any);
+
+      if (Array.isArray(historical) && historical.length > 0) {
+        return historical.map((h: any) => ({
+          date: h.date?.toISOString(),
+          paymentDate: h.date?.toISOString(),
+          dataCom: h.date?.toISOString(),
+          amount: h.dividends || 0,
+          type: cleanTicker.endsWith('11') ? 'Rendimento' : 'Dividendo'
+        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      }
+    } catch (err) {
+      console.warn(`[Nexus] Yahoo dividends failed for ${ticker}`, err);
+    }
+
     return [];
   }
 

@@ -16,12 +16,28 @@ export default function News() {
 
   useEffect(() => {
     financeService.getNews().then(async (newsData) => {
-      setNews(newsData);
+      // Filter news from the last 15 days
+      const fifteenDaysAgo = new Date();
+      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+      
+      const filteredByDate = newsData.filter(item => {
+        const displayDate = item.pubDate ? new Date(item.pubDate) : (item.providerPublishTime ? new Date(item.providerPublishTime * 1000) : new Date());
+        return displayDate >= fifteenDaysAgo;
+      });
+
+      // Sort newest to oldest
+      const sortedByDate = filteredByDate.sort((a, b) => {
+        const dateA = a.pubDate ? new Date(a.pubDate).getTime() : (a.providerPublishTime ? a.providerPublishTime * 1000 : 0);
+        const dateB = b.pubDate ? new Date(b.pubDate).getTime() : (b.providerPublishTime ? b.providerPublishTime * 1000 : 0);
+        return dateB - dateA;
+      });
+
+      setNews(sortedByDate);
       setLoading(false);
       
       // Analyze news after loading
-      if (newsData.length > 0) {
-        const analysisData = await financeService.analyzeNews(newsData);
+      if (sortedByDate.length > 0) {
+        const analysisData = await financeService.analyzeNews(sortedByDate);
         setAnalysis(analysisData);
       }
     }).catch(err => {
@@ -68,10 +84,10 @@ export default function News() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-5 md:p-12 bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] md:rounded-[3rem] flex flex-col md:flex-row items-center gap-6 md:gap-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] relative overflow-hidden group mb-8"
+          className="p-5 md:p-12 bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-xl md:rounded-2xl md:rounded-2xl flex flex-col md:flex-row items-center gap-6 md:gap-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] relative overflow-hidden group mb-8"
         >
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/[0.03] blur-[120px] -z-10 group-hover:scale-125 transition-transform duration-1000" />
-          <div className="w-20 h-20 md:w-28 md:h-28 rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shrink-0 shadow-[0_20px_50px_rgba(37,99,235,0.4)] border border-blue-400/30 group-hover:scale-105 transition-transform duration-700">
+          <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shrink-0 shadow-[0_20px_50px_rgba(37,99,235,0.4)] border border-blue-400/30 group-hover:scale-105 transition-transform duration-700">
             <Zap className="w-10 h-10 text-white animate-pulse" />
           </div>
           <div className="flex-1 text-center md:text-left">
@@ -134,7 +150,7 @@ export default function News() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
-              className="bg-slate-900/20 border border-white/5 rounded-[2.5rem] md:rounded-[3rem] group hover:border-blue-500/30 transition-all duration-700 flex flex-col relative overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] hover:shadow-blue-500/10"
+              className="bg-slate-900/20 border border-white/5 rounded-xl md:rounded-2xl md:rounded-2xl group hover:border-blue-500/30 transition-all duration-700 flex flex-col relative overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] hover:shadow-blue-500/10"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10 group-hover:bg-blue-600/10 transition-all duration-1000" />
               
@@ -189,7 +205,7 @@ export default function News() {
           );
         }) : (
           <div className="col-span-full py-32 text-center group">
-            <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-white/10 group-hover:scale-110 transition-transform duration-500">
+            <div className="w-24 h-24 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-8 border border-white/10 group-hover:scale-110 transition-transform duration-500">
               <Newspaper className="w-10 h-10 text-slate-600" />
             </div>
             <h3 className="text-display-tiny text-white uppercase italic mb-3">Selo de Silêncio Nexus</h3>

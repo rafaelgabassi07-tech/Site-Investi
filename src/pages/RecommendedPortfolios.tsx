@@ -57,7 +57,7 @@ export default function RecommendedPortfolios() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 hover:border-white/20 transition-all group cursor-pointer relative overflow-hidden shadow-xl"
+            className="bg-white/5 border border-white/5 rounded-xl md:rounded-2xl p-8 hover:border-white/20 transition-all group cursor-pointer relative overflow-hidden shadow-xl"
             onClick={() => window.location.href = `/search?q=${portfolio.assets.join(',')}`}
           >
             <div className={`absolute top-0 right-0 w-48 h-48 bg-${portfolio.color}-500/5 blur-[80px] -z-10`} />

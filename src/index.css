@@ -36,42 +36,43 @@
 
 @layer base {
   :root {
+    --background: white;
+    --foreground: #020617;
+    --card: #f8fafc;
+    --card-foreground: #020617;
+    --popover: white;
+    --popover-foreground: #020617;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --destructive: #EF4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #ffffff;
+    --ring: #3b82f6;
+    --radius: 1rem;
+  }
+
+  .dark {
     --background: #020617;
     --foreground: #f8fafc;
     --card: #0f172a;
     --card-foreground: #f8fafc;
     --popover: #0f172a;
     --popover-foreground: #f8fafc;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
     --secondary: #1e293b;
     --secondary-foreground: #f8fafc;
-    --muted: #334155;
+    --muted: #1e293b;
     --muted-foreground: #94a3b8;
     --accent: #1e293b;
     --accent-foreground: #f8fafc;
-    --destructive: #EF4444;
-    --destructive-foreground: #ffffff;
     --border: #1e293b;
     --input: #0f172a;
-    --ring: #3b82f6;
-    --radius: 1rem;
-  }
-
-  .home-light {
-    --background: #f8fafc;
-    --foreground: #0f172a;
-    --card: #ffffff;
-    --card-foreground: #0f172a;
-    --popover: #ffffff;
-    --popover-foreground: #0f172a;
-    --secondary: #f1f5f9;
-    --secondary-foreground: #0f172a;
-    --muted: #e2e8f0;
-    --muted-foreground: #64748b;
-    --border: #e2e8f0;
-    --input: #ffffff;
-    --color-border: rgba(0, 0, 0, 0.05);
   }
 }
 
@@ -89,7 +90,7 @@
 
 @layer components {
   .card {
-    @apply bg-black/60 backdrop-blur-3xl border border-white/5 rounded-3xl md:rounded-[2rem] shadow-2xl overflow-hidden transition-all duration-700 hover:border-white/10 hover:bg-black/80;
+    @apply bg-black/60 backdrop-blur-3xl border border-white/5 rounded-3xl md:rounded-xl md:rounded-2xl shadow-2xl overflow-hidden transition-all duration-700 hover:border-white/10 hover:bg-black/80;
   }
   
   .glass-panel {
@@ -136,6 +137,35 @@
   .text-display-2xl { @apply font-display text-5xl sm:text-6xl md:text-7xl tracking-tighter uppercase font-bold; }
   .text-mono { @apply font-mono tracking-tight; }
   .text-label { @apply text-[9px] sm:text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 italic; }
+
+  /* Nexus System Standards */
+  .nexus-grid {
+    @apply grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6;
+  }
+
+  .nexus-card {
+    @apply p-3 md:p-5 bg-slate-900/20 border border-white/5 rounded-lg md:rounded-xl transition-all duration-500 overflow-hidden relative;
+  }
+
+  .nexus-title {
+    @apply text-[10px] md:text-sm font-black text-white uppercase italic tracking-tighter leading-tight;
+  }
+
+  .nexus-hero {
+    @apply text-2xl md:text-3xl font-display font-black text-white italic tracking-tighter uppercase leading-none;
+  }
+
+  .nexus-stat {
+    @apply text-xl md:text-2xl font-display font-black text-white italic tracking-tighter uppercase leading-none;
+  }
+
+  .nexus-description {
+    @apply text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-widest italic leading-tight;
+  }
+
+  .nexus-label {
+    @apply text-[8px] md:text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] italic;
+  }
 }
 
 .recharts-cartesian-grid-horizontal line,
@@ -155,6 +185,28 @@
   stroke: rgba(59, 130, 246, 0.2);
 }
 
+/* Fix for Recharts Selection Rectangle and Interaction Borders */
+.recharts-surface:focus,
+.recharts-wrapper:focus,
+svg:focus,
+rect:focus,
+path:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.recharts-default-tooltip {
+  @apply !border-white/10 !bg-slate-900/90 !backdrop-blur-2xl !rounded-2xl !shadow-2xl;
+}
+
+.recharts-text {
+  user-select: none;
+}
+
+.chart-glow {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+}
+
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
     width: 6px;
@@ -169,41 +221,6 @@
   }
 }
 
-/* Light Theme Overrides for hardcoded classes */
-.light-theme {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #e2e8f0;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --input: #ffffff;
-}
-
-body.light-theme .bg-\[\#020617\] { background-color: var(--background) !important; }
-body.light-theme .bg-\[\#0f172a\] { background-color: var(--card) !important; }
-body.light-theme .text-white { color: var(--foreground) !important; }
-body.light-theme .text-slate-200 { color: #334155 !important; }
-body.light-theme .text-slate-300 { color: #475569 !important; }
-body.light-theme .text-slate-400 { color: #64748b !important; }
-body.light-theme .border-white\/5 { border-color: rgba(0,0,0,0.1) !important; }
-body.light-theme .border-white\/10 { border-color: rgba(0,0,0,0.15) !important; }
-body.light-theme .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
-body.light-theme .bg-white\/10 { background-color: rgba(0,0,0,0.05) !important; }
-body.light-theme .hover\:bg-white\/5:hover { background-color: rgba(0,0,0,0.08) !important; }
-body.light-theme .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.12) !important; }
-body.light-theme .card { background-color: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); }
-body.light-theme .glass-panel { background-color: rgba(255,255,255,0.7); border-color: rgba(0,0,0,0.1); }
-body.light-theme .from-\[\#020617\] { --tw-gradient-from: var(--background) !important; --tw-gradient-to: transparent !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-body.light-theme .via-\[\#020617\] { --tw-gradient-stops: var(--tw-gradient-from), var(--background), var(--tw-gradient-to) !important; }
-body.light-theme .from-\[\#0f172a\] { --tw-gradient-from: var(--card) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-body.light-theme .via-\[\#0f172a\] { --tw-gradient-stops: var(--tw-gradient-from), var(--card), var(--tw-gradient-to) !important; }
-
 @layer utilities {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
@@ -214,4 +231,12 @@ body.light-theme .via-\[\#0f172a\] { --tw-gradient-stops: var(--tw-gradient-from
   .element-spacing {
     @apply my-2 md:my-4;
   }
+}
+
+body.hide-values .mask-value {
+  filter: blur(5px);
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+  transition: all 0.3s ease;
 }

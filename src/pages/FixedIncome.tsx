@@ -56,7 +56,7 @@ export default function FixedIncome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           {/* Simulator Section */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-6 md:p-8 shadow-xl relative overflow-hidden">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-xl md:rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] -z-10" />
             
             <div className="flex items-center gap-4 mb-8">
@@ -212,7 +212,7 @@ export default function FixedIncome() {
         </div>
 
         <div className="space-y-4">
-          <div className="bg-[#0f172a] border border-white/5 rounded-[2rem] p-6 shadow-xl">
+          <div className="bg-[#0f172a] border border-white/5 rounded-xl md:rounded-2xl p-6 shadow-xl">
             <h3 className="text-display-tiny text-white mb-6 flex items-center gap-3 uppercase">
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                 <TrendingUp className="icon-xs text-blue-500" />
@@ -237,7 +237,7 @@ export default function FixedIncome() {
             </div>
           </div>
 
-          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-[2rem] p-6 shadow-lg">
+          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl md:rounded-2xl p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
               <ShieldCheck className="icon-sm text-emerald-500" />
               <h4 className="text-label text-emerald-400">Garantia FGC</h4>

@@ -30,6 +30,16 @@ export async function createServer() {
     });
 
     // API Routes
+    app.get("/api/download-engine", (req, res) => {
+      const enginePath = path.join(process.cwd(), 'src', 'lib', 'nexus', 'engine.ts');
+      
+      if (fs.existsSync(enginePath)) {
+        res.download(enginePath, 'nexus-engine.ts');
+      } else {
+        res.status(404).json({ error: "Source file not found." });
+      }
+    });
+
     app.get("/api/health", (_req, res) => {
       res.json({ status: "ok", time: new Date().toISOString() });
     });

@@ -1,15 +1,21 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter, Download, Scale, FileText, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Menu as MenuIcon, Briefcase, Search, Heart, Newspaper, Calendar, Award, Calculator, HelpCircle, Bell, HeadphonesIcon, Info, ChevronRight, Crown, ShieldCheck, GitCompare, Filter, Download, Scale, FileText, TrendingUp, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 
 export default function Menu() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -54,84 +60,99 @@ export default function Menu() {
   ];
 
   const maisOpcoes = [
-    { icon: Bell, label: 'Notificações', to: '#', badge: '20' },
-    { icon: Bell, label: 'Notificações via push', to: '#' },
-    { icon: HeadphonesIcon, label: 'Suporte', to: '#' },
+    { icon: MenuIcon, label: 'Configurações', to: '/settings' },
+    { icon: Info, label: 'Central de Ajuda', to: '/guide' },
+    { icon: HeadphonesIcon, label: 'Suporte Nexus', to: 'mailto:suporte@nexusinvest.com' },
     { icon: Info, label: 'Sobre o Nexus Invest', to: '/about' },
   ];
 
   return (
-    <div className="space-y-8 pb-32">
+    <div className="space-y-8 pb-32 bg-background transition-colors duration-500">
       <div className="pt-8 px-4 md:px-0">
-        <h2 className="text-tiny font-black text-slate-500 uppercase tracking-[0.2em] mb-4 ml-3">Minha Identidade</h2>
+        <h2 className="text-tiny font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-3">Minha Identidade</h2>
         
-        <div className="flex items-center gap-6 bg-white/5 p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
+        <div className="flex items-center gap-6 bg-card p-6 rounded-xl md:rounded-2xl border border-border shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[50px] -z-10 group-hover:scale-150 transition-transform duration-700" />
           <div className="w-16 h-16 rounded-[1.25rem] bg-blue-600 flex items-center justify-center text-display-tiny font-black text-white shadow-xl shadow-blue-500/20 border border-blue-400/20 uppercase italic">
             {displayName[0].toUpperCase()}
           </div>
-          <div className="flex-1">
-            <h3 className="text-display-tiny text-white uppercase italic tracking-tight">{displayName}</h3>
-            <p className="text-tiny font-bold text-slate-500 uppercase tracking-widest">{user?.email}</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-display-tiny text-foreground uppercase italic tracking-tight truncate">{displayName}</h3>
+            <p className="text-tiny font-bold text-muted-foreground uppercase tracking-widest truncate">{user?.email}</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
-            <ChevronRight className="text-slate-600 icon-xs" />
+          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center border border-border">
+            <ChevronRight className="text-muted-foreground icon-xs" />
           </div>
         </div>
       </div>
 
       <div className="px-4 md:px-0">
-        <h2 className="text-tiny font-black text-slate-500 uppercase tracking-[0.2em] mb-4 ml-3">Arsenall Ferramentas</h2>
-        <div className="bg-white/5 border border-white/5 rounded-[2.5rem] overflow-hidden divide-y divide-white/5 shadow-xl">
+        <h2 className="text-tiny font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-3">Arsenall Ferramentas</h2>
+        <div className="bg-card border border-border rounded-xl md:rounded-2xl overflow-hidden divide-y divide-border shadow-xl">
           {ferramentas.map((item, idx) => (
-            <Link key={idx} to={item.to} className="flex items-center justify-between p-5 hover:bg-white/10 transition-all group">
+            <Link key={idx} to={item.to} className="flex items-center justify-between p-6 hover:bg-secondary transition-all group">
               <div className="flex items-center gap-5">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-blue-600/10 transition-colors border border-white/5 group-hover:border-blue-500/20">
-                  <item.icon className="icon-xs text-slate-500 group-hover:text-blue-500 transition-colors" />
+                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center group-hover:bg-blue-600/10 transition-colors border border-border group-hover:border-blue-500/20">
+                  <item.icon className="icon-xs text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 </div>
-                <span className="text-display-tiny text-slate-200 uppercase italic tracking-tight group-hover:text-white transition-colors">{item.label}</span>
+                <span className="text-display-tiny text-foreground uppercase italic tracking-tight group-hover:text-blue-500 transition-colors">{item.label}</span>
               </div>
-              <ChevronRight className="text-slate-700 group-hover:text-slate-400 transition-colors icon-xs" />
+              <ChevronRight className="text-muted-foreground group-hover:text-foreground transition-colors icon-xs" />
             </Link>
           ))}
         </div>
       </div>
 
       <div className="px-4 md:px-0">
-        <h2 className="text-tiny font-black text-slate-500 uppercase tracking-[0.2em] mb-4 ml-3">Nexus Terminal</h2>
-        <div className="bg-white/5 border border-white/5 rounded-[2.5rem] overflow-hidden divide-y divide-white/5 shadow-xl">
+        <h2 className="text-tiny font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-3">Nexus Terminal</h2>
+        <div className="bg-card border border-border rounded-xl md:rounded-2xl overflow-hidden divide-y divide-border shadow-xl">
           {isInstallable && (
             <button 
               onClick={handleInstallClick}
-              className="w-full flex items-center justify-between p-5 hover:bg-white/10 transition-all group"
+              className="w-full flex items-center justify-between p-6 hover:bg-secondary transition-all group text-left"
             >
               <div className="flex items-center gap-5">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center group-hover:bg-blue-600/20 transition-colors border border-blue-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600/10 flex items-center justify-center group-hover:bg-blue-600/20 transition-colors border border-blue-500/20">
                   <Download className="icon-xs text-blue-500" />
                 </div>
-                <span className="text-display-tiny text-blue-400 uppercase italic tracking-tight">Instalar Aplicativo</span>
+                <span className="text-display-tiny text-blue-500 uppercase italic tracking-tight">Instalar Aplicativo</span>
               </div>
-              <ChevronRight className="text-slate-700 group-hover:text-slate-400 transition-colors icon-xs" />
+              <ChevronRight className="text-muted-foreground group-hover:text-blue-500 transition-colors icon-xs" />
             </button>
           )}
-          {maisOpcoes.map((item, idx) => (
-            <Link key={idx} to={item.to} className="flex items-center justify-between p-5 hover:bg-white/10 transition-all group">
+          {maisOpcoes.map((item, idx) => {
+            const isExternal = item.to.startsWith('mailto:') || item.to.startsWith('http');
+            const Wrapper = isExternal ? 'a' : Link;
+            return (
+            <Wrapper key={idx} to={!isExternal ? item.to : undefined} href={isExternal ? item.to : undefined} className="flex items-center justify-between p-6 hover:bg-secondary transition-all group">
               <div className="flex items-center gap-5">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-blue-600/10 transition-colors border border-white/5 group-hover:border-blue-500/20">
-                  <item.icon className="icon-xs text-slate-500 group-hover:text-blue-500 transition-colors" />
+                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center group-hover:bg-blue-600/10 transition-colors border border-border group-hover:border-blue-500/20">
+                  <item.icon className="icon-xs text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 </div>
-                <span className="text-display-tiny text-slate-200 uppercase italic tracking-tight group-hover:text-white transition-colors">{item.label}</span>
+                <span className="text-display-tiny text-foreground uppercase italic tracking-tight group-hover:text-blue-500 transition-colors">{item.label}</span>
               </div>
               <div className="flex items-center gap-4">
-                {item.badge && (
-                  <span className="px-3 py-1 bg-blue-600/20 text-blue-400 text-[10px] font-black rounded-full border border-blue-500/20 shadow-lg shadow-blue-500/5 uppercase tracking-widest">
-                    {item.badge} New
+                {(item as any).badge && (
+                  <span className="px-3 py-1 bg-blue-600/20 text-blue-500 text-[10px] font-black rounded-full border border-blue-500/20 shadow-lg shadow-blue-500/5 uppercase tracking-widest">
+                    {(item as any).badge} New
                   </span>
                 )}
-                <ChevronRight className="text-slate-700 group-hover:text-slate-400 transition-colors icon-xs" />
+                <ChevronRight className="text-muted-foreground group-hover:text-foreground transition-colors icon-xs" />
               </div>
-            </Link>
-          ))}
+            </Wrapper>
+          )})}
+          <button 
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-between p-6 hover:bg-red-500/5 transition-all group text-left"
+          >
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors border border-red-500/20">
+                <LogOut className="icon-xs text-red-500" />
+              </div>
+              <span className="text-display-tiny text-red-500 uppercase italic tracking-tight">Sair da Conta</span>
+            </div>
+            <ChevronRight className="text-muted-foreground group-hover:text-red-500 transition-colors icon-xs" />
+          </button>
         </div>
       </div>
     </div>

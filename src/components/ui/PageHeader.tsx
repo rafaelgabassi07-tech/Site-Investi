@@ -25,10 +25,10 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
           </div>
         )}
         <div>
-          <h2 className="text-lg md:text-display-md text-white mb-1 md:mb-2 leading-none italic tracking-tighter uppercase font-black">
+          <h2 className="nexus-hero mb-1 md:mb-2 !text-foreground">
             {title}
           </h2>
-          <div className="text-[9px] md:text-tiny font-black text-slate-500 uppercase tracking-widest md:tracking-[0.2em] max-w-xl opacity-80 leading-tight italic">
+          <div className="nexus-label max-w-xl opacity-80 leading-tight">
             {description}
           </div>
         </div>

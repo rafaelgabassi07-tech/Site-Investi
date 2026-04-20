@@ -110,7 +110,7 @@ export default function About() {
       </section>
 
       {/* Vision Section */}
-      <section className="bg-blue-600 rounded-[2rem] p-8 md:p-16 text-white relative overflow-hidden">
+      <section className="bg-blue-600 rounded-xl md:rounded-2xl p-8 md:p-16 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-[100px] -mr-48 -mt-48 rounded-full" />
         <div className="relative z-10 max-w-2xl space-y-8">
           <h2 className="text-display-lg text-white">

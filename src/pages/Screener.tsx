@@ -76,7 +76,7 @@ export default function Screener() {
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Filters Sidebar */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white/5 border border-white/5 rounded-[2rem] p-6 space-y-8 shadow-xl">
+          <div className="bg-white/5 border border-white/5 rounded-xl md:rounded-2xl p-6 space-y-8 shadow-xl">
             <div className="flex items-center gap-3 pl-1">
               <SlidersHorizontal className="icon-sm text-blue-500" />
               <h3 className="text-label text-white uppercase italic tracking-tight">Filtros Inteligentes</h3>
@@ -136,9 +136,9 @@ export default function Screener() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="h-full flex flex-col items-center justify-center py-20 text-center bg-white/5 border border-white/5 border-dashed rounded-[2.5rem]"
+                className="h-full flex flex-col items-center justify-center py-20 text-center bg-white/5 border border-white/5 border-dashed rounded-xl md:rounded-2xl"
               >
-                <div className="w-20 h-20 rounded-[2rem] bg-white/5 flex items-center justify-center mb-6 border border-white/5 shadow-xl">
+                <div className="w-20 h-20 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center mb-6 border border-white/5 shadow-xl">
                   <Filter className="icon-lg text-slate-500" />
                 </div>
                 <h3 className="text-display-tiny text-white mb-2 uppercase italic">Pronto para filtrar?</h3>
@@ -153,7 +153,7 @@ export default function Screener() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="h-full flex flex-col items-center justify-center py-20 text-center bg-white/5 border border-white/5 rounded-[2.5rem] shadow-xl"
+                className="h-full flex flex-col items-center justify-center py-20 text-center bg-white/5 border border-white/5 rounded-xl md:rounded-2xl shadow-xl"
               >
                 <h3 className="text-display-tiny text-white mb-2 uppercase italic">Nenhum ativo encontrado</h3>
                 <p className="text-tiny font-bold text-slate-400 max-w-xs mx-auto uppercase tracking-widest leading-relaxed">Tente ajustar seus filtros para obter mais resultados.</p>
@@ -171,7 +171,7 @@ export default function Screener() {
                   </div>
                 </div>
 
-                <div className="overflow-hidden bg-white/5 border border-white/5 rounded-[2.5rem] shadow-2xl">
+                <div className="overflow-hidden bg-white/5 border border-white/5 rounded-xl md:rounded-2xl shadow-2xl">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>

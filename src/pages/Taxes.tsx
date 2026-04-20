@@ -46,7 +46,7 @@ export default function Taxes() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Isentômetro de Ações */}
-        <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
+        <div className="bg-white/5 border border-white/5 rounded-xl md:rounded-2xl p-8 shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
             <ShieldCheck className="w-32 h-32" />
           </div>
@@ -97,7 +97,7 @@ export default function Taxes() {
         </div>
 
         {/* Resumo Tributável e DARF */}
-        <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 shadow-xl group">
+        <div className="bg-white/5 border border-white/5 rounded-xl md:rounded-2xl p-8 shadow-xl group">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-indigo-600/10 rounded-[1.25rem] flex items-center justify-center text-indigo-500 border border-indigo-500/20">
               <FileText className="icon-sm" />
@@ -203,7 +203,7 @@ export default function Taxes() {
               const totalDue = data.taxDueAcoes + data.taxDueFIIs;
 
               return (
-                <div key={month} className="bg-white/5 border border-white/5 rounded-[2rem] p-6 hover:bg-white/10 transition-all border-b-4 border-b-indigo-500/30">
+                <div key={month} className="bg-white/5 border border-white/5 rounded-xl md:rounded-2xl p-6 hover:bg-white/10 transition-all border-b-4 border-b-indigo-500/30">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="text-label text-white uppercase italic">{monthName}</h4>
@@ -238,7 +238,7 @@ export default function Taxes() {
             })}
           
           {Object.keys(taxLedger).filter(k => k !== currentMonthKey).length === 0 && (
-            <div className="col-span-full py-12 text-center bg-white/5 border border-dashed border-white/10 rounded-[2rem]">
+            <div className="col-span-full py-12 text-center bg-white/5 border border-dashed border-white/10 rounded-xl md:rounded-2xl">
               <TrendingDown className="mx-auto mb-4 text-slate-700 w-12 h-12" />
               <p className="text-label text-slate-500 uppercase italic">Nenhum histórico fiscal registrado até o momento.</p>
             </div>

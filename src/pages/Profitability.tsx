@@ -5,6 +5,8 @@ import { motion } from 'motion/react';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { useState, useEffect, useMemo } from 'react';
+import { formatNumber } from '../lib/utils';
+import { usePrivacy } from '../contexts/PrivacyContext';
 import { financeService } from '../services/financeService';
 import { PortfolioNav } from '../components/PortfolioNav';
 
@@ -103,10 +105,10 @@ export default function Profitability() {
     const bestMonth = monthlyReturns.length > 0 ? Math.max(...monthlyReturns) : 0;
 
     return [
-      { label: 'Rentabilidade Total', value: `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}%`, icon: TrendingUp, color: totalReturn >= 0 ? 'emerald' : 'red' },
-      { label: 'Média Mensal', value: `${avgMonthly >= 0 ? '+' : ''}${avgMonthly.toFixed(2)}%`, icon: Calendar, color: 'blue' },
-      { label: 'vs. IBOVESPA', value: `${alpha >= 0 ? '+' : ''}${alpha.toFixed(2)}%`, icon: Activity, color: alpha >= 0 ? 'purple' : 'red' },
-      { label: 'Melhor Mês', value: `${bestMonth >= 0 ? '+' : ''}${bestMonth.toFixed(2)}%`, icon: ArrowUpRight, color: 'emerald' },
+      { label: 'Rentabilidade Total', value: `${totalReturn >= 0 ? '+' : ''}${formatNumber(totalReturn)}%`, icon: TrendingUp, color: totalReturn >= 0 ? 'emerald' : 'red' },
+      { label: 'Média Mensal', value: `${avgMonthly >= 0 ? '+' : ''}${formatNumber(avgMonthly)}%`, icon: Calendar, color: 'blue' },
+      { label: 'vs. IBOVESPA', value: `${alpha >= 0 ? '+' : ''}${formatNumber(alpha)}%`, icon: Activity, color: alpha >= 0 ? 'purple' : 'red' },
+      { label: 'Melhor Mês', value: `${bestMonth >= 0 ? '+' : ''}${formatNumber(bestMonth)}%`, icon: ArrowUpRight, color: 'emerald' },
     ];
   }, [performanceData, portfolio]);
 
@@ -245,9 +247,10 @@ export default function Profitability() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-slate-500 uppercase tracking-widest text-[10px] font-black border border-white/5 rounded-2xl">
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 uppercase tracking-widest text-[10px] font-black border border-white/5 rounded-2xl bg-blue-500/[0.02]">
+                <Activity className="w-8 h-8 text-blue-500/20 mb-3" />
                 <span>Dados insuficientes para gerar a evolução.</span>
-                <span className="opacity-50 mt-1">É necessário ter pelo menos 2 transações em dias diferentes.</span>
+                <span className="opacity-50 mt-1 max-w-[250px] text-center">O histórico é montado automaticamente conforme você registra transações em datas diferentes.</span>
               </div>
             )}
           </div>

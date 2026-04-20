@@ -28,6 +28,7 @@ import Favorites from './pages/Favorites';
 import BeginnersGuide from './pages/BeginnersGuide';
 
 import { PortfolioProvider } from './contexts/PortfolioProvider';
+import { PrivacyProvider } from './contexts/PrivacyContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ScrollToTop } from './components/ScrollToTop';
 
@@ -83,8 +84,9 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#020617]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#020617] space-y-4">
+        <div className="w-16 h-16 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
+        <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] animate-pulse italic">Protocolo Nexus: Iniciando Sistemas...</p>
       </div>
     );
   }
@@ -103,10 +105,11 @@ export default function App() {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="nexus-theme">
-      <ErrorBoundary>
-        <Router>
-        <ScrollToTop />
-        <Routes>
+      <PrivacyProvider>
+        <ErrorBoundary>
+          <Router>
+            <ScrollToTop />
+            <Routes>
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
           <Route path="/" element={user ? <PortfolioProvider><Layout /></PortfolioProvider> : <Navigate to="/login" />}>
             <Route index element={<Home />} />
@@ -144,8 +147,9 @@ export default function App() {
             element={user ? <PortfolioProvider><AssetAnalysis /></PortfolioProvider> : <Navigate to="/login" />} 
           />
         </Routes>
-      </Router>
-    </ErrorBoundary>
+          </Router>
+        </ErrorBoundary>
+      </PrivacyProvider>
     </ThemeProvider>
   );
 }

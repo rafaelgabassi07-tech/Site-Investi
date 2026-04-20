@@ -44,6 +44,56 @@ export function formatPercentage(v: number): string {
   });
 }
 
+export function formatPercentString(v: number, digits: number = 2): string {
+   if (isNaN(v)) return '0,00%';
+   return v.toLocaleString('pt-BR', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }) + '%';
+}
+
+export function formatNumber(v: number, optionsOrMinDigits: number | Intl.NumberFormatOptions = 2, maxDigits?: number): string {
+  if (v === undefined || v === null || isNaN(v)) return '0,00';
+  
+  if (typeof optionsOrMinDigits === 'object' && optionsOrMinDigits !== null) {
+    const opts = { ...optionsOrMinDigits };
+    if (opts.style === 'currency' && !opts.currency) {
+      opts.currency = 'BRL';
+    }
+    
+    // Safety check for fraction digits in options
+    if (opts.minimumFractionDigits !== undefined && (isNaN(opts.minimumFractionDigits) || opts.minimumFractionDigits < 0 || opts.minimumFractionDigits > 20)) {
+      opts.minimumFractionDigits = 2;
+    }
+    if (opts.maximumFractionDigits !== undefined && (isNaN(opts.maximumFractionDigits) || opts.maximumFractionDigits < 0 || opts.maximumFractionDigits > 20)) {
+      opts.maximumFractionDigits = Math.max(opts.minimumFractionDigits || 0, 2);
+    }
+    
+    try {
+      return v.toLocaleString('pt-BR', opts);
+    } catch (e) {
+      console.warn('formatNumber failed with options:', opts, e);
+      return v.toLocaleString('pt-BR');
+    }
+  }
+  
+  // Strict safety for numeric arguments
+  let min = typeof optionsOrMinDigits === 'number' ? optionsOrMinDigits : 2;
+  if (isNaN(min) || min < 0 || min > 20) min = 2;
+  
+  let max = typeof maxDigits === 'number' ? maxDigits : min;
+  if (isNaN(max) || max < 0 || max > 20) max = Math.max(min, 2);
+
+  try {
+    return v.toLocaleString('pt-BR', {
+      minimumFractionDigits: min,
+      maximumFractionDigits: Math.max(min, max),
+    });
+  } catch (e) {
+    return v.toLocaleString('pt-BR');
+  }
+}
+
 export function formatCompactNumber(v: number | string): string {
   const num = typeof v === 'string' ? parseFinanceValue(v) : v;
   if (!num || isNaN(num)) return 'N/A';

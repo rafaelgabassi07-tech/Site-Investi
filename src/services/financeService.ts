@@ -146,33 +146,8 @@ export const financeService = {
   },
 
   async analyzeNews(news: NewsItem[], ticker?: string): Promise<any> {
-    const newsHash = news.slice(0, 3).map(n => n.title).join('|');
-    return fetchWithCache(`analyze-${ticker}-${newsHash}`, async () => {
-      try {
-        const topNews = news.slice(0, 5).map((n: any) => n.title).join("\n");
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
-        
-        const ai = new GoogleGenAI({ apiKey });
-        
-        const prompt = `Analise o sentimento das seguintes notícias financeiras sobre ${ticker || 'o mercado brasileiro'}. 
-        Responda APENAS um JSON no formato: {"sentiment": "Bullish" | "Bearish" | "Neutral", "score": 0-100, "summary": "breve resumo de 1 frase"}.
-        Notícias:
-        ${topNews}`;
-        
-        const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: prompt,
-        });
-
-        const text = response.text || '';
-        const jsonMatch = text.match(/\{.*\}/s);
-        return jsonMatch ? JSON.parse(jsonMatch[0]) : { sentiment: "Neutral", score: 50, summary: "Análise indisponível" };
-      } catch (error) {
-        console.error("News analysis failed:", error);
-        return { sentiment: "Neutral", score: 50, summary: "Análise indisponível no momento" };
-      }
-    });
+    // Gemini removed due to quota limits, returning fallback
+    return { sentiment: "Neutral", score: 50, summary: "Análise de sentimentos indisponível no momento" };
   },
 
   async getRanking(category: string, type: string = 'ACAO'): Promise<any[]> {
