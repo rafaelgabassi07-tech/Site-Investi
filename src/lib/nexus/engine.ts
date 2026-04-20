@@ -806,7 +806,7 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
   });
 
   try {
-    const quotes = await yahooFinance.quote(symbols);
+    const quotes = await yahooFinance.quote(symbols, { return: 'array' } as any);
     const quoteList = Array.isArray(quotes) ? quotes : [quotes];
     
     quoteList.forEach((q: any) => {
@@ -1185,50 +1185,31 @@ export class NexusEngine {
   static async fetchNews(ticker: string): Promise<NewsItem[]> {
     const clean = canonicalizeTicker(ticker);
     try {
-      const isGlobal = clean === 'IBOVESPA';
-      const query = isGlobal 
-        ? `mercado financeiro OR bolsa de valores OR ibovespa+when:15d`
-        : `${clean}+acao OR fii OR b3+when:15d`;
-        
-      const res = await fetch(`https://news.google.com/rss/search?q=${query}&hl=pt-BR&gl=BR&ceid=BR:pt-419`, {
-        headers: { 'User-Agent': getRandomAgent() }
-      });
-      if (!res.ok) return [];
-      const xml = await res.text();
-      
-      const items: NewsItem[] = [];
-      const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-      let match;
-      
-      const maxItems = isGlobal ? 30 : 8;
-      
-      while ((match = itemRegex.exec(xml)) !== null) {
-        const itemXml = match[1];
-        const titleMatch = /<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/.exec(itemXml);
-        const linkMatch = /<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/.exec(itemXml);
-        const pubDateMatch = /<pubDate>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/pubDate>/.exec(itemXml);
-        const sourceMatch = /<source[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/source>/.exec(itemXml);
-        
-        if (titleMatch && linkMatch) {
-          const cleanTitle = titleMatch[1]
-            .replace(/&amp;/g, '&')
-            .replace(/&quot;/g, '"')
-            .replace(/&apos;/g, "'")
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/ - [^-]+$/, '');
+      const isGlobal = clean === 'IBOVESPA' || clean === 'MARKET';
+      const query = isGlobal ? 'IBOVESPA' : clean;
 
-          const pubDate = pubDateMatch ? new Date(pubDateMatch[1]) : new Date();
+      // Use yahoo finance search which is more reliable
+      const searchResult = await yahooFinance.search(query, {
+        newsCount: isGlobal ? 30 : 10,
+        quotesCount: 0
+      } as any);
+
+      const items: NewsItem[] = [];
+      
+      if (searchResult && searchResult.news) {
+        for (const article of searchResult.news) {
+          const pubDate = article.providerPublishTime ? new Date(article.providerPublishTime * 1000) : new Date();
           
           // Only keep news from last 15 days
           const diffDays = (new Date().getTime() - pubDate.getTime()) / (1000 * 3600 * 24);
           
           if (diffDays <= 15) {
             items.push({
-              title: cleanTitle,
-              link: linkMatch[1],
+              title: article.title,
+              link: article.link,
               pubDate: pubDate,
-              source: sourceMatch ? sourceMatch[1] : undefined,
+              source: article.publisher || 'Yahoo Finance',
+              thumbnail: article.thumbnail
             });
           }
         }
@@ -1237,7 +1218,8 @@ export class NexusEngine {
       // Sort newest to oldest
       items.sort((a, b) => (b.pubDate as Date).getTime() - (a.pubDate as Date).getTime());
       
-      return items.slice(0, maxItems);
+      const finalItems = items.slice(0, isGlobal ? 30 : 8);
+      return finalItems;
     } catch (e) {
       console.error(`[Nexus] Error fetching news for ${ticker}:`, e);
       return [];
@@ -1259,11 +1241,18 @@ export class NexusEngine {
       const popularTickers: any = {
         ACAO: [
           'PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 
-          'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3'
+          'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3', 'B3SA3', 'SUZB3', 'GGBR4', 'RDOR3', 'RADL3',
+          'VIVA3', 'LREN3', 'ASAI3', 'HAPV3', 'CCRO3', 'CMIG4', 'SBSP3', 'CPLE6', 'ENEV3', 'TIMS3',
+          'VIVT3', 'KLBN11', 'EQTL3', 'TAEE11', 'ALPA4', 'CVCB3', 'GOLL4', 'AZUL4', 'BRFS3', 'JBSS3',
+          'MRFG3', 'BEEF3', 'SMTO3', 'TOTS3', 'BPAC11', 'SANB11', 'BBSE3', 'CXSE3', 'PSSA3', 'IRBR3',
+          'MULT3', 'IGTI11', 'CYRE3', 'MRVE3', 'EZTC3', 'DIRR3', 'TEND3', 'JHSF3', 'CSAN3', 'SLCE3'
         ],
         FII: [
           'HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 
-          'KNIP11'
+          'KNIP11', 'HGRU11', 'VILG11', 'BRCR11', 'VRTA11', 'VGIP11', 'RECR11', 'VGHF11', 'TGAR11',
+          'MCCI11', 'RBRR11', 'RBRF11', 'BCFF11', 'ALZR11', 'TRXF11', 'RBRP11', 'HGBS11', 'HSML11',
+          'MALL11', 'VINO11', 'GGRC11', 'SDIL11', 'LVBI11', 'KNSC11', 'RZAK11', 'BTRA11', 'SNAG11',
+          'RZTR11', 'XPIN11', 'SNCI11', 'VTAA11', 'CACR11', 'ARCT11', 'GZIT11', 'VIFI11', 'OURE11'
         ],
         BDR: [
           'AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34'
@@ -1312,15 +1301,8 @@ export class NexusEngine {
               };
             }
 
-            const data = await this.fetchAtivo(ticker, type);
-            if (!data || !data.results) return null;
-            return {
-              ticker: ticker,
-              name: data.results.name || ticker,
-              value: 'N/A',
-              subValue: `R$ ${data.results.precoAtual || '0,00'}`,
-              raw: data.results
-            };
+            // Do NOT fallback to scraper for ranks as it causes timeouts on 404s
+            return null;
           } catch (err) {
             console.warn(`[Nexus] Failed to fetch ticker ${ticker} for ranking:`, err);
             return null;

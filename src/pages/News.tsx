@@ -84,28 +84,28 @@ export default function News() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-5 md:p-12 bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-xl md:rounded-2xl md:rounded-2xl flex flex-col md:flex-row items-center gap-6 md:gap-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] relative overflow-hidden group mb-8"
+          className="p-4 md:p-8 bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl flex flex-col md:flex-row items-center gap-6 shadow-2xl relative overflow-hidden group mb-6"
         >
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/[0.03] blur-[120px] -z-10 group-hover:scale-125 transition-transform duration-1000" />
-          <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shrink-0 shadow-[0_20px_50px_rgba(37,99,235,0.4)] border border-blue-400/30 group-hover:scale-105 transition-transform duration-700">
-            <Zap className="w-10 h-10 text-white animate-pulse" />
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/[0.02] blur-[100px] -z-10" />
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shrink-0 shadow-lg border border-blue-400/30">
+            <Zap className="w-8 h-8 text-white animate-pulse" />
           </div>
           <div className="flex-1 text-center md:text-left">
-            <div className="flex flex-col md:flex-row items-center md:items-start md:justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row items-center md:items-start md:justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] italic">Nexus Intelligence Report</span>
-                <div className="w-1 h-1 rounded-full bg-blue-500/50" />
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] italic">Real-time Analysis</span>
+                <span className="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] italic">Nexus Intelligence</span>
+                <div className="w-1 h-1 rounded-full bg-blue-500/30" />
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] italic">AI Radar</span>
               </div>
-              <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-2xl backdrop-blur-md italic ${
-                analysis.sentiment === 'Bullish' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10' :
-                analysis.sentiment === 'Bearish' ? 'bg-red-500/10 text-red-400 border-red-500/20 shadow-red-500/10' :
-                'bg-slate-500/10 text-slate-400 border-slate-500/20 shadow-slate-500/10'
+              <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-lg backdrop-blur-md italic ${
+                analysis.sentiment === 'Bullish' || analysis.sentiment === 'Otimista' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                analysis.sentiment === 'Bearish' || analysis.sentiment === 'Pessimista' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                'bg-slate-500/10 text-slate-400 border-slate-500/20'
               }`}>
-                {analysis.sentiment} • {analysis.score}% STR
+                {analysis.sentiment} • {analysis.score}%
               </span>
             </div>
-            <p className="text-display-tiny md:text-display-sm text-slate-100 leading-[1.4] uppercase italic tracking-tighter">
+            <p className="text-display-tiny md:text-display-xs text-slate-100 leading-tight uppercase italic tracking-tight">
               "{analysis.summary}"
             </p>
           </div>
@@ -113,19 +113,19 @@ export default function News() {
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-10 pt-4 no-scrollbar snap-x snap-mandatory px-4 md:px-0 -mx-4 md:mx-0">
-        <div className="flex items-center gap-3 px-6 py-3 bg-slate-900/60 backdrop-blur-2xl rounded-xl border border-white/10 text-slate-600 shrink-0 shadow-2xl italic group snap-start">
-          <Filter className="w-4 h-4 group-hover:text-blue-500 transition-colors" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Filtros</span>
+      <div className="flex items-center gap-2 overflow-x-auto pb-6 pt-2 no-scrollbar px-4 md:px-0 -mx-4 md:mx-0">
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-900/60 backdrop-blur-2xl rounded-xl border border-white/10 text-slate-600 shrink-0 shadow-md italic group">
+          <Filter className="w-3.5 h-3.5 group-hover:text-blue-500 transition-colors" />
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]">Filtros</span>
         </div>
         {THEMES.map(theme => (
           <button
             key={theme}
             onClick={() => setActiveTheme(theme)}
-            className={`snap-start px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-300 border italic ${
+            className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-300 border italic ${
               activeTheme === theme 
-                ? 'bg-blue-600 text-white shadow-[0_8px_16px_rgba(37,99,235,0.3)] border-blue-500/50' 
-                : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-slate-300 hover:border-white/10'
+                ? 'bg-blue-600 text-white shadow-lg border-blue-500/50' 
+                : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-slate-300'
             }`}
           >
             {theme}
@@ -133,7 +133,7 @@ export default function News() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.isArray(filteredNews) && filteredNews.length > 0 ? filteredNews.map((item, index) => {
           const displayTitle = item.title;
           const displayLink = item.link;
@@ -146,55 +146,44 @@ export default function News() {
               href={displayLink}
               target="_blank"
               rel="noopener noreferrer"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: Math.min(index * 0.05, 0.5) }}
-              className="card group flex flex-col hover:border-blue-500/30 overflow-hidden !rounded-2xl"
+              transition={{ delay: Math.min(index * 0.03, 0.3) }}
+              className="card group flex flex-col hover:border-blue-500/30 overflow-hidden !rounded-2xl bg-slate-900/40"
             >
-              {item.thumbnail ? (
-                <div className="h-40 overflow-hidden relative border-b border-white/5">
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent z-10" />
+              <div className="h-32 overflow-hidden relative border-b border-white/5 bg-slate-800/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent z-10" />
+                {item.thumbnail ? (
                   <img
                     src={item.thumbnail.resolutions[0]?.url}
                     alt={displayTitle}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 opacity-60 group-hover:opacity-100"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute top-4 left-4 z-20">
-                    <span className="px-3 py-1 bg-blue-600/90 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-xl border border-blue-400/30 backdrop-blur-xl">
-                      {displaySource}
-                    </span>
-                  </div>
+                ) : (
+                  <Newspaper className="w-8 h-8 text-slate-800 opacity-30" />
+                )}
+                <div className="absolute top-3 left-3 z-20">
+                  <span className="px-2 py-1 bg-blue-600/90 text-white text-[7px] font-black uppercase tracking-widest rounded-lg shadow-xl border border-blue-400/20 backdrop-blur-xl">
+                    {displaySource}
+                  </span>
                 </div>
-              ) : (
-                 <div className="h-40 bg-slate-900/40 flex items-center justify-center relative overflow-hidden border-b border-white/5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
-                  <Newspaper className="w-12 h-12 text-slate-800 opacity-50" />
-                  <div className="absolute top-4 left-4 z-20">
-                    <span className="px-3 py-1 bg-blue-600/90 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-xl border border-blue-400/30 backdrop-blur-xl">
-                      {displaySource}
-                    </span>
-                  </div>
-                </div>
-              )}
+              </div>
               
               <div className="p-4 flex-1 flex flex-col">
-                <div className="flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-widest mb-3">
-                  <Clock className="text-blue-500 w-3 h-3" />
+                <div className="flex items-center gap-2 text-slate-500 text-[8px] font-black uppercase tracking-widest mb-2 opacity-60">
+                  <Clock className="w-2.5 h-2.5" />
                   {formatDistanceToNow(displayDate, { addSuffix: true, locale: ptBR })}
                 </div>
                 
-                <h3 className="text-sm font-bold text-slate-100 mb-4 line-clamp-3 group-hover:text-blue-400 transition-colors leading-snug">
+                <h3 className="text-xs font-bold text-slate-100 mb-4 line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">
                   {displayTitle}
                 </h3>
                 
-                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-2 group/read">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-400 transition-colors">Acessar</span>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-blue-500 transition-colors" />
+                <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between opacity-40 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest underline decoration-blue-500/30 underline-offset-4">Ler Reportagem</span>
+                  <ArrowUpRight className="w-3 h-3 text-slate-600 group-hover:text-blue-500 transition-colors" />
                 </div>
               </div>
             </motion.a>

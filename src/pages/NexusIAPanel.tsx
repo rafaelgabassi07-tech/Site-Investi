@@ -17,7 +17,8 @@ import {
   Radio,
   Wifi,
   Search,
-  ServerCrash
+  ServerCrash,
+  Loader2
 } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { nexusAI } from '../services/nexusAIService';
@@ -64,6 +65,23 @@ export default function NexusIAPanel() {
   }, [healthData]);
 
   const [matrixData, setMatrixData] = useState<any[]>([]);
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
+
+  const handleAsk = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!question.trim()) return;
+    setIsAsking(true);
+    const context = {
+      portfolioSize: portfolio.length,
+      totalAssets: portfolio.map(p => p.ticker),
+      recentTransactions: transactions.slice(0, 5)
+    };
+    const res = await nexusAI.askNexus(question, context);
+    setAnswer(res);
+    setIsAsking(false);
+  };
 
   useEffect(() => {
     if (!healthData) return;
@@ -88,7 +106,7 @@ export default function NexusIAPanel() {
   if (!healthData) return null;
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-6 pb-24">
       <PageHeader 
         title="Nexus Cérebro IA"
         description={<>Mente <span className="text-primary font-bold">autônoma</span> e rede de telemetria inteligente.</>}
@@ -97,66 +115,105 @@ export default function NexusIAPanel() {
           <button 
             onClick={handleRecovery}
             disabled={isRecovering}
-            className="btn-primary"
+            className="btn-primary py-2 px-4 h-10"
           >
             {isRecovering ? <Activity className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-            {isRecovering ? 'Restaurando...' : 'Purga Autônoma'}
+            <span className="hidden sm:inline">{isRecovering ? 'Restaurando...' : 'Purga Autônoma'}</span>
           </button>
         }
       />
 
       {/* Hero Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[
-          { label: 'Estado do Núcleo', value: healthData.status, icon: Activity, color: 'text-emerald-500', glow: 'shadow-emerald-500/20' },
-          { label: 'Modelo de Motor', value: healthData.mode, icon: Binary, color: 'text-primary', glow: 'shadow-blue-500/20' },
-          { label: 'Carga Cognitiva', value: healthData.ramUsage, icon: Cpu, color: 'text-purple-500', glow: 'shadow-purple-500/20' },
-          { label: 'Análise de Risco', value: healthData.riskLevel, icon: ShieldAlert, color: healthData.riskLevel === 'CRITICO' ? 'text-red-500' : 'text-amber-500', glow: 'shadow-amber-500/20' }
+          { label: 'Estado', value: healthData.status, icon: Activity, color: 'text-emerald-500' },
+          { label: 'Modo', value: healthData.mode, icon: Binary, color: 'text-primary' },
+          { label: 'Carga', value: healthData.ramUsage, icon: Cpu, color: 'text-purple-500' },
+          { label: 'Risco', value: healthData.riskLevel, icon: ShieldAlert, color: healthData.riskLevel === 'CRITICO' ? 'text-red-500' : 'text-amber-500' }
         ].map((stat, idx) => (
           <motion.div 
             key={idx}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className={`nexus-card border-t-2 overflow-hidden relative group`}
+            className={`nexus-card border-t-2 !p-3 md:!p-4 overflow-hidden relative group`}
             style={{ borderTopColor: 'currentColor', color: stat.color === 'text-primary' ? 'var(--primary)' : undefined }}
           >
-            <div className={`absolute -right-4 -top-4 w-16 h-16 ${stat.color} opacity-10 rounded-full blur-xl group-hover:opacity-30 transition-opacity duration-700`} />
-            <div className="flex items-center gap-2 mb-2 w-full text-foreground relative z-10">
-               <stat.icon className={`w-4 h-4 ${stat.color}`} />
-               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</span>
+            <div className="flex items-center gap-2 mb-1 w-full text-foreground relative z-10">
+               <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
+               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</span>
             </div>
-            <div className={`text-lg md:text-xl font-bold font-mono tracking-tight transition-colors truncate ${stat.color}`}>
+            <div className={`text-sm md:text-base font-bold font-mono tracking-tight transition-colors truncate ${stat.color}`}>
               {stat.value}
             </div>
           </motion.div>
         ))}
       </div>
 
-      <div className="nexus-card p-1">
-        <div className="flex overflow-x-auto hide-scrollbar gap-1 border-b border-border bg-secondary/50 rounded-t-xl px-2 pt-2">
+      {/* Ask Nexus Section - NEW */}
+      <section className="nexus-card !p-4 bg-primary/5 border-primary/20">
+         <h4 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4 flex items-center gap-2 italic">
+           <Bot className="w-4 h-4" /> Perguntar ao Nexus
+         </h4>
+         <form onSubmit={handleAsk} className="flex flex-col sm:flex-row gap-2">
+            <input 
+              type="text" 
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ex: Qual o risco da minha carteira?"
+              className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            />
+            <button 
+              type="submit" 
+              disabled={isAsking || !question.trim()}
+              className="btn-primary py-3 px-6 whitespace-nowrap"
+            >
+              {isAsking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Consultar Cérebro'}
+            </button>
+         </form>
+
+         <AnimatePresence>
+           {answer && (
+             <motion.div 
+               initial={{ opacity: 0, height: 0 }}
+               animate={{ opacity: 1, height: 'auto' }}
+               className="mt-4 p-4 bg-background border border-primary/10 rounded-xl relative overflow-hidden"
+             >
+                <div className="absolute top-0 right-0 p-2 opacity-10">
+                   <BrainCircuit className="w-12 h-12" />
+                </div>
+                <p className="text-sm text-foreground leading-relaxed italic">
+                  "{answer}"
+                </p>
+             </motion.div>
+           )}
+         </AnimatePresence>
+      </section>
+
+      <div className="nexus-card !p-0 overflow-hidden">
+        <div className="flex overflow-x-auto hide-scrollbar gap-1 border-b border-border bg-secondary/50 px-2 pt-2">
             {[
-              { id: 'console', label: 'Terminal Neural', icon: Terminal },
-              { id: 'capabilities', label: 'Capacidades Cognitivas', icon: BrainCircuit },
-              { id: 'network', label: 'Topologia B3 & Dados', icon: Network },
+              { id: 'console', label: 'Console', icon: Terminal },
+              { id: 'capabilities', label: 'Cérebro', icon: BrainCircuit },
+              { id: 'network', label: 'Rede', icon: Network },
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-t-lg whitespace-nowrap
+                className={`flex items-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-t-lg whitespace-nowrap
                   ${activeTab === tab.id 
-                    ? 'bg-card text-foreground border-t-2 border-primary shadow-[0_-4px_15px_-5px_rgba(59,130,246,0.2)]' 
+                    ? 'bg-card text-foreground border-t-2 border-primary shadow-sm' 
                     : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
                   }
                 `}
               >
-                <tab.icon className="w-4 h-4" />
+                <tab.icon className="w-3.5 h-3.5" />
                 {tab.label}
               </button>
             ))}
         </div>
 
-        <div className="p-4 md:p-6 min-h-[500px]">
+        <div className="p-4 md:p-6 min-h-[400px]">
           <AnimatePresence mode="wait">
             {activeTab === 'console' && (
               <motion.div
@@ -164,37 +221,22 @@ export default function NexusIAPanel() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="h-[500px] bg-[#0a0a0a] rounded-xl border border-border/50 overflow-hidden flex flex-col font-mono relative shadow-[inset_0_0_50px_rgba(0,0,0,0.5)]"
+                className="h-[400px] bg-[#050505] rounded-xl border border-border/50 overflow-hidden flex flex-col font-mono relative"
               >
                 {/* Mac-like header */}
-                <div className="flex items-center px-4 py-2 bg-[#171717] border-b border-white/5">
+                <div className="flex items-center px-4 py-2 bg-[#0f0f0f] border-b border-white/5">
                   <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                  </div>
-                  <div className="flex-1 text-center text-[10px] text-white/40 tracking-widest uppercase">
-                    nexus-ai-core-tty1
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
                   </div>
                 </div>
 
-                {/* Blinking indicator */}
-                <div className="absolute top-10 right-4 flex items-center gap-2">
-                    <span className="text-[10px] text-emerald-500">LIVE FEED</span>
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-1.5 text-[11px] sm:text-xs">
-                  <div className="mb-6 opacity-70 text-blue-400">
+                <div className="flex-1 overflow-y-auto p-4 space-y-1 text-[10px] sm:text-[11px]">
+                  <div className="mb-4 opacity-50 text-blue-500">
 {`N E X U S   A. I.   O S   v3.1.0-alpha
-(c) 2026 Nexus Invest Systems. All rights reserved.
-> Inicializando barramento de eventos... OK
-> Conectando WebSocket B3 / Alpha Vantage... HELD
-> Montando Tensores Financeiros na memória local... OK
-> Escutando tráfego na porta 3000.`}
+> Node 3000 linked.
+> Gemini neural bridge active.`}
                   </div>
                   
                   {terminalLines.map((line, idx) => {
@@ -204,18 +246,18 @@ export default function NexusIAPanel() {
                       <div 
                         key={idx} 
                         className={`flex items-start gap-2 ${
-                            isError ? 'text-red-500' : isWarning ? 'text-amber-400' : 'text-emerald-400/90'
+                            isError ? 'text-red-500' : isWarning ? 'text-amber-400' : 'text-emerald-400/80'
                         }`}
                       >
-                        <span className="opacity-50 select-none">{'>'}</span>
+                        <span className="opacity-30 select-none">#</span>
                         <span className="break-all">{line}</span>
                       </div>
                     );
                   })}
                   
                   <div className="flex items-center gap-2 text-primary animate-pulse mt-2">
-                    <span className="opacity-50 select-none">{'>'}</span>
-                    <div className="w-2 h-4 bg-primary" />
+                    <span className="opacity-30 select-none">#</span>
+                    <div className="w-1.5 h-3 bg-primary" />
                   </div>
                 </div>
               </motion.div>
@@ -227,54 +269,22 @@ export default function NexusIAPanel() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                className="grid grid-cols-1 md:grid-cols-3 gap-3"
               >
                 {[
-                  { 
-                    title: 'Processamento Natural Paralelo (NLP)', 
-                    icon: BrainCircuit, 
-                    color: 'text-primary',
-                    desc: 'Lê dezenas de feeds de notícias ao vivo na página Inicial e extrai imediatamente o sentimento direcional sobre empresas e cenário macroeconômico, convertendo texto em vetores preditivos.' 
-                  },
-                  { 
-                    title: 'Motor Autônomo Fiscal e de Custódia', 
-                    icon: Database, 
-                    color: 'text-emerald-500',
-                    desc: 'Monitora silenciosamente todos os seus aportes. Ao detectar novas compras, recalcula preços médios e sincroniza toda a sua malha de cotas do primeiro ao último dia sem que o usuário sinta.' 
-                  },
-                  { 
-                    title: 'Caçador B3 & Alpha (Crawlers)', 
-                    icon: Binary, 
-                    color: 'text-purple-500',
-                    desc: 'O Cérebro sabe o ticker de tudo. Possui crawlers projetados para varrer a web (APIs e Scrapings defensivos) buscando cotações diárias ou recuperando dados quando o provedor primário falhar (Protocolo de Auto-Reparo).' 
-                  },
-                  { 
-                    title: 'Sincronizador Cego de Dividendos', 
-                    icon: Network, 
-                    color: 'text-amber-500',
-                    desc: 'Constantemente verifica sua carteira perante o tempo. Identifica o fluxo de capital passivo da empresa, descobre anomalias de cortes brutais em proventos e emite relatórios automáticos.' 
-                  },
-                  { 
-                    title: 'Engenharia de Risco Direcional', 
-                    icon: AlertTriangle, 
-                    color: 'text-red-500',
-                    desc: 'Emite o Alerta de Volatilidade e "Drawdown" de Perdas se percebe que o investidor está afundado e sobrecarregado num mercado ou ativo específico, operando como seu consultor hostil mas seguro.' 
-                  },
-                  { 
-                    title: 'Integração em Camada Zero', 
-                    icon: Zap, 
-                    color: 'text-blue-400',
-                    desc: 'Nexus IA não é um chatbot preguiçoso. Ele não tem janelas pop-up. Ele é o próprio sangue do aplicativo. Toda rentabilidade global e página que carrega obedece indiretamente os parâmetros dele.' 
-                  }
+                  { title: 'NLP Paralelo', icon: BrainCircuit, color: 'text-primary', desc: 'Analisa notícias e sentimento B3 em tempo real.' },
+                  { title: 'Motor Fiscal', icon: Database, color: 'text-emerald-500', desc: 'Sincroniza aportes e preços médios autonomamente.' },
+                  { title: 'Caçador B3', icon: Binary, color: 'text-purple-500', desc: 'Varre a web por cotações e dividendos perdidos.' },
+                  { title: 'Sinc. Cego', icon: Network, color: 'text-amber-500', desc: 'Descobre proventos e anomalias sistêmicas.' },
+                  { title: 'Gestão de Risco', icon: AlertTriangle, color: 'text-red-500', desc: 'Alerta sobre volatilidade e drawdown de risco.' },
+                  { title: 'Camada Zero', icon: Zap, color: 'text-blue-400', desc: 'Funciona como o "sangue" do app, sem popups.' }
                 ].map((cap, i) => (
-                    <div key={i} className="bg-secondary/30 border border-border p-5 rounded-2xl relative overflow-hidden group">
+                    <div key={i} className="bg-secondary/30 border border-border p-4 rounded-xl relative overflow-hidden group">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className={`p-2 bg-card rounded-lg border border-border shadow-sm`}>
-                                <cap.icon className={`w-5 h-5 ${cap.color}`} />
-                            </div>
-                            <h4 className="text-sm font-bold text-foreground">{cap.title}</h4>
+                            <cap.icon className={`w-4 h-4 ${cap.color}`} />
+                            <h4 className="text-[11px] font-bold text-foreground uppercase tracking-tight">{cap.title}</h4>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed mt-3 relative z-10">
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
                             {cap.desc}
                         </p>
                     </div>
@@ -288,65 +298,48 @@ export default function NexusIAPanel() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="space-y-6"
+                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
               >
-                  <p className="text-sm font-medium text-muted-foreground">
-                    A Topologia Neural demonstra o alcance dos nós de extração atuais do Cérebro conectados à infraestrutura financeira global.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 h-[300px]">
-                      {/* B3 Node */}
-                      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center items-center text-center relative overflow-hidden group">
-                           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                           <Activity className="w-10 h-10 text-primary mb-3" />
-                           <h5 className="font-bold text-sm mb-1">Malha B3 (Ações)</h5>
-                           <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Status: Integrado / Live</span>
-                      </div>
-                      
-                      {/* Scraper Fallbacks */}
-                      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center items-center text-center relative overflow-hidden group">
-                           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                           <Search className="w-10 h-10 text-amber-500 mb-3" />
-                           <h5 className="font-bold text-sm mb-1">Web Scraping Heurístico</h5>
-                           <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Status: Intermitente / Fallback</span>
-                      </div>
-
-                      {/* Notícias */}
-                      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center items-center text-center relative overflow-hidden group">
-                           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                           <Radio className="w-10 h-10 text-purple-500 mb-3" />
-                           <h5 className="font-bold text-sm mb-1">Radar de Sentimentos</h5>
-                           <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Status: Ativo O(1) / Fast</span>
-                      </div>
-                  </div>
+                  {[
+                    { label: 'B3 Node', icon: Activity, color: 'text-primary', status: 'Integrado' },
+                    { label: 'Scraper', icon: Search, color: 'text-amber-500', status: 'Fallback' },
+                    { label: 'Sentiment', icon: Radio, color: 'text-purple-500', status: 'Active' },
+                  ].map((node, i) => (
+                    <div key={i} className="bg-card border border-border rounded-xl p-6 flex flex-col items-center text-center">
+                         <node.icon className={`w-8 h-8 ${node.color} mb-3`} />
+                         <h5 className="font-bold text-xs uppercase mb-1">{node.label}</h5>
+                         <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">{node.status}</span>
+                    </div>
+                  ))}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
-{/* Live Activity Matrix */}
-      <div className="nexus-card p-6">
-          <h3 className="text-display-xs text-foreground mb-4 font-mono flex items-center gap-2">
-              <Bot className="w-5 h-5 text-primary" />
-              Tabela de Desempenho Algorítmico Diário
-          </h3>
+
+      <div className="nexus-card !p-0 overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center justify-between bg-secondary/20">
+              <h3 className="text-xs font-black text-foreground flex items-center gap-2 uppercase tracking-widest">
+                  <Bot className="w-4 h-4 text-primary" /> Desempenho Algorítmico
+              </h3>
+          </div>
           <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest border-b border-border bg-secondary/30">
+              <table className="w-full text-left text-[11px] whitespace-nowrap">
+                  <thead className="bg-secondary/50 text-muted-foreground font-black uppercase tracking-widest border-b border-border">
                       <tr>
-                          <th className="px-4 py-3 rounded-tl-lg">Protocolo</th>
-                          <th className="px-4 py-3">Execuções Hoje</th>
-                          <th className="px-4 py-3">Taxa de Sucesso</th>
-                          <th className="px-4 py-3 rounded-tr-lg">Prioridade Base</th>
+                          <th className="px-4 py-3">Protocolo</th>
+                          <th className="px-4 py-3">Ops</th>
+                          <th className="px-4 py-3">Sucesso</th>
+                          <th className="px-4 py-3">Prioridade</th>
                       </tr>
                   </thead>
-                  <tbody className="divide-y divide-border text-xs font-medium">
+                  <tbody className="divide-y divide-border">
                       {matrixData.map((p: any, i: number) => (
                          <tr key={i} className="hover:bg-secondary/50 transition-colors">
-                             <td className="px-4 py-3 text-foreground">{p.name}</td>
+                             <td className="px-4 py-3 font-semibold text-foreground">{p.name}</td>
                              <td className="px-4 py-3 font-mono text-primary">{p.ops} ops</td>
                              <td className="px-4 py-3 font-mono text-emerald-500">{p.success}%</td>
-                             <td className={`px-4 py-3 ${p.priority.includes('MÁXIMA') || p.priority === 'CRÍTICA' ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>{p.priority}</td>
+                             <td className={`px-4 py-3 font-bold ${p.priority.includes('MÁXIMA') || p.priority === 'CRÍTICA' ? 'text-red-500' : 'text-muted-foreground opacity-60'}`}>{p.priority}</td>
                          </tr>
                       ))}
                   </tbody>

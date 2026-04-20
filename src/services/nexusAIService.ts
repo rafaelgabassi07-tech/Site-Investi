@@ -1,4 +1,7 @@
 // Implementação Inteiramente Local e Algorítmica da Nexus Engine
+import { GoogleGenAI } from "@google/genai";
+
+const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
 
 function totalInvestedFunc(pf: any[]) {
   return pf.reduce((a, b) => a + (b.totalInvested || 0), 0);
@@ -62,7 +65,32 @@ export const nexusAI = {
 
   getMarketSentiment: async () => {
     addLog('info', 'Varredura de Sentimento Lexical requisitada.', 'Carregando...');
-    return 'Malha neural do painel analisando matriz de rentabilidade em tempo real.';
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = "Dê um insight curto (máximo 15 palavras) e profissional em português sobre o sentimento atual do mercado brasileiro (Ibovespa) de forma técnica e analítica.";
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim();
+      return text || 'Malha neural analisando matriz de rentabilidade em tempo real.';
+    } catch (e) {
+      return 'Malha neural analisando matriz de rentabilidade em tempo real.';
+    }
+  },
+
+  askNexus: async (question: string, context?: any) => {
+    addLog('info', `Inquérito Neural: ${question.slice(0, 30)}...`);
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `Você é a Nexus AI, o cérebro de uma plataforma de investimentos profissional. 
+      Responda de forma curta, técnica, direta e ligeiramente futurista. Inclua emojis técnicos se apropriado.
+      Contexto do Usuário: ${JSON.stringify(context || {})}
+      Pergunta: ${question}`;
+      
+      const result = await model.generateContent(prompt);
+      return result.response.text().trim();
+    } catch (e) {
+      console.error(e);
+      return "Erro no link neural. Subsistema Gemini inacessível.";
+    }
   },
 
   getPortfolioAnalysis: async (portfolio: any[]) => {

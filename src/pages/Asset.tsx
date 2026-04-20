@@ -22,11 +22,7 @@ export default function Asset() {
   const [isFavorite, setIsFavorite] = useState(false);
 
   const handleGoBack = () => {
-    if (window.history.length > 2 || (window.history.state && window.history.state.idx > 0)) {
-      navigate(-1);
-    } else {
-      navigate('/');
-    }
+    navigate(-1);
   };
 
   useEffect(() => {
@@ -74,16 +70,11 @@ export default function Asset() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 max-w-5xl mx-auto">
-        <div className="relative">
-          <div className="w-24 h-24 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Zap className="icon-lg text-blue-500 animate-pulse" />
-          </div>
-        </div>
-        <div className="text-center space-y-3">
-          <h2 className="text-display-md text-foreground animate-pulse">Analisando {ticker}</h2>
-          <p className="text-label text-muted-foreground uppercase tracking-widest animate-pulse">Processando dados em tempo real...</p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-6 max-w-5xl mx-auto">
+        <Loader2 className="animate-spin text-primary icon-xl" />
+        <div className="text-center space-y-2">
+          <h2 className="text-display-md text-foreground animate-pulse">{ticker}</h2>
+          <p className="text-label text-muted-foreground uppercase tracking-widest animate-pulse">Sincronizando dados...</p>
         </div>
       </div>
     );
@@ -111,7 +102,7 @@ export default function Asset() {
     { label: 'Dividend Yield', value: results.dividendYield || results.dy || 'N/A', icon: Wallet, color: 'emerald', desc: 'Rendimento de Dividendos' },
     { label: 'P/L', value: results.pl || results.p_l || 'N/A', icon: BarChart3, color: 'blue', desc: 'Preço sobre Lucro' },
     { label: 'P/VP', value: results.pvp || results.p_vp || 'N/A', icon: TrendingUp, color: 'indigo', desc: 'Preço sobre Valor Patr.' },
-    { label: 'Valor de Merc.', value: formatCompactNumber(results.marketCap || results.valorMercado), icon: DollarSign, color: 'emerald', desc: 'Market Capitalization' },
+    { label: 'Valor de Mec.', value: formatCompactNumber(results.marketCap || results.valorMercado), icon: DollarSign, color: 'emerald', desc: 'Valor de Mercado' },
     { label: 'Patr. Líquido', value: formatCompactNumber(results.equity || results.patrimonioLiquido), icon: Building2, color: 'blue', desc: 'Patrimônio da Empresa' },
     { label: 'ROE', value: results.roe || 'N/A', icon: Activity, color: 'purple', desc: 'Retorno sobre Patrimônio' },
     { label: 'ROA', value: results.roa || 'N/A', icon: Activity, color: 'cyan', desc: 'Retorno sobre Ativos' },

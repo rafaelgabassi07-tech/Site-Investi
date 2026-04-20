@@ -143,7 +143,7 @@ export default function Patrimony() {
         icon={Briefcase}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 focus:outline-none outline-none">
         {/* Ativos Chart */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -152,9 +152,9 @@ export default function Patrimony() {
         >
           <h3 className="text-sm font-black uppercase tracking-widest text-foreground mb-8">Posição Atual (Ativos)</h3>
           
-          <div className="h-64 sm:h-80 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <div className="h-64 sm:h-80 relative focus:outline-none outline-none *:focus:outline-none">
+            <ResponsiveContainer width="100%" height="100%" className="focus:outline-none">
+              <PieChart className="focus:outline-none">
                 <Pie
                   data={assetsData}
                   cx="50%"
@@ -187,9 +187,9 @@ export default function Patrimony() {
         >
           <h3 className="text-sm font-black uppercase tracking-widest text-foreground mb-8">Posição Atual (Tipo de Ativos)</h3>
           
-          <div className="h-64 sm:h-80 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <div className="h-64 sm:h-80 relative focus:outline-none outline-none *:focus:outline-none">
+            <ResponsiveContainer width="100%" height="100%" className="focus:outline-none">
+              <PieChart className="focus:outline-none">
                 <Pie
                   data={assetTypesData}
                   cx="50%"
@@ -222,9 +222,9 @@ export default function Patrimony() {
         >
           <h3 className="text-sm font-black uppercase tracking-widest text-foreground mb-8">Exposição ao Exterior</h3>
           
-          <div className="h-64 sm:h-80 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <div className="h-64 sm:h-80 relative focus:outline-none outline-none *:focus:outline-none">
+            <ResponsiveContainer width="100%" height="100%" className="focus:outline-none">
+              <PieChart className="focus:outline-none">
                 <Pie
                   data={exposureData}
                   cx="50%"

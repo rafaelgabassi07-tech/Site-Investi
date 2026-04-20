@@ -312,49 +312,53 @@ export default function Home() {
         </section>
 
         {/* Rankings Quick Card */}
-        <section className="nexus-card !p-0 overflow-hidden">
-           <div className="p-5 border-b border-border flex items-center justify-between">
+        <section className="nexus-card !p-0 overflow-hidden bg-card/50 backdrop-blur-sm border-border/60">
+           <div className="p-4 border-b border-border/40 flex items-center justify-between bg-emerald-500/5">
              <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
-                 <Award className="w-4 h-4" />
+               <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                 <Award className="w-3.5 h-3.5" />
                </div>
-               <h3 className="nexus-label">Top Dividendos (Nexus Engine)</h3>
+               <h3 className="nexus-label !text-emerald-500/80">Top Dividendos <span className="text-[9px] opacity-40 ml-1">#NexusEngine</span></h3>
              </div>
-             <Link to="/ranking" className="px-3 py-1 bg-secondary rounded-full border border-border">
-                <p className="nexus-label opacity-60">Filtrar Rankings</p>
+             <Link to="/ranking" className="px-2 py-0.5 bg-secondary/50 rounded-lg border border-border/40 hover:bg-secondary transition-all">
+                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest italic">Ver Todos</p>
              </Link>
            </div>
            
-           <div className="divide-y divide-border">
+           <div className="divide-y divide-border/30">
               {loadingRankings ? (
-                <div className="p-8 flex justify-center">
-                  <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                <div className="p-10 flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                  <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest animate-pulse italic">Escaneando Yields...</span>
                 </div>
               ) : (
                 [...(rankings['ACAO'] || []), ...(rankings['FII'] || [])]
                   .sort((a, b) => {
-                    const dyA = parseFloat((a.raw?.dividendYield || a.value || '0').toString().replace('%', '').replace(',', '.')) || 0;
-                    const dyB = parseFloat((b.raw?.dividendYield || b.value || '0').toString().replace('%', '').replace(',', '.')) || 0;
+                    const dyA = typeof a.raw?.dividendYield === 'string' ? parseFloat(a.raw.dividendYield.replace('%', '').replace(',', '.')) : (a.value ? parseFloat(a.value.toString().replace('%', '')) : 0);
+                    const dyB = typeof b.raw?.dividendYield === 'string' ? parseFloat(b.raw.dividendYield.replace('%', '').replace(',', '.')) : (b.value ? parseFloat(b.value.toString().replace('%', '')) : 0);
                     return dyB - dyA;
                   })
-                  .slice(0, 4)
+                  .slice(0, 5)
                   .map((item, idx) => {
-                    const dyValue = parseFloat((item.raw?.dividendYield || item.value || '0').toString().replace('%', '').replace(',', '.')) || 0;
+                    const dyValue = typeof item.raw?.dividendYield === 'string' ? parseFloat(item.raw.dividendYield.replace('%', '').replace(',', '.')) : (item.value ? parseFloat(item.value.toString().replace('%', '')) : 0);
                     return (
-                    <Link key={idx} to={`/asset/${item.ticker}`} className="flex items-center justify-between p-5 px-6 hover:bg-secondary transition-colors group/item relative">
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover/item:opacity-100 transition-opacity" />
-                      <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center border border-border text-muted-foreground group-hover/item:text-blue-500 group-hover/item:border-blue-500/20 transition-all shadow-inner">
-                          {item.type === 'ACAO' ? <TrendingUp className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                    <Link key={idx} to={`/asset/${item.ticker}`} className="flex items-center justify-between p-4 px-5 hover:bg-emerald-500/[0.02] transition-all group/item relative">
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-emerald-500 opacity-0 group-hover/item:opacity-40 transition-opacity" />
+                      <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center border border-border/50 text-muted-foreground/60 group-hover/item:text-emerald-500 group-hover/item:border-emerald-500/20 transition-all shadow-sm">
+                          {item.type === 'ACAO' ? <TrendingUp className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
                         </div>
                         <div>
-                          <span className="nexus-title text-sm group-hover/item:text-blue-400 block transition-colors">{item.ticker}</span>
-                          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block truncate max-w-[120px] sm:max-w-xs">{item.name}</span>
+                          <span className="text-xs font-bold text-foreground group-hover/item:text-emerald-500 block transition-colors leading-none mb-1">{item.ticker}</span>
+                          <span className="text-[8px] text-muted-foreground/60 font-black uppercase tracking-widest block truncate max-w-[100px] sm:max-w-xs italic">{item.type} • {item.name.split(' ')[0]}</span>
                         </div>
                       </div>
-                      <div className="text-right relative z-10">
-                        <p className="text-[12px] font-black text-emerald-500 italic uppercase">DY {formatNumber(dyValue)}%</p>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground float-right group-hover/item:text-foreground group-hover/item:translate-x-1 transition-all mt-1" />
+                      <div className="text-right relative z-10 flex items-center gap-3">
+                        <div className="flex flex-col items-end">
+                           <p className="text-[11px] font-black text-emerald-500 italic uppercase leading-none">{formatNumber(dyValue)}%</p>
+                           <p className="text-[7px] text-muted-foreground font-black uppercase tracking-tighter opacity-40">DY p.a.</p>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover/item:text-emerald-500 group-hover/item:translate-x-1 transition-all" />
                       </div>
                     </Link>
                   )})

@@ -213,19 +213,23 @@ export const financeService = {
   },
 
   async getMarketStats(): Promise<any[]> {
-    return fetchWithCache('market-stats', async () => {
-      const res = await fetchWithRetry('/api/market-stats');
-      return res.json();
-    });
+    const key = 'market-stats';
+    const now = Date.now();
+    if (cache[key] && (now - cache[key].timestamp < 20 * 1000)) {
+      return cache[key].data;
+    }
+    const res = await fetchWithRetry('/api/market-stats');
+    const data = await res.json();
+    cache[key] = { data, timestamp: now };
+    return data;
   },
-  
+
   async getQuotesBatch(tickers: string[]): Promise<any[]> {
     if (tickers.length === 0) return [];
-    // For batch quotes, we might not want to cache globally for long as prices change frequently
-    // But we can cache for 1 minute
     const key = `batch-${tickers.sort().join(',')}`;
     const now = Date.now();
-    if (cache[key] && (now - cache[key].timestamp < 60 * 1000)) {
+    // Cache batch quotes for 20 seconds
+    if (cache[key] && (now - cache[key].timestamp < 20 * 1000)) {
       return cache[key].data;
     }
     

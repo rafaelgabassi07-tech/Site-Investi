@@ -148,7 +148,7 @@ export default function Search() {
                             <span className="text-lg font-display font-black text-foreground uppercase italic group-hover:text-blue-500 transition-colors tracking-tighter leading-none">
                               {ticker}
                             </span>
-                            <div className="flex items-center gap-2 font-black uppercase text-[8px] tracking-[0.2em] italic">
+                            <div className="flex items-center gap-1.5 font-black uppercase text-[8px] tracking-[0.2em] italic">
                               <span className="px-2 py-0.5 bg-secondary text-muted-foreground rounded-lg border border-border">
                                 {asset.exchange || 'B3'}
                               </span>

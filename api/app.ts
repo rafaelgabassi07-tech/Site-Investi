@@ -121,33 +121,24 @@ export async function createServer() {
         { sym: "IFIX.SA", label: "IFIX" }
       ];
       try {
-        const results = await Promise.all(tickers.map(async ({ sym, label }) => {
-          try {
-            const data = await yahooFinance.quote(sym);
-            const preco = data?.regularMarketPrice;
-            const change = data?.regularMarketChangePercent;
-            const strChange = change != null ? (change > 0 ? '+' : '') + change.toFixed(2) + '%' : '0.00%';
-            
-            return {
-              ticker: sym,
-              label,
-              price: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '---',
-              value: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '---',
-              change: strChange,
-              color: change && change < 0 ? 'red' : 'emerald'
-            };
-          } catch (e) {
-            console.error(`[API] Error fetching market stat for ${sym}:`, e);
-            return {
-              ticker: sym,
-              label,
-              price: '---',
-              value: '---',
-              change: '0.00%',
-              color: 'emerald'
-            };
-          }
-        }));
+        const querySyms = tickers.map(t => t.sym);
+        const quotes = await yahooFinance.quote(querySyms, { return: 'array' } as any);
+        
+        const results = tickers.map(({ sym, label }) => {
+          const data = quotes.find((q: any) => q.symbol === sym);
+          const preco = data?.regularMarketPrice;
+          const change = data?.regularMarketChangePercent;
+          const strChange = change != null ? (change > 0 ? '+' : '') + change.toFixed(2) + '%' : '0.00%';
+          
+          return {
+            ticker: sym,
+            label,
+            price: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '---',
+            value: typeof preco === 'number' && preco > 0 ? preco.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '---',
+            change: strChange,
+            color: change && change < 0 ? 'red' : 'emerald'
+          };
+        });
 
         res.json(results);
       } catch (error) {
@@ -191,23 +182,31 @@ export async function createServer() {
       const tickerList = tickers.split(',').map(t => t.trim().toUpperCase()).filter(t => t.length > 0);
       
       try {
-        // Limitation: Resolve asset types for batch. For now, assume most are ACAO/FII
-        const results = await Promise.all(tickerList.map(async (ticker) => {
-          try {
-            const data = await NexusEngine.fetchAtivo(ticker, inferAssetType(ticker));
-            return {
-              ticker,
-              price: data.results?.precoAtual || 0,
-              currency: data.results?.currency || 'BRL',
-              change: data.results?.variacaoDay || '0.00%',
-              name: data.results?.nome || '',
-              type: data.type
-            };
-          } catch (e) {
-            console.error(`[API] Batch quote error for ${ticker}:`, e);
-            return { ticker, price: 0, change: '0.00%', error: true, currency: 'BRL' };
+        const querySyms = tickerList.map(t => {
+           if (t.includes('^') || t.includes('=') || t.includes('-USD') || t.endsWith('.SA')) return t;
+           return `${t}.SA`; 
+        });
+
+        const quotes = await yahooFinance.quote(querySyms, { return: 'array' } as any);
+        
+        const results = tickerList.map((originalTicker, idx) => {
+          const yt = querySyms[idx];
+          const data = quotes.find((q: any) => q.symbol === yt);
+          
+          if (data) {
+             return {
+               ticker: originalTicker,
+               price: data.regularMarketPrice || 0,
+               currency: data.currency || 'BRL',
+               change: data.regularMarketChangePercent != null ? `${data.regularMarketChangePercent > 0 ? '+' : ''}${data.regularMarketChangePercent.toFixed(2)}%` : '0.00%',
+               name: data.longName || data.shortName || originalTicker,
+               type: inferAssetType(originalTicker)
+             };
+          } else {
+             // Fallback to fetchAtivo if it's missing from fast quote
+             return { ticker: originalTicker, price: 0, change: '0.00%', error: true, currency: 'BRL' };
           }
-        }));
+        });
 
         res.json(results);
       } catch (error) {
@@ -322,7 +321,10 @@ export async function createServer() {
     if (process.env.NODE_ENV !== "production") {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
-        server: { middlewareMode: true },
+        server: { 
+          middlewareMode: true,
+          hmr: process.env.DISABLE_HMR !== "true"
+        },
         appType: "spa",
       });
       app.use(vite.middlewares);
@@ -384,13 +386,27 @@ export async function createServer() {
   return serverPromise;
 }
 
-// Start server if not running on Vercel (or always if we want local/dev to work)
+// Start server if not running on Vercel
 const isDev = process.env.NODE_ENV !== "production";
-if (!process.env.VERCEL || isDev) {
+const isMain = process.argv[1]?.includes('app.ts') || process.argv[1]?.includes('app.js');
+
+if (isMain && (!process.env.VERCEL || isDev)) {
   createServer().then(({ app, PORT }) => {
-    app.listen(PORT, "0.0.0.0", () => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`[SERVER] Running on http://localhost:${PORT} (${isDev ? 'Development' : 'Production'})`);
     });
+
+    server.on('error', (e: any) => {
+      if (e.code === 'EADDRINUSE') {
+        console.error(`[SERVER FATAL] Port ${PORT} is already in use. This usually means a previous instance is still running or another service is using it.`);
+        process.exit(1);
+      } else {
+        console.error('[SERVER ERROR]', e);
+      }
+    });
+  }).catch(err => {
+    console.error("[SERVER] Failed to start:", err);
+    process.exit(1);
   });
 }
 

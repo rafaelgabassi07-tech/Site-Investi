@@ -150,6 +150,16 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchCurrentPrices]);
 
+  // Setup real-time quotes polling for portfolio items
+  useEffect(() => {
+    if (!loading && portfolio.length > 0) {
+      const interval = setInterval(() => {
+        fetchCurrentPrices(portfolio);
+      }, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [loading, portfolio, fetchCurrentPrices]);
+
   const fetchTransactions = useCallback(async () => {
     const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
     

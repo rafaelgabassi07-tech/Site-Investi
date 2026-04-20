@@ -642,13 +642,13 @@ export default function Transactions() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.01 }}
-                      className="flex items-center px-6 py-5 hover:bg-secondary/30 transition-all group relative"
+                      className="flex items-center px-6 py-3 hover:bg-secondary/30 transition-all group relative"
                     >
                       <div className={`absolute left-0 top-1 bottom-1 w-0.5 rounded-full ${tx.type === 'BUY' ? 'bg-primary' : 'bg-red-600'} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                      <div className="flex-1 flex items-center gap-4">
-                        <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-card p-1 shadow-sm border border-border" />
+                      <div className="flex-1 flex items-center gap-3">
+                        <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-8 h-8 rounded-lg bg-card p-1 shadow-sm border border-border" />
                         <div>
-                          <div className="text-display-tiny text-foreground uppercase italic">{tx.ticker}</div>
+                          <div className="text-sm font-bold text-foreground uppercase italic">{tx.ticker}</div>
                           <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
                         </div>
                       </div>
@@ -702,11 +702,11 @@ export default function Transactions() {
                       className="p-5 space-y-4 hover:bg-secondary/30 transition-all relative border-l-2 border-transparent group"
                       style={{ borderLeftColor: tx.type === 'BUY' ? 'hsl(var(--primary))' : 'hsl(var(--destructive))' }}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex-1 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-10 h-10 rounded-xl bg-card p-1 shadow-sm border border-border" />
+                          <AssetIcon assetType={tx.assetType || tx.asset_type} ticker={tx.ticker} className="w-8 h-8 rounded-lg bg-card p-1 shadow-sm border border-border" />
                           <div>
-                            <div className="text-display-tiny text-foreground uppercase italic">{tx.ticker}</div>
+                            <div className="text-sm font-bold text-foreground uppercase italic">{tx.ticker}</div>
                             <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(tx.date).toLocaleDateString('pt-BR')}</div>
                           </div>
                         </div>
