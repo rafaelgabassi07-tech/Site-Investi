@@ -25,6 +25,7 @@ export function getHistoricalQuantity(ticker: string, targetDateStr: string, por
   
   const match = [...history].reverse().find(h => {
     const hDateStrNormalized = h.date.split('T')[0];
+    // Se a data fornecida é a "Data COM" (Data com dividendo), a compra deve ocorrer ANTES *OU NO MESMO DIA* da Data COM para dar direito ao dividendo.
     return hDateStrNormalized <= targetDateStrNormalized;
   });
   

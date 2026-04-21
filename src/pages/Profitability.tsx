@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, Calendar, ArrowUpRight, ArrowDownRight, BarChart3, PieChart, Activity, Loader2 } from 'lucide-react';
+import { TrendingUp, Calendar, ArrowUpRight, ArrowDownRight, BarChart3, PieChart, Activity, Loader2, ChevronDown } from 'lucide-react';
 import { NexusAgentUI } from '../components/NexusAgentUI';
 import { motion } from 'motion/react';
 import { usePortfolio } from '../hooks/usePortfolio';
@@ -8,26 +8,36 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { formatNumber } from '../lib/utils';
 import { usePrivacy } from '../hooks/usePrivacy';
 import { financeService } from '../services/financeService';
-import { PortfolioNav } from '../components/PortfolioNav';
+
+const BENCHMARKS = [
+  { id: '^BVSP', label: 'IBOVESPA' },
+  { id: 'IFIX.SA', label: 'IFIX' },
+  { id: '^GSPC', label: 'S&P 500 (SPX)' },
+  { id: 'IVVB11.SA', label: 'IVVB11' },
+  { id: 'SMAL11.SA', label: 'SMLL' },
+  { id: 'DIVO11.SA', label: 'IDIV' }
+];
 
 export default function Profitability() {
   const { portfolio, quotaHistory, loading: loadingPortfolio } = usePortfolio();
-  const [ibovHistory, setIbovHistory] = useState<any[]>([]);
-  const [loadingIbov, setLoadingIbov] = useState(true);
+  const [benchmarkHistory, setBenchmarkHistory] = useState<any[]>([]);
+  const [loadingBenchmark, setLoadingBenchmark] = useState(true);
+  const [selectedBenchmark, setSelectedBenchmark] = useState(BENCHMARKS[0]);
 
   useEffect(() => {
-    async function fetchIbov() {
+    async function fetchBenchmark() {
+      setLoadingBenchmark(true);
       try {
-        const history = await financeService.getAssetHistory('^BVSP', '1y');
-        setIbovHistory(history);
+        const history = await financeService.getAssetHistory(selectedBenchmark.id, '1y');
+        setBenchmarkHistory(history);
       } catch (error) {
-        console.error('Error fetching IBOV history:', error);
+        console.error(`Error fetching ${selectedBenchmark.label} history:`, error);
       } finally {
-        setLoadingIbov(false);
+        setLoadingBenchmark(false);
       }
     }
-    fetchIbov();
-  }, []);
+    fetchBenchmark();
+  }, [selectedBenchmark]);
 
   const performanceData = useMemo(() => {
     if (!quotaHistory || quotaHistory.length === 0 || portfolio.length === 0) return [];
@@ -66,27 +76,25 @@ export default function Profitability() {
       patrimony: q.totalPatrimony
     }));
 
-    // Normalize IBOV history to match portfolio dates
-    if (!ibovHistory || ibovHistory.length === 0 || !ibovHistory[0]?.close) return normalizedPortfolio;
+    // Normalize benchmark history to match portfolio dates
+    if (!benchmarkHistory || benchmarkHistory.length === 0 || !benchmarkHistory[0]?.close) return normalizedPortfolio;
 
-    const firstIbov = ibovHistory[0].close;
+    const firstBench = benchmarkHistory[0].close;
     return normalizedPortfolio.map((p, idx, arr) => {
       const pDate = new Date(p.date).getTime();
-      // Find closest IBOV point before or at pDate
-      const ibovPoint = ibovHistory.reduce((prev, curr) => {
+      // Find closest benchmark point before or at pDate
+      const benchPoint = benchmarkHistory.reduce((prev, curr) => {
         const currDate = new Date(curr.date).getTime();
         if (currDate <= pDate) return curr;
         return prev;
-      }, ibovHistory[0]);
+      }, benchmarkHistory[0]);
 
       // Estimate real historical value
-      // If it's the last point, inject the absolute true current profitability mathematically
       let realValue = p.value;
       if (idx === arr.length - 1) {
          const totalInvested = portfolio.reduce((acc, curr) => acc + (curr.totalInvested || 0), 0);
          const currentTotalValue = portfolio.reduce((acc, curr) => acc + (curr.currentValue || curr.totalInvested), 0);
          if (totalInvested > 0) {
-            // we use the actual absolute ROI for the final point to ensure the displayed stat matches the chart
             realValue = ((currentTotalValue / totalInvested) - 1) * 100;
          }
       }
@@ -95,10 +103,73 @@ export default function Profitability() {
         ...p,
         value: realValue,
         month: new Date(p.date).toLocaleDateString('pt-BR', { month: 'short' }),
-        benchmark: ibovPoint?.close ? ((ibovPoint.close / firstIbov) - 1) * 100 : 0
+        benchmark: benchPoint?.close ? ((benchPoint.close / firstBench) - 1) * 100 : 0
       };
     });
-  }, [quotaHistory, ibovHistory, portfolio]);
+  }, [quotaHistory, benchmarkHistory, portfolio]);
+
+  const monthlyTableData = useMemo(() => {
+    if (!quotaHistory || quotaHistory.length === 0) return [];
+    
+    // Agrupa quotas por Mês/Ano
+    const monthlyGroups: Record<string, { year: number, month: number, lastQuota: number }> = {};
+    
+    quotaHistory.forEach(q => {
+       const d = new Date(q.date);
+       const key = `${d.getFullYear()}-${d.getMonth()}`;
+       monthlyGroups[key] = {
+           year: d.getFullYear(),
+           month: d.getMonth(),
+           lastQuota: q.quotaValue
+       }; // Como a array original está em ordem cronológica, isso sobrescreve sempre com a última do mês
+    });
+
+    const years = Array.from(new Set(Object.values(monthlyGroups).map(g => g.year))).sort((a,b) => b - a);
+    
+    const table: any[] = [];
+    
+    years.forEach(year => {
+        const row: any = { year };
+        let yearStartQuota = 0;
+        
+        // Determinar a quota inicial do ano (última do ano anterior)
+        const prevYearKeys = Object.keys(monthlyGroups).filter(k => monthlyGroups[k].year < year);
+        if (prevYearKeys.length > 0) {
+           const lastIdx = prevYearKeys.length - 1;
+           yearStartQuota = monthlyGroups[prevYearKeys[lastIdx]].lastQuota;
+        } else {
+           // Se for o primeiro ano da carteira, pega a cota 0
+           yearStartQuota = quotaHistory[0]?.quotaValue || 1;
+        }
+
+        let currentPrevQuota = yearStartQuota;
+
+        for (let m = 0; m < 12; m++) {
+            const key = `${year}-${m}`;
+            if (monthlyGroups[key]) {
+               const quota = monthlyGroups[key].lastQuota;
+               const ret = currentPrevQuota > 0 ? ((quota / currentPrevQuota) - 1) * 100 : 0;
+               row[m] = ret;
+               currentPrevQuota = quota;
+            } else {
+               const now = new Date();
+               if (year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth())) {
+                 row[m] = null; // Futuro
+               } else {
+                 row[m] = 0; // Mês sem movimentação considerável
+               }
+            }
+        }
+        
+        // Year YTD
+        const lastMonthQuota = currentPrevQuota;
+        row['ytd'] = yearStartQuota > 0 ? ((lastMonthQuota / yearStartQuota) - 1) * 100 : 0;
+        
+        table.push(row);
+    });
+    
+    return table;
+  }, [quotaHistory]);
 
   const stats = useMemo(() => {
     if (!performanceData || performanceData.length < 2) return [
@@ -154,7 +225,7 @@ export default function Profitability() {
     })).sort((a, b) => b.value - a.value);
   }, [portfolio]);
 
-  if (loadingPortfolio || loadingIbov) {
+  if (loadingPortfolio || loadingBenchmark) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
@@ -206,13 +277,22 @@ export default function Profitability() {
                 Evolução da Rentabilidade (%)
               </h3>
             </div>
-            <div className="flex gap-6">
+            <div className="flex items-center gap-4">
               <span className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
                 <div className="w-2 h-2 rounded-full bg-primary" /> Carteira
               </span>
-              <span className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                <div className="w-2 h-2 rounded-full border border-muted-foreground/50" /> IBOVESPA
-              </span>
+              <div className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                <div className="w-2 h-2 rounded-full border border-muted-foreground/50" /> 
+                <select 
+                  value={selectedBenchmark.id}
+                  onChange={(e) => setSelectedBenchmark(BENCHMARKS.find(b => b.id === e.target.value) || BENCHMARKS[0])}
+                  className="bg-transparent text-[9px] font-bold text-muted-foreground uppercase tracking-widest outline-none cursor-pointer border-none p-0 focus:ring-0"
+                >
+                  {BENCHMARKS.map(b => (
+                    <option key={b.id} value={b.id} className="bg-popover text-foreground">{b.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           
@@ -260,6 +340,7 @@ export default function Profitability() {
                     fill="url(#colorValue)" 
                     animationDuration={2000} 
                     activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
+                    name="Carteira"
                   />
                   <Area 
                     type="monotone" 
@@ -269,6 +350,7 @@ export default function Profitability() {
                     fill="transparent" 
                     strokeDasharray="5 5" 
                     activeDot={{ r: 4, strokeWidth: 0, fill: '#64748b' }}
+                    name={selectedBenchmark.label}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -280,6 +362,53 @@ export default function Profitability() {
               </div>
             )}
           </div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="nexus-card p-0 overflow-hidden"
+          >
+            <div className="p-4 md:p-6 border-b border-border flex items-center justify-between bg-secondary/30">
+               <div className="flex items-center gap-3">
+                 <Calendar className="w-4 h-4 text-emerald-500" />
+                 <h3 className="text-xs font-black text-foreground uppercase tracking-widest">Rentabilidade Mensal</h3>
+               </div>
+            </div>
+            <div className="overflow-x-auto">
+               <table className="w-full text-left border-collapse min-w-[800px]">
+                 <thead>
+                    <tr>
+                      <th className="p-4 bg-secondary/10 text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b border-border border-r border-border/50">Ano</th>
+                      {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].map((m) => (
+                         <th key={m} className="p-4 bg-secondary/10 text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b border-border border-r border-border/50 text-center">{m}</th>
+                      ))}
+                      <th className="p-4 bg-primary/5 text-[10px] font-black text-primary uppercase tracking-widest border-b border-border text-center">YTD</th>
+                    </tr>
+                 </thead>
+                 <tbody>
+                    {monthlyTableData.map((row, i) => (
+                       <tr key={row.year} className="border-b border-border last:border-0 hover:bg-secondary/40 transition-colors">
+                          <td className="p-4 text-xs font-bold text-foreground border-r border-border/50 bg-secondary/5">{row.year}</td>
+                          {[0,1,2,3,4,5,6,7,8,9,10,11].map(m => (
+                             <td key={m} className={`p-4 text-xs font-semibold text-center border-r border-border/50 ${row[m] === null ? 'text-muted-foreground opacity-30 cursor-not-allowed' : row[m] > 0 ? 'text-emerald-500' : row[m] < 0 ? 'text-red-500' : 'text-slate-500'}`}>
+                                {row[m] === null ? '-' : `${row[m] > 0 ? '+' : ''}${row[m].toFixed(2)}%`}
+                             </td>
+                          ))}
+                          <td className={`p-4 text-xs font-bold text-center bg-primary/5 ${row.ytd > 0 ? 'text-primary' : row.ytd < 0 ? 'text-red-500' : 'text-slate-500'}`}>
+                             {row.ytd === null ? '-' : `${row.ytd > 0 ? '+' : ''}${row.ytd.toFixed(2)}%`}
+                          </td>
+                       </tr>
+                    ))}
+                 </tbody>
+               </table>
+               {monthlyTableData.length === 0 && (
+                   <div className="p-8 text-center text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-50">
+                       Sem histórico de transações suficiente
+                   </div>
+               )}
+            </div>
+          </motion.div>
         </motion.div>
 
         <motion.div 

@@ -6,7 +6,6 @@ import { financeService } from '../services/financeService';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { supabase } from '../lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { PortfolioNav } from '../components/PortfolioNav';
 import { getHistoricalQuantity } from '../lib/portfolioCalc';
 import { NexusAgentUI } from '../components/NexusAgentUI';
 import { formatNumber } from '../lib/utils';
@@ -131,6 +130,17 @@ export default function Dividends() {
     });
   }, [dividends, portfolio]);
 
+  const filteredDividends = useMemo(() => processedDividends.filter(d => {
+    if (filter === 'Todos') return true;
+    const ticker = d.ticker || '';
+    const isFII = ticker.toUpperCase().endsWith('11') || 
+                  (d.type || '').toUpperCase().includes('FII') || 
+                  (d.type || '').toUpperCase().includes('RENDIMENTO');
+    if (filter === 'Ações') return !isFII;
+    if (filter === 'FIIs') return isFII;
+    return true;
+  }), [processedDividends, filter]);
+
   const monthlyHistory = useMemo(() => {
     const history: Record<string, { recebido: number, confirmado: number, futuro: number }> = {};
     const now = new Date();
@@ -142,7 +152,7 @@ export default function Dividends() {
       history[key] = { recebido: 0, confirmado: 0, futuro: 0 };
     }
 
-    processedDividends.forEach(div => {
+    filteredDividends.forEach(div => {
       const d = new Date(div.paymentDate || div.date);
       const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
       if (history[key] !== undefined) {
@@ -158,17 +168,17 @@ export default function Dividends() {
         fullDate: key
       }))
       .sort((a, b) => a.fullDate.localeCompare(b.fullDate));
-  }, [processedDividends]);
+  }, [filteredDividends]);
 
   const stats = useMemo(() => {
-    const pastDividends = processedDividends.filter(d => !d.isFuture);
-    const futureDividends = processedDividends.filter(d => d.isFuture);
+    const pastDividends = filteredDividends.filter(d => !d.isFuture);
+    const futureDividends = filteredDividends.filter(d => d.isFuture);
 
     const totalReceived = pastDividends.reduce((acc, curr) => acc + curr.totalAmount, 0);
     const totalFuture = futureDividends.reduce((acc, curr) => acc + curr.totalAmount, 0);
     
     // Better Avg Monthly Calculation
-    const monthsWithData = new Set(processedDividends.map(d => {
+    const monthsWithData = new Set(filteredDividends.map(d => {
       const dt = new Date(d.paymentDate || d.date);
       return `${dt.getFullYear()}-${dt.getMonth()}`;
     })).size;
@@ -198,18 +208,7 @@ export default function Dividends() {
       yieldOnCost,
       annualDividends
     };
-  }, [processedDividends, portfolio]);
-
-  const filteredDividends = processedDividends.filter(d => {
-    if (filter === 'Todos') return true;
-    const ticker = d.ticker || '';
-    const isFII = ticker.toUpperCase().endsWith('11') || 
-                  (d.type || '').toUpperCase().includes('FII') || 
-                  (d.type || '').toUpperCase().includes('RENDIMENTO');
-    if (filter === 'Ações') return !isFII;
-    if (filter === 'FIIs') return isFII;
-    return true;
-  });
+  }, [filteredDividends, portfolio]);
 
   const groupedDividends = useMemo(() => {
     const groups: Record<string, { items: typeof filteredDividends, total: number }> = {};

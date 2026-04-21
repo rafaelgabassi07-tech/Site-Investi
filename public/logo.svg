@@ -1,17 +1,18 @@
 <svg width="512" height="512" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="100" height="100" rx="20" fill="#020617"/>
   <defs>
-    <linearGradient id="metalN" x1="0" y1="0" x2="0" y2="100%">
-      <stop offset="0%" stop-color="#f8fafc" /> 
-      <stop offset="50%" stop-color="#94a3b8" /> 
-      <stop offset="100%" stop-color="#475569" /> 
+    <linearGradient id="metalBlueN" x1="0" y1="0" x2="0" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd" /> 
+      <stop offset="40%" stop-color="#3b82f6" /> 
+      <stop offset="60%" stop-color="#2563eb" /> 
+      <stop offset="100%" stop-color="#1e3a8a" /> 
     </linearGradient>
   </defs>
-  <path d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" fill="url(#metalN)"/>
+  <path d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" fill="url(#metalBlueN)"/>
   <text 
     x="50" y="93" 
     text-anchor="middle" 
-    fill="#94a3b8" 
+    fill="url(#metalBlueN)" 
     font-size="10" 
     font-weight="900" 
     letter-spacing="0.1em" 

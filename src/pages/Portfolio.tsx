@@ -101,25 +101,39 @@ export default function Portfolio() {
         {menuItems.map((item, idx) => (
           <motion.div
             key={idx}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
+            transition={{ 
+              delay: idx * 0.08,
+              type: "spring",
+              stiffness: 100
+            }}
             onClick={() => navigate(item.to)}
-            className="nexus-card cursor-pointer group"
+            className="nexus-card cursor-pointer group relative overflow-hidden active:scale-95 transition-transform"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10 transition-colors group-hover:bg-primary group-hover:text-white">
-                <item.icon className="w-5 h-5" />
+            {/* Background Glow */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl transition-colors group-hover:bg-primary/10" />
+            
+            <div className="flex items-start justify-between mb-5 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10 transition-all duration-500 group-hover:scale-110 group-hover:bg-primary group-hover:text-white group-hover:shadow-[0_0_20px_rgba(59,130,246,0.5)]">
+                <item.icon className="w-6 h-6" />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all -translate-y-1 translate-x-1" />
+              <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4 border border-border/50">
+                <ArrowUpRight className="w-4 h-4 text-primary" />
+              </div>
             </div>
             
-            <h3 className="nexus-title mb-2 group-hover:text-primary transition-colors">
-              {item.title}
-            </h3>
-            <p className="nexus-description leading-relaxed">
-              {item.description}
-            </p>
+            <div className="relative z-10">
+              <h3 className="text-sm font-display font-black text-foreground mb-2 group-hover:text-primary transition-colors uppercase tracking-tight italic">
+                {item.title}
+              </h3>
+              <p className="text-[11px] text-muted-foreground font-medium leading-relaxed opacity-70 group-hover:opacity-100 transition-opacity">
+                {item.description}
+              </p>
+            </div>
+
+            {/* Bottom Accent */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
           </motion.div>
         ))}
       </div>

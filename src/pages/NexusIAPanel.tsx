@@ -53,15 +53,23 @@ export default function NexusIAPanel() {
   };
 
   useEffect(() => {
-    const fetchHealth = () => {
-      setHealthData(nexusAI.getSystemHealth());
-      setNeuralMetrics(nexusAI.getNeuralMetrics());
+    let mounted = true;
+    const fetchHealth = async () => {
+      const metrics = await nexusAI.getNeuralMetrics();
+      const health = nexusAI.getSystemHealth();
+      if (mounted) {
+         setHealthData(health);
+         setNeuralMetrics(metrics);
+      }
     };
     
     fetchHealth();
     // Fetch system health every second for real-time feel
     const interval = setInterval(fetchHealth, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -100,23 +108,47 @@ export default function NexusIAPanel() {
 
   useEffect(() => {
     if (!healthData) return;
-    // Generate stable values for the session
-    const protocols = healthData.activeProtocols.map((p: any, i: number) => ({
+    
+    // Create or update matrix values that fluctuate every second
+    const protocols = (healthData.activeProtocols || []).map((p: any, i: number) => ({
         name: p.name,
         ops: Math.floor(Math.random() * 800) + 70,
-        success: (Math.random() * (99.9 - 95.0) + 95.0).toFixed(2),
+        success: (98.0 + Math.random() * 1.9).toFixed(2),
         priority: ['CRÍTICA', 'ALTA', 'MODERADA'][i%3]
     }));
     
     protocols.push({
         name: 'Sincronizador B3 Cego',
         ops: Math.floor(Math.random() * 50) + 10,
-        success: (Math.random() * (99.9 - 90.0) + 90.0).toFixed(2),
+        success: (97.0 + Math.random() * 2.9).toFixed(2),
         priority: 'PÚLSAR / MÁXIMA'
     });
     setMatrixData(protocols);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [healthData?.activeProtocols]);
+  }, [healthData]);
+
+  const [processingData, setProcessingData] = useState<any[]>([
+    { name: 'Sincronizador B3 Cego', progress: 85, speed: '420ms' },
+    { name: 'NLP Sentiment Scan', progress: 42, speed: '1.2s' },
+    { name: 'Web Crawler (Nexus)', progress: 68, speed: '850ms' },
+    { name: 'Calculadora de Drawdown', progress: 95, speed: '15ms' }
+  ]);
+
+  useEffect(() => {
+    if (!healthData) return;
+    
+    // Update processing progress randomly to simulate active work
+    setProcessingData(prev => prev.map(p => {
+      const delta = Math.floor(Math.random() * 5) - 2;
+      const newProgress = Math.max(10, Math.min(100, p.progress + delta));
+      const speedValue = parseFloat(p.speed);
+      const speedUnit = p.speed.includes('ms') ? 'ms' : 's';
+      const newSpeed = speedUnit === 'ms' 
+        ? `${Math.max(10, Math.min(900, speedValue + (Math.random() * 40 - 20))).toFixed(0)}ms`
+        : `${(Math.max(0.5, Math.min(2.5, speedValue + (Math.random() * 0.2 - 0.1)))).toFixed(1)}s`;
+        
+      return { ...p, progress: newProgress, speed: newSpeed };
+    }));
+  }, [healthData]);
 
   if (!healthData) return null;
 
@@ -155,7 +187,11 @@ export default function NexusIAPanel() {
                   "M 0 100 Q 100 50 200 100 T 400 100"
                 ]
               }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              transition={{ 
+                repeat: Infinity, 
+                duration: Math.max(1.5, 5 - (healthData.rawCpu / 20)), 
+                ease: "easeInOut" 
+              }}
             />
           </svg>
         </div>
@@ -169,18 +205,18 @@ export default function NexusIAPanel() {
              </div>
              <div className="space-y-1">
                 <h3 className="text-lg font-display font-black text-white italic uppercase tracking-tight">Status Neural: Sincronizado</h3>
-                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">Alpha Brain v3.1.0-alpha / Latência: 12ms</p>
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">Alpha Brain v3.1.0-alpha / Latência: {healthData.latency}</p>
              </div>
            </div>
            
            <div className="flex gap-4">
               <div className="px-5 py-2 bg-slate-900/50 border border-white/5 rounded-xl text-center">
                  <p className="text-[9px] text-muted-foreground font-bold uppercase mb-1">Precisão</p>
-                 <p className="text-lg font-mono font-bold text-emerald-500">99.8%</p>
+                 <p className="text-lg font-mono font-bold text-emerald-500">{healthData.accuracy}</p>
               </div>
               <div className="px-5 py-2 bg-slate-900/50 border border-white/5 rounded-xl text-center">
                  <p className="text-[9px] text-muted-foreground font-bold uppercase mb-1">Uptime</p>
-                 <p className="text-lg font-mono font-bold text-primary">100.0%</p>
+                 <p className="text-lg font-mono font-bold text-primary">{healthData.uptime}</p>
               </div>
            </div>
         </div>
@@ -190,9 +226,9 @@ export default function NexusIAPanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[
           { label: 'Estado', value: healthData.status, icon: Activity, color: 'text-emerald-500' },
-          { label: 'Modo', value: healthData.mode, icon: Binary, color: 'text-primary' },
-          { label: 'Carga', value: healthData.ramUsage, icon: Cpu, color: 'text-purple-500' },
-          { label: 'Risco', value: healthData.riskLevel, icon: ShieldAlert, color: healthData.riskLevel === 'CRITICO' ? 'text-red-500' : 'text-amber-500' }
+          { label: 'CPU', value: healthData.cpuUsage, icon: Binary, color: 'text-primary' },
+          { label: 'RAM', value: healthData.ramUsage, icon: Cpu, color: 'text-purple-500' },
+          { label: 'Vetores', value: `${portfolio.length + transactions.length} Nodes`, icon: Network, color: 'text-amber-500' }
         ].map((stat, idx) => (
           <motion.div 
             key={idx}
@@ -478,15 +514,13 @@ export default function NexusIAPanel() {
           </div>
 
           <div className="space-y-5">
-              {[
-                  { name: 'Sincronizador B3 Cego', progress: 85, speed: '420ms' },
-                  { name: 'NLP Sentiment Scan', progress: 42, speed: '1.2s' },
-                  { name: 'Web Crawler (Nexus)', progress: 68, speed: '850ms' },
-                  { name: 'Calculadora de Drawdown', progress: 95, speed: '15ms' }
-              ].map((proc, i) => (
+              {processingData.map((proc, i) => (
                   <div key={i} className="space-y-2">
                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{proc.name}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{proc.name}</span>
+                                <span className="text-[9px] font-mono text-primary font-bold">{proc.progress}%</span>
+                            </div>
                             <span className="text-[9px] font-mono text-primary/60">{proc.speed}</span>
                        </div>
                        <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
@@ -494,7 +528,7 @@ export default function NexusIAPanel() {
                               className="h-full bg-gradient-to-r from-primary/40 to-primary"
                               initial={{ width: 0 }}
                               animate={{ width: `${proc.progress}%` }}
-                              transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                              transition={{ duration: 0.5, ease: "easeOut" }}
                             />
                        </div>
                   </div>

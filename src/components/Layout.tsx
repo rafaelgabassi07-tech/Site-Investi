@@ -178,6 +178,9 @@ export default function Layout() {
     }
   };
 
+  const rootPaths = ['/', '/portfolio', '/ranking', '/search', '/settings', '/news', '/about', '/compare', '/recommended', '/calculators', '/renda-fixa', '/nexus-ia'];
+  const shouldShowBackButton = !rootPaths.includes(location.pathname) && location.pathname !== '/';
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-slate-200 flex flex-col selection:bg-blue-500/30 transition-colors duration-300">
       <CommandCenter />
@@ -190,7 +193,7 @@ export default function Layout() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="flex items-center gap-3">
-                  {location.pathname !== '/' && (
+                  {shouldShowBackButton && (
                     <button 
                       onClick={handleGoBack}
                       className="p-2 sm:p-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all mr-2"

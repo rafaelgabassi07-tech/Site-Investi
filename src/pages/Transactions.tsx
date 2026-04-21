@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { AssetIcon } from '../components/ui/AssetIcon';
-import { PortfolioNav } from '../components/PortfolioNav';
 import * as XLSX from 'xlsx';
 import { formatNumber } from '../lib/utils';
 import { usePrivacy } from '../hooks/usePrivacy';

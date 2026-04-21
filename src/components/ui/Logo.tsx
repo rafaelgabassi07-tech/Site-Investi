@@ -11,24 +11,15 @@ export function Logo({ className = "", size = 40, showText = false, variant = 'd
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <div 
-        className={`relative flex items-center justify-center transition-all duration-500`}
+        className="relative flex items-center justify-center transition-all duration-500"
         style={{ width: size, height: size }}
       >
-        {/* Logo Container - Solid Sophistication */}
-        <div className="relative w-full h-full bg-primary border border-primary/20 rounded-lg flex items-center justify-center p-1.5 shadow-sm overflow-hidden">
-          <svg 
-            viewBox="0 0 100 100" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-            className={`w-full h-full relative z-10`}
-          >
-            {/* The Geometric 'N' - Clean White */}
-            <path 
-              d="M28 20 H38 L62 65 V20 H72 V80 H62 L38 35 V80 H28 V20 Z" 
-              fill="white"
-            />
-          </svg>
-        </div>
+        {/* Usando o mesmo logo do PWA para padronização */}
+        <img 
+          src="/logo.svg" 
+          alt="Nexus Invest" 
+          className="w-full h-full object-contain rounded-xl shadow-sm"
+        />
       </div>
 
       {showText && (
@@ -37,11 +28,11 @@ export function Logo({ className = "", size = 40, showText = false, variant = 'd
             <span className="text-xl font-display font-extrabold tracking-tighter text-foreground leading-none uppercase">
               Nexus
             </span>
-            <div className="w-1.5 h-1.5 bg-primary rounded-full shadow-sm" />
+            <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-blue-500" />
           </div>
           <div className="mt-0.5 ml-0.5">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
-              Intelligence
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] font-sans italic">
+              Invest
             </span>
           </div>
         </div>

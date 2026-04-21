@@ -382,23 +382,25 @@ export default function Home() {
         </div> {/* End of grid grid-cols-1 lg:grid-cols-3 */}
 
         {/* Meus Recursos Section - Compact & Clean Grid */}
-        <section className="space-y-4 pt-2">
+        <section className="space-y-3 pt-2">
            <div className="flex items-center justify-between px-2">
-             <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] italic">Ferramentas de Análise</h3>
-             <div className="w-12 h-0.5 bg-primary/10 rounded-full" />
+             <h3 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.3em] italic">Análise de Sistemas</h3>
            </div>
            
-           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {resourceItems.slice(0, 8).map((item, idx) => (
                 <Link 
                   key={idx} 
                   to={item.to} 
-                  className="bg-card border border-border/60 p-3 flex flex-col items-center justify-center gap-2.5 rounded-xl hover:border-primary/40 hover:bg-secondary/50 transition-all duration-300 group text-center"
+                  className="bg-card border border-border/40 p-2.5 flex items-center gap-3 rounded-xl hover:border-primary/30 hover:bg-secondary/40 transition-all duration-300 group"
                 >
-                  <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center text-muted-foreground/60 group-hover:text-primary group-hover:scale-110 transition-all border border-border group-hover:border-primary/20">
+                  <div className="w-10 h-10 shrink-0 bg-secondary rounded-lg flex items-center justify-center text-muted-foreground/50 group-hover:text-primary group-hover:bg-primary/5 transition-all border border-border/50 group-hover:border-primary/20">
                     <item.icon className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-black text-foreground/80 group-hover:text-foreground uppercase tracking-tight leading-tight transition-colors">{item.label}</span>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-foreground/80 group-hover:text-foreground uppercase tracking-tight leading-tight">{item.label}</span>
+                    <span className="text-[8px] text-muted-foreground/40 font-bold group-hover:text-primary/50 transition-colors">Sistema {idx + 1}</span>
+                  </div>
                 </Link>
               ))}
            </div>
