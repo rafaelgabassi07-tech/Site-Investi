@@ -27,6 +27,20 @@ addLog('info', 'Motor Lógico pronto para escanear WebSockets.');
 
 export const nexusAI = {
   getSystemHealth: () => {
+    // Inject dynamic logs based on random intervals to simulate background work
+    if (Math.random() > 0.8) {
+      const randomTickers = ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'ABEV3', 'MXRF11', 'HGLG11'];
+      const ticker = randomTickers[Math.floor(Math.random() * randomTickers.length)];
+      const actions = [
+        `Atualizando spread de cotação para ${ticker}...`,
+        `Escaner de proventos encontrou novo anúncio para ${ticker}.`,
+        `Calculando preço médio ajustado de ${ticker}.`,
+        `Verificando conformidade regulatória de ${ticker}.`,
+        `Analisando sentimento social de ${ticker} nas últimas 24h.`
+      ];
+      addLog('info', actions[Math.floor(Math.random() * actions.length)]);
+    }
+
     return {
       status: 'ONLINE & ATIVO',
       mode: 'Otimista (Auto-Aprendizado)',
@@ -84,11 +98,25 @@ export const nexusAI = {
       });
       if (!response.ok) throw new Error('API Error');
       const data = await response.json();
-      return data.text || "Subsistema Gemini retornou resposta vazia.";
+      return data.text || "Subsistema Nexus retornou resposta vazia.";
     } catch (e) {
       console.error(e);
-      return "Erro no link neural. Subsistema Gemini inacessível.";
+      return "Erro no link neural. Subsistema Nexus inacessível.";
     }
+  },
+  
+  getNeuralMetrics: () => {
+    // Generate sample data for activity chart
+    const now = new Date();
+    return Array.from({ length: 24 }).map((_, i) => {
+      const time = new Date(now.getTime() - (23 - i) * 1000 * 60 * 60);
+      return {
+        time: time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        activity: Math.floor(Math.random() * 40) + 60, // 60-100 range
+        load: Math.floor(Math.random() * 30) + 10, // 10-40 range
+        accuracy: (Math.random() * (99.9 - 98.5) + 98.5).toFixed(2)
+      };
+    });
   },
 
   getPortfolioAnalysis: async (portfolio: any[]) => {

@@ -18,8 +18,21 @@ import {
   Wifi,
   Search,
   ServerCrash,
-  Loader2
+  Loader2,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
 import { PageHeader } from '../components/ui/PageHeader';
 import { nexusAI } from '../services/nexusAIService';
 import { formatNumber } from '../lib/utils';
@@ -29,8 +42,9 @@ export default function NexusIAPanel() {
   const { portfolio, quotaHistory, transactions } = usePortfolio();
   const [healthData, setHealthData] = useState<any>(null);
   const [isRecovering, setIsRecovering] = useState(false);
-  const [activeTab, setActiveTab] = useState<'console' | 'capabilities' | 'network'>('console');
+  const [activeTab, setActiveTab] = useState<'console' | 'capabilities' | 'network' | 'metrics'>('console');
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  const [neuralMetrics, setNeuralMetrics] = useState<any[]>([]);
   
   const handleRecovery = async () => {
     setIsRecovering(true);
@@ -41,6 +55,7 @@ export default function NexusIAPanel() {
   useEffect(() => {
     const fetchHealth = () => {
       setHealthData(nexusAI.getSystemHealth());
+      setNeuralMetrics(nexusAI.getNeuralMetrics());
     };
     
     fetchHealth();
@@ -108,7 +123,7 @@ export default function NexusIAPanel() {
   return (
     <div className="space-y-6 pb-24">
       <PageHeader 
-        title="Nexus Cérebro IA"
+        title="Nexus Alpha Brain"
         description={<>Mente <span className="text-primary font-bold">autônoma</span> e rede de telemetria inteligente.</>}
         icon={BrainCircuit}
         actions={
@@ -122,6 +137,54 @@ export default function NexusIAPanel() {
           </button>
         }
       />
+
+      {/* Neural Interface State - Pulse Visual */}
+      <div className="nexus-card !p-0 overflow-hidden bg-[#020617] border-primary/20 relative">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_70%)]" />
+          <svg className="w-full h-full" viewBox="0 0 400 200">
+            <motion.path
+              d="M 0 100 Q 100 50 200 100 T 400 100"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              animate={{
+                d: [
+                  "M 0 100 Q 100 50 200 100 T 400 100",
+                  "M 0 100 Q 100 150 200 100 T 400 100",
+                  "M 0 100 Q 100 50 200 100 T 400 100"
+                ]
+              }}
+              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            />
+          </svg>
+        </div>
+        <div className="p-6 relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+           <div className="flex items-center gap-5">
+             <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                <div className="w-16 h-16 rounded-full bg-slate-900 border border-primary/30 flex items-center justify-center relative">
+                   <BrainCircuit className="w-8 h-8 text-primary" />
+                </div>
+             </div>
+             <div className="space-y-1">
+                <h3 className="text-lg font-display font-black text-white italic uppercase tracking-tight">Status Neural: Sincronizado</h3>
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">Alpha Brain v3.1.0-alpha / Latência: 12ms</p>
+             </div>
+           </div>
+           
+           <div className="flex gap-4">
+              <div className="px-5 py-2 bg-slate-900/50 border border-white/5 rounded-xl text-center">
+                 <p className="text-[9px] text-muted-foreground font-bold uppercase mb-1">Precisão</p>
+                 <p className="text-lg font-mono font-bold text-emerald-500">99.8%</p>
+              </div>
+              <div className="px-5 py-2 bg-slate-900/50 border border-white/5 rounded-xl text-center">
+                 <p className="text-[9px] text-muted-foreground font-bold uppercase mb-1">Uptime</p>
+                 <p className="text-lg font-mono font-bold text-primary">100.0%</p>
+              </div>
+           </div>
+        </div>
+      </div>
 
       {/* Hero Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -150,44 +213,64 @@ export default function NexusIAPanel() {
         ))}
       </div>
 
-      {/* Ask Nexus Section - NEW */}
-      <section className="nexus-card !p-4 bg-primary/5 border-primary/20">
-         <h4 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4 flex items-center gap-2 italic">
-           <Bot className="w-4 h-4" /> Perguntar ao Nexus
-         </h4>
-         <form onSubmit={handleAsk} className="flex flex-col sm:flex-row gap-2">
-            <input 
-              type="text" 
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ex: Qual o risco da minha carteira?"
-              className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-            />
-            <button 
-              type="submit" 
-              disabled={isAsking || !question.trim()}
-              className="btn-primary py-3 px-6 whitespace-nowrap"
-            >
-              {isAsking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Consultar Cérebro'}
-            </button>
-         </form>
+      {/* Ask Nexus Section - Enhanced Neural Interface */}
+      <section className="nexus-card !p-0 overflow-hidden bg-[#0a0f1e] border-primary/30 relative">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+             <Bot className="w-48 h-48" />
+          </div>
+          
+          <div className="p-5 border-b border-white/5 flex items-center justify-between bg-primary/5">
+             <h4 className="text-xs font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2 italic">
+               <Bot className="w-4 h-4" /> Neural Terminal Interface
+             </h4>
+             <div className="flex gap-1">
+                <div className="w-1 h-1 rounded-full bg-primary animate-ping" />
+                <div className="w-1 h-1 rounded-full bg-primary/40" />
+             </div>
+          </div>
 
-         <AnimatePresence>
-           {answer && (
-             <motion.div 
-               initial={{ opacity: 0, height: 0 }}
-               animate={{ opacity: 1, height: 'auto' }}
-               className="mt-4 p-4 bg-background border border-primary/10 rounded-xl relative overflow-hidden"
-             >
-                <div className="absolute top-0 right-0 p-2 opacity-10">
-                   <BrainCircuit className="w-12 h-12" />
+          <div className="p-6 space-y-6">
+             <form onSubmit={handleAsk} className="relative group">
+                <input 
+                  type="text" 
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Injetar consulta técnica no Alpha Brain..."
+                  className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-12 py-4 text-sm md:text-base text-white focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none shadow-2xl transition-all placeholder:text-muted-foreground/30 font-mono italic"
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary transition-colors">
+                   <Terminal className="w-5 h-5" />
                 </div>
-                <p className="text-sm text-foreground leading-relaxed italic">
-                  "{answer}"
-                </p>
-             </motion.div>
-           )}
-         </AnimatePresence>
+                <button 
+                  type="submit" 
+                  disabled={isAsking || !question.trim()}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-primary hover:bg-blue-600 text-white font-black text-[10px] uppercase italic rounded-lg transition-all disabled:opacity-50"
+                >
+                  {isAsking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'EXECUTAR'}
+                </button>
+             </form>
+
+             <AnimatePresence>
+               {answer && (
+                 <motion.div 
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="p-5 bg-card border border-primary/20 rounded-xl group relative shadow-lg"
+                 >
+                    <div className="flex items-center gap-2 mb-3">
+                       <Radio className="w-3 h-3 text-emerald-500 animate-pulse" />
+                       <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Resposta Alpha Brain</span>
+                    </div>
+                    <p className="text-sm md:text-base text-foreground leading-relaxed font-medium italic border-l-2 border-primary/40 pl-4">
+                      {answer}
+                    </p>
+                    <div className="mt-4 flex justify-end">
+                       <span className="text-[8px] font-mono text-muted-foreground/40">Hash: {Math.random().toString(16).slice(2, 10).toUpperCase()}</span>
+                    </div>
+                 </motion.div>
+               )}
+             </AnimatePresence>
+          </div>
       </section>
 
       <div className="nexus-card !p-0 overflow-hidden">
@@ -195,6 +278,7 @@ export default function NexusIAPanel() {
             {[
               { id: 'console', label: 'Console', icon: Terminal },
               { id: 'capabilities', label: 'Cérebro', icon: BrainCircuit },
+              { id: 'metrics', label: 'Métricas', icon: BarChart3 },
               { id: 'network', label: 'Rede', icon: Network },
             ].map(tab => (
               <button
@@ -236,7 +320,7 @@ export default function NexusIAPanel() {
                   <div className="mb-4 opacity-50 text-blue-500">
 {`N E X U S   A. I.   O S   v3.1.0-alpha
 > Node 3000 linked.
-> Gemini neural bridge active.`}
+> Nexus Alpha Brain bridge active.`}
                   </div>
                   
                   {terminalLines.map((line, idx) => {
@@ -313,8 +397,109 @@ export default function NexusIAPanel() {
                   ))}
               </motion.div>
             )}
+
+            {activeTab === 'metrics' && (
+              <motion.div
+                key="metrics"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-6"
+              >
+                 <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={neuralMetrics}>
+                        <defs>
+                          <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                        <XAxis 
+                          dataKey="time" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fontSize: 10, fill: '#64748b' }}
+                        />
+                        <YAxis hide domain={[0, 100]} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}
+                          itemStyle={{ fontSize: 12, fontWeight: 'bold' }}
+                          labelStyle={{ fontSize: 10, color: '#64748b', marginBottom: '4px' }}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="activity" 
+                          stroke="var(--primary)" 
+                          strokeWidth={2}
+                          fillOpacity={1} 
+                          fill="url(#colorActivity)" 
+                          name="Atividade Neural"
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="load" 
+                          stroke="#8b5cf6" 
+                          strokeWidth={2}
+                          fillOpacity={0.1}
+                          fill="#8b5cf6"
+                          name="Carga do Sistema"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-secondary/20 p-4 rounded-xl border border-border">
+                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Média de Precisão</p>
+                       <p className="text-xl font-display font-black text-emerald-500 italic">
+                         {neuralMetrics.length > 0 ? neuralMetrics[neuralMetrics.length - 1].accuracy : '0'}%
+                       </p>
+                    </div>
+                    <div className="bg-secondary/20 p-4 rounded-xl border border-border">
+                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Taxa de Inferência</p>
+                       <p className="text-xl font-display font-black text-primary italic">1.2ms/op</p>
+                    </div>
+                 </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
+      </div>
+
+      <div className="nexus-card !p-6 bg-[#020617] border-primary/20">
+          <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                  <Cpu className="w-5 h-5 text-primary animate-spin" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] italic">Processamento Ativo</h3>
+              </div>
+              <span className="text-[9px] font-black text-primary uppercase tracking-[0.1em] px-2 py-0.5 bg-primary/10 rounded border border-primary/20">Telemetria Live</span>
+          </div>
+
+          <div className="space-y-5">
+              {[
+                  { name: 'Sincronizador B3 Cego', progress: 85, speed: '420ms' },
+                  { name: 'NLP Sentiment Scan', progress: 42, speed: '1.2s' },
+                  { name: 'Web Crawler (Nexus)', progress: 68, speed: '850ms' },
+                  { name: 'Calculadora de Drawdown', progress: 95, speed: '15ms' }
+              ].map((proc, i) => (
+                  <div key={i} className="space-y-2">
+                       <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{proc.name}</span>
+                            <span className="text-[9px] font-mono text-primary/60">{proc.speed}</span>
+                       </div>
+                       <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                            <motion.div 
+                              className="h-full bg-gradient-to-r from-primary/40 to-primary"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${proc.progress}%` }}
+                              transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                            />
+                       </div>
+                  </div>
+              ))}
+          </div>
       </div>
 
       <div className="nexus-card !p-0 overflow-hidden">
