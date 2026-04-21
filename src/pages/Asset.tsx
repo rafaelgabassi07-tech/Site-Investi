@@ -2,7 +2,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper, Building2, Wallet, BarChart3, ShieldCheck, Zap, PieChart as PieChartIcon, DollarSign, MapPin, ChevronRight, Quote as QuoteIcon, ExternalLink } from 'lucide-react';
 import { AssetIcon } from '../components/ui/AssetIcon';
-import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
+import { financeService, AssetDetails, HistoryPoint, NewsItem } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, ComposedChart, Cell, Pie, PieChart, ReferenceLine } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatCompactNumber, parseFinanceValue, formatNumber } from '../lib/utils';
@@ -16,6 +16,7 @@ export default function Asset() {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [dividends, setDividends] = useState<any[]>([]);
   const [peers, setPeers] = useState<any[]>([]);
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [activePeriod, setActivePeriod] = useState('1y');
 
@@ -43,18 +44,20 @@ export default function Asset() {
       setLoading(true);
       setError(null);
       try {
-        const [details, hist, divs, peerData, fundamentals] = await Promise.all([
+        const [details, hist, divs, peerData, fundamentals, newsData] = await Promise.all([
           financeService.getAssetDetails(ticker),
           financeService.getAssetHistory(ticker, activePeriod),
           financeService.getAssetDividends(ticker),
           financeService.getPeers(ticker),
-          financeService.getHistoricalFundamentals(ticker)
+          financeService.getHistoricalFundamentals(ticker),
+          financeService.getNews(ticker)
         ]);
         setAssetData(details);
         setHistory(hist);
         setDividends(divs);
         setPeers(peerData);
         setHistoricalFundamentals(fundamentals);
+        setNewsList(newsData);
       } catch (err) {
         setError('Erro ao carregar dados do ativo.');
         console.error(err);
@@ -1012,7 +1015,7 @@ export default function Asset() {
         
         <div className="p-4 bg-card/40 backdrop-blur-md border border-border/50 rounded-[48px] shadow-sm hover:bg-card/50 transition-all overflow-hidden">
           <div className="divide-y divide-border/30">
-            {(news.length > 0 ? news.slice(0, 6) : [
+            {(newsList.length > 0 ? newsList.slice(0, 6) : [
               { date: '15/10/2024', title: 'Pagamento de Juros sobre Capital Próprio - 4º Trimestre' },
               { date: '28/09/2024', title: 'Fato Relevante: Plano de Investimentos 2025-2029' },
               { date: '10/09/2024', title: 'Aviso aos Acionistas: Distribuição de Dividendos Intermediários' },

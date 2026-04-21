@@ -1210,7 +1210,7 @@ export class NexusEngine {
               link: article.link,
               pubDate: pubDate,
               source: article.publisher || 'Yahoo Finance',
-              thumbnail: article.thumbnail
+              thumbnail: (article.thumbnail as any)?.resolutions?.[0]?.url
             });
           }
         }

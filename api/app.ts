@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import { NexusEngine, inferAssetType, formatYahooError, yahooFinance, ensureYahooConfig } from "../src/lib/nexus/engine.ts";
 
 const __filename = fileURLToPath(import.meta.url);
-const _dirname = path.dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 // Nexus Native Heuristic Logic for Sentiment Analysis
 function analyzeNexusSentiment(text: string) {
