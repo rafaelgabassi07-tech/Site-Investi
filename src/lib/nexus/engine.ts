@@ -1268,7 +1268,7 @@ export class NexusEngine {
         ]
       };
 
-      const tickers = popularTickers[type] || popularTickers.ACAO;
+      const tickers = popularTickers[String(type).toUpperCase()] || popularTickers.ACAO;
       
       // Step 1: Bulk Fetch from Yahoo (Fast)
       const bulkQuotes = await yahooQuoteBulk(tickers);
@@ -1421,7 +1421,7 @@ export class NexusEngine {
           ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'],
           STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA']
         };
-        peers = popular[type] || popular.ACAO;
+        peers = popular[String(type).toUpperCase()] || popular.ACAO;
       }
 
       peers = peers.filter(p => p !== clean).slice(0, 5);

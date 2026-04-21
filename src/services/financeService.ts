@@ -140,7 +140,15 @@ export const financeService = {
     const url = ticker ? `/api/news?ticker=${encodeURIComponent(ticker)}` : '/api/news';
     return fetchWithCache(`news-${ticker || 'global'}`, async () => {
       const res = await fetchWithRetry(url);
-      return res.json();
+      const data = await res.json();
+      // Ensure it's an array and map dates to Date objects
+      if (Array.isArray(data)) {
+        return data.map(item => ({
+          ...item,
+          pubDate: item.pubDate ? new Date(item.pubDate) : new Date()
+        }));
+      }
+      return [];
     });
   },
 
@@ -184,7 +192,7 @@ export const financeService = {
 
   async getRanking(category: string, type: string = 'ACAO'): Promise<any[]> {
     return fetchWithCache(`ranking-${category}-${type}`, async () => {
-      const res = await fetchWithRetry(`/api/ranking?category=${encodeURIComponent(category)}&type=${type}`);
+      const res = await fetchWithRetry(`/api/ranking?category=${encodeURIComponent(category)}&type=${type.toUpperCase()}`);
       return res.json();
     });
   },

@@ -12,6 +12,7 @@ import {
   XCircle,
   BrainCircuit,
   Binary,
+  Hash,
   Bot,
   Zap,
   Radio,
@@ -90,6 +91,7 @@ export default function NexusIAPanel() {
   const [matrixData, setMatrixData] = useState<any[]>([]);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
+  const [answerHash, setAnswerHash] = useState('');
   const [isAsking, setIsAsking] = useState(false);
 
   const handleAsk = async (e: React.FormEvent) => {
@@ -103,6 +105,7 @@ export default function NexusIAPanel() {
     };
     const res = await nexusAI.askNexus(question, context);
     setAnswer(res);
+    setAnswerHash(Math.random().toString(16).slice(2, 10).toUpperCase());
     setIsAsking(false);
   };
 
@@ -301,7 +304,7 @@ export default function NexusIAPanel() {
                       {answer}
                     </p>
                     <div className="mt-4 flex justify-end">
-                       <span className="text-[8px] font-mono text-muted-foreground/40">Hash: {Math.random().toString(16).slice(2, 10).toUpperCase()}</span>
+                       <span className="text-[8px] font-mono text-muted-foreground/40">Hash: {answerHash}</span>
                     </div>
                  </motion.div>
                )}
