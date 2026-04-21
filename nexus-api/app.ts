@@ -52,9 +52,7 @@ export async function createServer() {
 
     // Debug Logger
     app.use((req, res, next) => {
-      if (req.url.startsWith("/api/")) {
-        console.log(`[NEXUS SERVER] ${req.method} ${req.url}`);
-      }
+      console.log(`[NEXUS SERVER] ${req.method} ${req.url}`);
       next();
     });
 
@@ -186,102 +184,34 @@ export async function createServer() {
       }
     });
 
-    app.get("/api/history/:ticker", async (req, res) => {
-      const { ticker } = req.params;
-      const { period } = req.query;
-      try {
-        const data = await NexusEngine.fetchHistoricoGrafico(ticker, (period as any) || "1M");
-        res.json(data);
-      } catch (error) {
-        res.status(500).json({ error: formatYahooError(error) });
-      }
-    });
-
-    app.get("/api/dividends/:ticker", async (req, res) => {
-      const { ticker } = req.params;
-      try {
-        const data = await NexusEngine.fetchDividends(ticker);
-        res.json(data);
-      } catch (error) {
-        res.status(500).json({ error: formatYahooError(error) });
-      }
-    });
-
-    app.get("/api/historical-fundamentals/:ticker", async (req, res) => {
-      const { ticker } = req.params;
-      try {
-        const data = await NexusEngine.fetchHistoricalFundamentals(ticker);
-        res.json(data);
-      } catch (error) {
-        res.status(500).json({ error: formatYahooError(error) });
-      }
-    });
-
-    app.get("/api/peers/:ticker", async (req, res) => {
-      const { ticker } = req.params;
-      const { type } = req.query;
-      try {
-        const data = await NexusEngine.fetchPeers(ticker, (type as any) || "Acao");
-        res.json(data);
-      } catch (error) {
-        res.status(500).json({ error: formatYahooError(error) });
-      }
-    });
-
-    app.get("/api/screener", async (req, res) => {
-      try {
-        const data = await NexusEngine.screener(req.query);
-        res.json(data);
-      } catch (error) {
-        res.status(500).json({ error: formatYahooError(error) });
-      }
-    });
-
-    app.get("/api/search", async (req, res) => {
-      const { q } = req.query;
-      if (!q) return res.json([]);
-      try {
-        const data = await NexusEngine.searchTicker(q as string);
-        res.json(data);
-      } catch (error) {
-        res.status(500).json({ error: formatYahooError(error) });
-      }
-    });
-
-    app.get("/api/exchange-rate", async (req, res) => {
-      try {
-        const quotes = await yahooFinance.quote("USDBRL=X");
-        res.json({ rate: quotes.regularMarketPrice || 5.0 });
-      } catch (error) {
-        res.status(500).json({ error: formatYahooError(error) });
-      }
-    });
-
     // SPA Fallback and 404
     app.all("/api/*", (req, res) => {
       res.status(404).json({ error: "NEXUS API 404", path: req.originalUrl });
     });
 
-    if (process.env.NODE_ENV !== "production") {
-      const { createServer: createViteServer } = await import("vite");
-      const vite = await createViteServer({
-        server: { middlewareMode: true, hmr: { port: 3001 } },
-        appType: "spa",
-      });
-      app.use(vite.middlewares);
-      app.get("*", async (req, res, next) => {
-        if (req.originalUrl.startsWith("/api/")) return next();
-        try {
-          let template = fs.readFileSync(path.resolve(process.cwd(), "index.html"), "utf-8");
-          template = await vite.transformIndexHtml(req.originalUrl, template);
-          res.status(200).set({ "Content-Type": "text/html" }).end(template);
-        } catch (e) { next(e); }
-      });
-    } else {
+    // if (process.env.NODE_ENV !== "production") {
+    //   const { createServer: createViteServer } = await import("vite");
+    //   const vite = await createViteServer({
+    //     server: { middlewareMode: true, hmr: { port: 3001 } },
+    //     appType: "spa",
+    //   });
+    //   app.use(vite.middlewares);
+    //   app.get("*", async (req, res, next) => {
+    //     if (req.originalUrl.startsWith("/api/")) return next();
+    //     try {
+    //       let template = fs.readFileSync(path.resolve(process.cwd(), "index.html"), "utf-8");
+    //       template = await vite.transformIndexHtml(req.originalUrl, template);
+    //       res.status(200).set({ "Content-Type": "text/html" }).end(template);
+    //     } catch (e) { next(e); }
+    //   });
+    // } else {
       const distPath = path.join(process.cwd(), "dist");
       app.use(express.static(distPath));
-      app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
-    }
+      app.get("*", (req, res) => {
+        if (req.originalUrl.startsWith("/api/")) return res.status(404).json({ error: "NEXUS API 404", path: req.originalUrl });
+        res.sendFile(path.join(distPath, "index.html"));
+      });
+    // }
 
     return { app, PORT };
   })();
