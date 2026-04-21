@@ -58,6 +58,7 @@ export interface NewsItem {
   link: string;
   pubDate?: Date;
   source?: string;
+  thumbnail?: string;
 }
 
 export interface NexusEngineOptions {
@@ -1198,7 +1199,7 @@ export class NexusEngine {
       
       if (searchResult && searchResult.news) {
         for (const article of searchResult.news) {
-          const pubDate = article.providerPublishTime ? new Date(article.providerPublishTime * 1000) : new Date();
+          const pubDate = article.providerPublishTime ? new Date(Number(article.providerPublishTime) * 1000) : new Date();
           
           // Only keep news from last 15 days
           const diffDays = (new Date().getTime() - pubDate.getTime()) / (1000 * 3600 * 24);
@@ -1772,7 +1773,6 @@ export class NexusEngine {
         const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
         const headerRegex = /<th[^>]*>([\s\S]*?)<\/th>/g;
         
-        let rowMatch;
         let colIndices = { tipo: 0, dataCom: 1, pagamento: 2, valor: 3 };
         
         // Find headers first to map column indices dynamically

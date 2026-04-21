@@ -167,11 +167,8 @@ export default function Home() {
       <header className="px-2 pt-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <h2 className="text-xl md:text-2xl font-display font-medium text-foreground leading-none">
-              {greeting},
-            </h2>
-            <h1 className="text-xl md:text-2xl font-display font-bold text-primary truncate max-w-[280px]">
-              {displayName}
+            <h1 className="text-xl md:text-2xl font-display font-bold text-foreground">
+               {greeting}, <span className="text-primary">{displayName}</span>
             </h1>
             <div className="flex items-center gap-2 pt-1">
               <div className="px-2 py-0.5 bg-emerald-500/5 border border-emerald-500/10 rounded-full flex items-center gap-1.5">
@@ -179,9 +176,6 @@ export default function Home() {
                 <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Sistemas Ativos</p>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 p-2.5 bg-secondary rounded-xl border border-border">
-             <Logo size={20} showText={false} />
           </div>
         </div>
 

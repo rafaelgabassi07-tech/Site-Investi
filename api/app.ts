@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import { NexusEngine, inferAssetType, formatYahooError, yahooFinance, ensureYahooConfig } from "../src/lib/nexus/engine.ts";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const _dirname = path.dirname(__filename);
 
 // Nexus Native Heuristic Logic for Sentiment Analysis
 function analyzeNexusSentiment(text: string) {
@@ -52,7 +52,7 @@ export async function createServer() {
     app.use(express.json());
 
     // Debug Logger
-    app.use((req, res, next) => {
+    app.use((req, _res, next) => {
       if (req.url.startsWith("/api/")) {
         console.log(`[NEXUS SERVER] ${req.method} ${req.url}`);
       }
@@ -269,7 +269,7 @@ export async function createServer() {
       }
     });
 
-    app.get("/api/exchange-rate", async (req, res) => {
+    app.get("/api/exchange-rate", async (_req, res) => {
       try {
         const quotes = await yahooFinance.quote("USDBRL=X");
         res.json({ rate: quotes.regularMarketPrice || 5.0 });
@@ -301,7 +301,7 @@ export async function createServer() {
     } else {
       const distPath = path.join(process.cwd(), "dist");
       app.use(express.static(distPath));
-      app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
+      app.get("*", (_req, res) => res.sendFile(path.join(distPath, "index.html")));
     }
 
     return { app, PORT };

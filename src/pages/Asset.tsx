@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper, Building2, Wallet, BarChart3, ShieldCheck, Zap, PieChart as PieChartIcon, DollarSign, MapPin, ChevronRight } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Info, Star, Activity, Loader2, Calendar, CheckCircle2, XCircle, AlertCircle, Users, ArrowRight, Newspaper, Building2, Wallet, BarChart3, ShieldCheck, Zap, PieChart as PieChartIcon, DollarSign, MapPin, ChevronRight, Quote as QuoteIcon, ExternalLink } from 'lucide-react';
 import { AssetIcon } from '../components/ui/AssetIcon';
 import { financeService, AssetDetails, HistoryPoint } from '../services/financeService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar, ComposedChart, Cell, Pie, PieChart, ReferenceLine } from 'recharts';
@@ -914,14 +914,14 @@ export default function Asset() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-muted/20 p-6 rounded-[32px] border border-border/50">
             {[
-              { label: 'Segmento de Listagem', val: assetDetails.governance?.listing || 'Nível 1' },
-              { label: 'Tag Along', val: assetDetails.governance?.tagAlong || '100% (ON) / 100% (PN)' },
-              { label: 'Free Float', val: assetDetails.governance?.freeFloat ? `${assetDetails.governance.freeFloat}%` : '49,20%' },
-              { label: 'CNPJ', val: assetDetails.governance?.cnpj || '17.155.730/0001-64' },
-              { label: 'Site RI', val: assetDetails.governance?.riSite || 'ri.cemig.com.br' },
-              { label: 'Setor', val: assetDetails.sector },
-              { label: 'Subsetor', val: assetDetails.subSector },
-              { label: 'Segmento', val: assetDetails.segment }
+              { label: 'Segmento de Listagem', val: assetData?.governance?.listing || 'Nível 1' },
+              { label: 'Tag Along', val: assetData?.governance?.tagAlong || '100% (ON) / 100% (PN)' },
+              { label: 'Free Float', val: assetData?.governance?.freeFloat ? `${assetData.governance.freeFloat}%` : '49,20%' },
+              { label: 'CNPJ', val: assetData?.governance?.cnpj || '17.155.730/0001-64' },
+              { label: 'Site RI', val: assetData?.governance?.riSite || 'ri.cemig.com.br' },
+              { label: 'Setor', val: assetData?.sector },
+              { label: 'Subsetor', val: assetData?.subSector },
+              { label: 'Segmento', val: assetData?.segment }
             ].map((item, i) => (
               <div key={i} className="space-y-1 group">
                 <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{item.label}</p>
@@ -946,7 +946,7 @@ export default function Asset() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
-                {(assetDetails.shareholders?.length > 0 ? assetDetails.shareholders : [
+                {(assetData?.shareholders?.length > 0 ? assetData.shareholders : [
                   { name: 'Estado de Minas Gerais', type: 'ON', pct: '50,96%' },
                   { name: 'Estado de Minas Gerais', type: 'PN', pct: '0,02%' },
                   { name: 'BNDESPAR', type: 'ON', pct: '10,21%' },
@@ -979,13 +979,13 @@ export default function Asset() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="space-y-6">
                 <p className="text-[12px] font-bold text-muted-foreground leading-relaxed italic uppercase tracking-widest opacity-80 first-letter:text-4xl first-letter:font-black first-letter:text-primary first-letter:mr-2 first-letter:float-left">
-                  {assetDetails.description || `A ${ticker} é uma das principais concessionárias do Brasil, com atuação estratégica em múltiplos segmentos do setor elétrico e energético.`}
+                  {assetData?.description || `A ${ticker} é uma das principais concessionárias do Brasil, com atuação estratégica em múltiplos segmentos do setor elétrico e energético.`}
                 </p>
             </div>
             <div className="p-8 bg-muted/20 backdrop-blur-sm rounded-[32px] border border-border/50 relative">
-               <Quote size={24} className="absolute -top-3 -right-3 text-primary opacity-20" />
+               <QuoteIcon size={24} className="absolute -top-3 -right-3 text-primary opacity-20" />
                <p className="text-[11px] font-black text-foreground italic leading-relaxed uppercase tracking-tight">
-                  "{assetDetails.managementVision || `Nossa história é marcada pelo compromisso com a excelência operacional e a geração de valor sustentável para nossos acionistas e para a sociedade.`}"
+                  "{assetData?.managementVision || `Nossa história é marcada pelo compromisso com a excelência operacional e a geração de valor sustentável para nossos acionistas e para a sociedade.`}"
                </p>
                <div className="mt-6 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 shadow-lg" />
