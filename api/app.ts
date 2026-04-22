@@ -3,7 +3,6 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import os from "os";
-import { fileURLToPath } from "url";
 import { NexusEngine, inferAssetType, formatYahooError, yahooFinance, ensureYahooConfig } from "../src/lib/nexus/engine.ts";
 
 // Nexus Native Heuristic Logic for Sentiment Analysis
