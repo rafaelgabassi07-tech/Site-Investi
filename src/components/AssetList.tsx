@@ -26,7 +26,7 @@ export function AssetList() {
   const assetTypes = useMemo(() => Object.keys(groupedPortfolio).sort(), [groupedPortfolio]);
 
   const handleFetchDetails = (ticker: string, assetType: string) => {
-    navigate(`/portfolio/analise/${ticker}?type=${assetType}`);
+    navigate(`/asset/${ticker}`);
   };
 
   if (loading) return (

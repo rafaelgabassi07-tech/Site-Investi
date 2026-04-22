@@ -27,6 +27,38 @@ export default function Transactions() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
 
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (!val) {
+      setPrice('');
+      return;
+    }
+    const num = parseInt(val, 10);
+    if (isNaN(num)) {
+      setPrice('');
+      return;
+    }
+    const strVal = num.toString().padStart(3, '0');
+    const integerPart = strVal.slice(0, -2);
+    const decimalPart = strVal.slice(-2);
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    setPrice(`R$ ${formattedInteger},${decimalPart}`);
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    // Permitir apenas dígitos e vírgula
+    val = val.replace(/\./g, ',');
+    val = val.replace(/[^0-9,]/g, '');
+    
+    // Garantir que haja apenas uma vírgula
+    const parts = val.split(',');
+    if (parts.length > 2) {
+      val = parts[0] + ',' + parts.slice(1).join('');
+    }
+    setQuantity(val);
+  };
+
   const generateId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return crypto.randomUUID();
@@ -44,7 +76,16 @@ export default function Transactions() {
       const parseBRNumber = (val: string | number | undefined) => {
         if (typeof val === 'number') return val;
         if (!val) return 0;
-        return parseFloat(val.toString().replace(/\./g, '').replace(',', '.'));
+        let str = val.toString().trim();
+        // Remove currency symbols and spaces
+        str = str.replace(/[R$\s]/g, '');
+        // If there are multiple dots or a dot and a comma, remove the dots as thousands separator
+        if (str.includes(',') && str.includes('.')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else if (str.includes(',')) {
+          str = str.replace(',', '.');
+        }
+        return parseFloat(str);
       };
 
       const qty = parseBRNumber(quantity);
@@ -131,13 +172,22 @@ export default function Transactions() {
     }
   };
 
+  const formatInitialPrice = (p: number) => {
+    // Protect if invalid
+    if (!p || isNaN(p)) return '';
+    const numStr = p.toFixed(2); 
+    const integerPart = numStr.slice(0, -3).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const decimalPart = numStr.slice(-2);
+    return `R$ ${integerPart},${decimalPart}`;
+  };
+
   const startEdit = (tx: any) => {
     setEditingId(tx.id);
     setTicker(tx.ticker);
     setType(tx.type);
     setAssetType(tx.assetType || tx.asset_type);
-    setQuantity(tx.quantity.toString());
-    setPrice(tx.price.toString());
+    setQuantity(tx.quantity.toString().replace('.', ','));
+    setPrice(formatInitialPrice(tx.price));
     setDate(new Date(tx.date).toISOString().split('T')[0]);
     setIsFormOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -263,11 +313,13 @@ export default function Transactions() {
             if (val === undefined || val === null || val === '') return 0;
             if (typeof val === 'number') return Math.abs(val);
             if (typeof val !== 'string') return 0;
-            const clean = String(val).replace(/R\$/g, '').replace(/\s/g, '');
-            if (clean.includes(',') && clean.includes('.')) {
-              return Math.abs(parseFloat(clean.replace(/\./g, '').replace(',', '.')));
+            let str = String(val).replace(/R\$/g, '').replace(/\s/g, '');
+            if (str.includes(',') && str.includes('.')) {
+              str = str.replace(/\./g, '').replace(',', '.');
+            } else if (str.includes(',')) {
+              str = str.replace(',', '.');
             }
-            return Math.abs(parseFloat(clean.replace(',', '.')));
+            return Math.abs(parseFloat(str));
           };
 
           const rawQuantity = normalizedRow['quantidade'] || normalizedRow['qtde'] || normalizedRow['qtd'] || normalizedRow['qnt'] || row.Quantidade || row.Qty || row.Qtde || row['Qtde.'];
@@ -506,11 +558,11 @@ export default function Transactions() {
                   Quantidade
                 </label>
                 <input
-                  type="number"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
                   value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="0.00"
+                  onChange={handleQuantityChange}
+                  placeholder="0,00"
                   required
                   className="w-full px-4 py-3 bg-card border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground font-bold placeholder:text-muted-foreground transition-all duration-300 text-sm"
                 />
@@ -522,10 +574,10 @@ export default function Transactions() {
                   Preço Unitário
                 </label>
                 <input
-                  type="number"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  onChange={handlePriceChange}
                   placeholder="R$ 0,00"
                   required
                   className="w-full px-4 py-3 bg-card border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground font-bold placeholder:text-muted-foreground transition-all duration-300 text-sm"

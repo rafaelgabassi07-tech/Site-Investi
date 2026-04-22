@@ -20,7 +20,6 @@ import Dividends from './pages/Dividends';
 import Calculators from './pages/Calculators';
 import RecommendedPortfolios from './pages/RecommendedPortfolios';
 import Asset from './pages/Asset';
-import AssetAnalysis from './pages/AssetAnalysis';
 import FixedIncome from './pages/FixedIncome';
 import Compare from './pages/Compare';
 import Rebalance from './pages/Rebalance';
@@ -149,9 +148,6 @@ export default function App() {
               <Route path="guide" element={<BeginnersGuide />} />
               <Route path="nexus-ia" element={<NexusIAPanel />} />
             </Route>
-            <Route path="/portfolio/analise/:ticker" 
-              element={user ? <AssetAnalysis /> : <Navigate to="/login" />} 
-            />
           </Routes>
             </Router>
           </PortfolioProvider>
