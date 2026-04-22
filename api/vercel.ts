@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import os from 'os';
-import { NexusEngine, ensureYahooConfig, formatYahooError, yahooFinance } from '../src/lib/nexus/engine';
+import { NexusEngine, ensureYahooConfig, formatYahooError, yahooFinance, inferAssetType } from '../src/lib/nexus/engine';
 
 ensureYahooConfig();
 const app = express();
@@ -81,7 +81,7 @@ app.get("/api/quotes/batch", async (req, res) => {
   const tickerList = tickers.split(",").map(t => t.trim().toUpperCase()).filter(t => t.length > 0);
   try {
     const querySyms = tickerList.map(t => (t.includes("^") || t.includes("=") || t.includes("-USD") || t.endsWith(".SA")) ? t : `${t}.SA`);
-    const quotes = await yahooFinance.quote(querySyms, { return: "array" } as any);
+    const quotes = await yahooFinance.quote(querySyms, { return: 'array' } as any);
     const results = tickerList.map((originalTicker, idx) => {
       const data = quotes.find((q: any) => q.symbol === querySyms[idx]);
       return {
@@ -90,7 +90,7 @@ app.get("/api/quotes/batch", async (req, res) => {
         currency: data?.currency || "BRL",
         change: data?.regularMarketChangePercent != null ? `${data.regularMarketChangePercent > 0 ? "+" : ""}${data.regularMarketChangePercent.toFixed(2)}%` : "0.00%",
         name: data?.longName || data?.shortName || originalTicker,
-        type: 'ACAO'
+        type: inferAssetType(originalTicker)
       };
     });
     res.json(results);
@@ -108,7 +108,7 @@ app.get("/api/market-stats", async (_req, res) => {
     { sym: "IFIX.SA", label: "IFIX" }
   ];
   try {
-    const quotes = await yahooFinance.quote(tickers.map(t => t.sym), { return: "array" } as any);
+    const quotes = await yahooFinance.quote(tickers.map(t => t.sym), { return: 'array' } as any);
     const results = tickers.map(({ sym, label }) => {
       const data = quotes.find((q: any) => q.symbol === sym);
       const change = data?.regularMarketChangePercent;

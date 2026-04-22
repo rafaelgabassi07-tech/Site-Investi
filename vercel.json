@@ -1,19 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/vite"
-    },
-    {
-      "src": "api/vercel.ts",
-      "use": "@vercel/node"
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/vercel.ts"
+      "destination": "/api/vercel"
     },
     {
       "source": "/(.*)",
