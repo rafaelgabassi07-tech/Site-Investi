@@ -150,7 +150,7 @@ export async function createServer() {
           return {
             ticker: sym,
             label,
-            price: data?.regularMarketPrice?.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) || "---",
+            value: data?.regularMarketPrice?.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) || "---",
             change: change != null ? (change > 0 ? "+" : "") + change.toFixed(2) + "%" : "0.00%",
             color: change && change < 0 ? "red" : "emerald"
           };

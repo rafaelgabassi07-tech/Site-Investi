@@ -1755,10 +1755,12 @@ export class NexusEngine {
         // Priority: Real-time price from Yahoo over scraper
         if (q.regularMarketPrice != null) {
           combined['precoAtual'] = q.regularMarketPrice;
+          combined['price'] = q.regularMarketPrice.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
         }
         if (combined['currency'] === undefined) combined['currency'] = q.currency;
         if (q.regularMarketChangePercent != null) {
           combined['variacaoDay'] = (q.regularMarketChangePercent > 0 ? '+' : '') + q.regularMarketChangePercent.toFixed(2) + '%';
+          combined['change'] = combined['variacaoDay'];
         }
         if (combined['name'] === undefined) combined['name'] = q.longName || q.shortName;
       }
