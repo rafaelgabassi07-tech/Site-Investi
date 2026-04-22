@@ -231,18 +231,8 @@ app.get("/api/asset/:ticker", async (req, res) => {
   }
 });
 
-app.get("/api/news/:ticker?", async (req, res) => {
-  const { ticker } = req.params;
-  try {
-    const data = await NexusEngine.fetchNews(ticker ? ticker : undefined);
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: formatYahooError(error) });
-  }
-});
-
 // Catch all
-app.all("*", (req, res) => {
+app.all("*", (_req, res) => {
   res.status(404).json({ error: "API Route Not Found" });
 });
 
