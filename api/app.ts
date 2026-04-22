@@ -115,12 +115,17 @@ export async function createServer() {
       const tickerList = tickers.split(",").map(t => t.trim().toUpperCase()).filter(t => t.length > 0);
       try {
         const querySyms = tickerList.map(t => (t.includes("^") || t.includes("=") || t.includes("-USD") || t.endsWith(".SA")) ? t : `${t}.SA`);
-        const quotes = await yahooFinance.quote(querySyms, { return: "array" } as any);
-        const results = tickerList.map((originalTicker, idx) => {
-          const data = quotes.find((q: any) => q.symbol === querySyms[idx]);
+        const quotes = await yahooFinance.quote(querySyms);
+        const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+
+        const results = tickerList.map((originalTicker) => {
+          const isBRLSymbol = originalTicker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(originalTicker);
+          const searchSym = isBRLSymbol ? `${originalTicker.replace(/\.SA$/i, '')}.SA` : originalTicker.toUpperCase();
+          
+          const data = quoteList.find((q: any) => q.symbol.toUpperCase() === searchSym.toUpperCase() || q.symbol.toUpperCase().startsWith(originalTicker.toUpperCase()));
           return {
             ticker: originalTicker,
-            price: data?.regularMarketPrice || 0,
+            price: data?.regularMarketPrice ?? data?.postMarketPrice ?? 0,
             currency: data?.currency || "BRL",
             change: data?.regularMarketChangePercent != null ? `${data.regularMarketChangePercent > 0 ? "+" : ""}${data.regularMarketChangePercent.toFixed(2)}%` : "0.00%",
             name: data?.longName || data?.shortName || originalTicker,
@@ -143,14 +148,18 @@ export async function createServer() {
         { sym: "IFIX.SA", label: "IFIX" }
       ];
       try {
-        const quotes = await yahooFinance.quote(tickers.map(t => t.sym), { return: "array" } as any);
+        const symbols = tickers.map(t => t.sym);
+        const quotes = await yahooFinance.quote(symbols);
+        const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+
         const results = tickers.map(({ sym, label }) => {
-          const data = quotes.find((q: any) => q.symbol === sym);
+          const data = quoteList.find((q: any) => q.symbol.toUpperCase() === sym.toUpperCase());
+          const price = data?.regularMarketPrice ?? data?.postMarketPrice;
           const change = data?.regularMarketChangePercent;
           return {
             ticker: sym,
             label,
-            value: data?.regularMarketPrice?.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) || "---",
+            value: price?.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) || "---",
             change: change != null ? (change > 0 ? "+" : "") + change.toFixed(2) + "%" : "0.00%",
             color: change && change < 0 ? "red" : "emerald"
           };

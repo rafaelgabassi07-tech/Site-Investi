@@ -751,7 +751,7 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
   const symbols = isBRLSymbol ? [`${ticker.replace(RE_SA, '')}.SA`] : [ticker.toUpperCase()];
   
   // For cryptos, maybe they need -USD suffix
-  if (['BTC', 'ETH', 'SOL', 'LTC'].includes(ticker.toUpperCase())) {
+  if (['BTC', 'ETH', 'SOL', 'LTC', 'XRP', 'ADA'].includes(ticker.toUpperCase())) {
     symbols.push(`${ticker.toUpperCase()}-USD`);
   }
 
@@ -759,16 +759,15 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
     try {
       const quote = await yahooFinance.quote(symbol);
       
-      if (!quote) {
-        continue;
-      }
+      if (!quote) continue;
       
       const q = quote as any;
-      if (!q.regularMarketPrice) continue;
+      const price = q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice;
+      if (price == null) continue;
       
       return {
-        regularMarketPrice:          q.regularMarketPrice,
-        regularMarketChangePercent:  q.regularMarketChangePercent,
+        regularMarketPrice:          price,
+        regularMarketChangePercent:  q.regularMarketChangePercent ?? 0,
         trailingPE:                  q.trailingPE,
         priceToBook:                 q.priceToBook,
         bookValue:                   q.bookValue,
@@ -777,11 +776,10 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
         marketCap:                   q.marketCap,
         longName:                    q.longName,
         shortName:                   q.shortName,
-        currency:                    q.currency,
+        currency:                    q.currency || (isBRLSymbol ? 'BRL' : 'USD'),
       };
     } catch (e) { 
-      console.error(`[Nexus Debug] Error fetching quote for ${symbol}:`, e);
-      // Silently fail for individual attempts
+      console.error(`[Nexus Debug] Yahoo error for ${symbol}:`, e);
       continue; 
     }
   }
@@ -799,15 +797,18 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
   });
 
   try {
-    const quotes = await yahooFinance.quote(symbols, { return: 'array' } as any);
+    const quotes = await yahooFinance.quote(symbols);
     const quoteList = Array.isArray(quotes) ? quotes : [quotes];
     
     quoteList.forEach((q: any) => {
       if (!q || !q.symbol) return;
       
+      const price = q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice;
+      if (price == null) return;
+
       const data: YahooQuoteData = {
-        regularMarketPrice:          q.regularMarketPrice,
-        regularMarketChangePercent:  q.regularMarketChangePercent,
+        regularMarketPrice:          price,
+        regularMarketChangePercent:  q.regularMarketChangePercent ?? 0,
         trailingPE:                  q.trailingPE,
         priceToBook:                 q.priceToBook,
         bookValue:                   q.bookValue,
@@ -816,12 +817,14 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
         marketCap:                   q.marketCap,
         longName:                    q.longName,
         shortName:                   q.shortName,
-        currency:                    q.currency,
+        currency:                    q.currency || (q.symbol.endsWith('.SA') ? 'BRL' : 'USD'),
       };
       
-      const baseTicker = q.symbol.replace(RE_SA, '');
+      const baseTicker = q.symbol.replace(RE_SA, '').toUpperCase();
       results.set(baseTicker, data);
-      if (q.symbol.includes('-')) results.set(q.symbol.split('-')[0], data);
+      // Fallback aliases
+      if (q.symbol.includes('-')) results.set(q.symbol.split('-')[0].toUpperCase(), data);
+      results.set(q.symbol.toUpperCase(), data);
     });
   } catch (e) {
     console.error('[Nexus Bulk] Error in bulk quote:', e);
