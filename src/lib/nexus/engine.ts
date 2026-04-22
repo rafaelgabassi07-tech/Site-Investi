@@ -1,22 +1,14 @@
 import { z } from 'zod';
 import YahooFinance from 'yahoo-finance2';
 
-export const yahooFinance = new YahooFinance();
+export const yahooFinance = new YahooFinance({
+  validation: { logErrors: false, logOptionsErrors: false }
+});
 
 // Set global config to quiet logs avoiding InvalidOptionsError
 let yahooConfigured = false;
 export function ensureYahooConfig() {
   if (yahooConfigured) return;
-  try {
-    // In some versions of yahoo-finance2, setGlobalConfig is on the instance
-    if (typeof (yahooFinance as any).setGlobalConfig === 'function') {
-      (yahooFinance as any).setGlobalConfig({
-        validation: { logErrors: false, logOptionsErrors: false }
-      });
-    }
-  } catch (e) {
-    console.warn('[Nexus] Could not set yahoo-finance global config', e);
-  }
   yahooConfigured = true;
 }
 
@@ -986,6 +978,137 @@ export class NexusEngine {
   static async fetchHistoricalFundamentals(ticker: string) {
     const cleanTicker = canonicalizeTicker(ticker);
     const isBrazilian = /^[A-Z]{4}[3-6]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
+
+    if (isBrazilian && !cleanTicker.endsWith('11') && !cleanTicker.endsWith('12')) {
+      try {
+        const url = `https://investidor10.com.br/acoes/${cleanTicker.toLowerCase()}/`;
+        const htmlRes = await fetch(url, { headers: getStealthHeaders(url) });
+        const html = await htmlRes.text();
+        const companyIdMatch = html.match(/companyId\s*=\s*['"](\d+)['"]/);
+        const tickerIdMatch = html.match(/\/api\/acoes\/payout-chart\/(\d+)\//) || html.match(/tickerId\s*=\s*['"](\d+)['"]/);
+        
+        if (companyIdMatch && tickerIdMatch) {
+          const companyId = companyIdMatch[1];
+          const tickerId = tickerIdMatch[1];
+          
+          const [dreRes, balancoRes, indRes] = await Promise.all([
+            fetch(`https://investidor10.com.br/api/balancos/balancoresultados/chart/${companyId}/10/yearly/`, { headers: getStealthHeaders('https://investidor10.com.br/') }),
+            fetch(`https://investidor10.com.br/api/balancos/balancopatrimonial/chart/${companyId}/true/`, { headers: getStealthHeaders('https://investidor10.com.br/') }),
+            fetch(`https://investidor10.com.br/api/historico-indicadores/${tickerId}/10/?v=2`, { headers: getStealthHeaders('https://investidor10.com.br/') })
+          ]);
+          
+          if (dreRes.ok && balancoRes.ok && indRes.ok) {
+            const dreData = await dreRes.json();
+            const balancoData = await balancoRes.json();
+            const indData = await indRes.json();
+            
+            if (Array.isArray(dreData) && dreData.length > 0 && Array.isArray(balancoData) && balancoData.length > 0) {
+              const historyData: any[] = [];
+              const dreHeaders = dreData[0] || [];
+              const balancoHeaders = balancoData[0] || [];
+              
+              const years = [];
+              for (let i = 1; i < dreHeaders.length; i += 2) {
+                const head = dreHeaders[i];
+                const yearMatch = head?.match && head.match(/20\d\d/);
+                if (yearMatch) years.push({ year: parseInt(yearMatch[0], 10), idxDRE: i });
+              }
+              
+              for (const y of years) {
+                const year = y.year;
+                const idxDRE = y.idxDRE;
+                let revenue = 0, netIncome = 0, ebitda = 0;
+                
+                for (let r = 1; r < dreData.length; r++) {
+                  const row = dreData[r] || [];
+                  const rowName = String(row[0] || '');
+                  const valBlock = row[idxDRE];
+                  const strValue = Array.isArray(valBlock) ? valBlock[0] : String(valBlock || '0');
+                  const val = Number(normalizeBRNumber(strValue)) || 0;
+                  
+                  if (rowName.includes('Receita Líquida')) revenue = val;
+                  if (rowName.includes('EBITDA')) ebitda = val;
+                  if (rowName.includes('Lucro Líquido')) netIncome = val;
+                }
+                
+                let patrimony = 0, totalAssets = 0, totalLiabilities = 0, grossDebt = 0, cash = 0;
+                const idxBalanco = balancoHeaders.findIndex((h: string) => typeof h === 'string' && h.includes(String(year)));
+                
+                if (idxBalanco !== -1) {
+                  for (let r = 1; r < balancoData.length; r++) {
+                    const row = balancoData[r] || [];
+                    const rowName = String(row[0] || '');
+                    const valBlock = row[idxBalanco];
+                    const strValue = Array.isArray(valBlock) ? valBlock[0] : String(valBlock || '0');
+                    const val = Number(normalizeBRNumber(strValue)) || 0;
+                    
+                    if (rowName.includes('Patrimônio Líquido')) patrimony = val;
+                    if (rowName.includes('Ativo Total')) totalAssets = val;
+                    if (rowName.includes('Passivo Total')) totalLiabilities = val;
+                    if (rowName.includes('Dívida Bruta')) grossDebt = val;
+                    if (rowName.includes('Caixa')) cash = val;
+                  }
+                }
+
+                // Handle Indicators
+                const getInd = (key: string) => {
+                  try {
+                     const arr = indData[key];
+                     if (!arr) return 0;
+                     const item = arr.find((a: any) => String(a.year) === String(year));
+                     return item ? Number(item.value) || 0 : 0;
+                  } catch(e) { return 0; }
+                };
+
+                const lpa = getInd('LPA');
+                const vpa = getInd('VPA');
+                const pl = getInd('P/L');
+                const dy = getInd('Dividend Yield');
+                const pvp = getInd('P/VP');
+                const payout = getInd('Payout');
+                const netMargin = getInd('Margem Líquida');
+                
+                // Estimate avgPrice
+                const avgPrice = Math.max((pl * lpa), (pvp * vpa), 0);
+                // Dividends payed in absolute value
+                const dividendsPayed = Math.max(0, netIncome * (payout / 100));
+
+                historyData.push({
+                  year: String(year),
+                  revenue,
+                  netRevenue: revenue,
+                  netIncome,
+                  netProfit: netIncome,
+                  ebitda,
+                  patrimony,
+                  equity: patrimony,
+                  totalAssets,
+                  totalLiabilities,
+                  grossDebt,
+                  cash,
+                  lpa,
+                  vpa,
+                  pl,
+                  dy,
+                  pvp,
+                  payout,
+                  netMargin,
+                  avgPrice,
+                  dividendsPayed
+                });
+              }
+              
+              if (historyData.length > 0) {
+                 return historyData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error(`[Nexus] Error fetching historical fundamentals from Investidor10 for ${ticker}:`, e);
+      }
+    }
+
     const symbols = [isBrazilian ? `${cleanTicker}.SA` : cleanTicker, cleanTicker];
 
     for (const symbol of symbols) {
@@ -1009,11 +1132,15 @@ export class NexusEngine {
           const dt = inc.endDate;
           if (dt) {
             const year = dt.getFullYear();
+            const revenue = inc.totalRevenue || 0;
+            const netIncome = inc.netIncome || inc.netIncomeApplicableToCommonShares || 0;
             historyData.push({
-              year,
-              revenue: inc.totalRevenue,
-              netIncome: inc.netIncome || inc.netIncomeApplicableToCommonShares,
-              ebitda: inc.ebitda || inc.ebit
+              year: String(year),
+              revenue,
+              netRevenue: revenue,
+              netIncome,
+              netProfit: netIncome,
+              ebitda: inc.ebitda || inc.ebit || 0
             });
           }
         });
@@ -1022,20 +1149,23 @@ export class NexusEngine {
         balanceHistory.forEach((bal: any) => {
           const dt = bal.endDate;
           if (dt) {
-            const year = dt.getFullYear();
+            const year = String(dt.getFullYear());
             let existing = historyData.find(h => h.year === year);
             if (!existing) {
-              existing = { year };
+              existing = { year, revenue: 0, netRevenue: 0, netIncome: 0, netProfit: 0, ebitda: 0 };
               historyData.push(existing);
             }
-            existing.patrimony = bal.totalStockholderEquity;
-            existing.totalAssets = bal.totalAssets;
-            existing.totalLiabilities = bal.totalLiab;
+            existing.patrimony = bal.totalStockholderEquity || 0;
+            existing.equity = bal.totalStockholderEquity || 0;
+            existing.totalAssets = bal.totalAssets || 0;
+            existing.totalLiabilities = bal.totalLiab || 0;
+            existing.cash = bal.cash || 0;
+            existing.grossDebt = (bal.shortLongTermDebt || 0) + (bal.longTermDebt || 0);
           }
         });
 
         if (historyData.length > 0) {
-          return historyData.sort((a, b) => a.year - b.year);
+          return historyData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
         }
 
       } catch (e) {
