@@ -744,30 +744,108 @@ interface YahooFundamentalsData {
   pegRatio?: number;
 }
 
+async function fetchYahooChartDirect(symbol: string, range: string = '1y'): Promise<any[]> {
+    // Range mapping for direct API
+    const rangeMap: Record<string, string> = { '1m': '1mo', '6m': '6mo', '1y': '1y', '5y': '5y', 'max': 'max', '1d': '1d', '5d': '5d' };
+    const r = rangeMap[range.toLowerCase()] || range;
+    
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${r}&interval=1d&includePrePost=false`;
+    try {
+        const res = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Accept': 'application/json'
+            }
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        const result = data?.chart?.result?.[0];
+        if (!result || !result.timestamp) return [];
+        
+        return result.timestamp.map((t: number, i: number) => ({
+            date: new Date(t * 1000).toISOString(),
+            close: result.indicators?.quote?.[0]?.close?.[i],
+            open: result.indicators?.quote?.[0]?.open?.[i],
+            high: result.indicators?.quote?.[0]?.high?.[i],
+            low: result.indicators?.quote?.[0]?.low?.[i],
+            volume: result.indicators?.quote?.[0]?.volume?.[i],
+        })).filter((p: any) => p.close != null);
+    } catch (err) {
+        console.error(`[YAHOO CHART DIRECT] Error:`, err);
+        return [];
+    }
+}
+
+async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Promise<any> {
+    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=0&newsCount=${newsCount}&enableFuzzyQuery=false`;
+    try {
+        const res = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Accept': 'application/json'
+            }
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (err) {
+        console.error(`[YAHOO SEARCH DIRECT] Error:`, err);
+        return null;
+    }
+}
+
+async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
+    });
+
+    if (!res.ok) {
+      console.warn(`[YAHOO DIRECT] Fetch failed for ${symbol} with status ${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+    return data?.quoteResponse?.result?.[0] || null;
+  } catch (err) {
+    console.error(`[YAHOO DIRECT] Error fetching ${symbol}:`, err);
+    return null;
+  }
+}
+
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   ensureYahooConfig();
   
   const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(ticker);
   const symbols = isBRLSymbol ? [`${ticker.replace(RE_SA, '')}.SA`] : [ticker.toUpperCase()];
   
-  // For cryptos, maybe they need -USD suffix
   if (['BTC', 'ETH', 'SOL', 'LTC', 'XRP', 'ADA'].includes(ticker.toUpperCase())) {
     symbols.push(`${ticker.toUpperCase()}-USD`);
   }
 
   for (const symbol of symbols) {
     try {
-      const quote = await yahooFinance.quote(symbol);
+      // Primary: Library
+      let q = await yahooFinance.quote(symbol) as any;
       
-      if (!quote) continue;
+      // Secondary: Direct Fetch Fallback
+      if (!q || q.regularMarketPrice == null) {
+        console.log(`[YAHOO] Library failed for ${symbol}, attempting direct fetch...`);
+        q = await fetchYahooQuoteDirect(symbol);
+      }
+
+      if (!q) continue;
       
-      const q = quote as any;
       const price = q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice;
       if (price == null) continue;
       
       return {
         regularMarketPrice:          price,
-        regularMarketChangePercent:  q.regularMarketChangePercent ?? 0,
+        regularMarketChangePercent:  q.regularMarketChangePercent ?? q.postMarketChangePercent ?? 0,
         trailingPE:                  q.trailingPE,
         priceToBook:                 q.priceToBook,
         bookValue:                   q.bookValue,
@@ -786,6 +864,25 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
   return null;
 }
 
+async function fetchYahooBulkDirect(symbols: string[]): Promise<any[]> {
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data?.quoteResponse?.result || [];
+  } catch (err) {
+    console.error(`[YAHOO BULK DIRECT] Error:`, err);
+    return [];
+  }
+}
+
 async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuoteData>> {
   ensureYahooConfig();
   const results = new Map<string, YahooQuoteData>();
@@ -797,8 +894,18 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
   });
 
   try {
-    const quotes = await yahooFinance.quote(symbols);
-    const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+    // Primary: Library
+    let quotes = await yahooFinance.quote(symbols);
+    let quoteList = Array.isArray(quotes) ? quotes : [quotes];
+    
+    // Check if library returned empty or mostly empty results
+    if (quoteList.length === 0 || quoteList.every((q: any) => !q || q.regularMarketPrice == null)) {
+      console.log(`[YAHOO BULK] Library failed or returned empty, attempting direct fetch...`);
+      const directQuotes = await fetchYahooBulkDirect(symbols);
+      if (directQuotes.length > 0) {
+        quoteList = directQuotes;
+      }
+    }
     
     quoteList.forEach((q: any) => {
       if (!q || !q.symbol) return;
@@ -808,7 +915,7 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
 
       const data: YahooQuoteData = {
         regularMarketPrice:          price,
-        regularMarketChangePercent:  q.regularMarketChangePercent ?? 0,
+        regularMarketChangePercent:  q.regularMarketChangePercent ?? q.postMarketChangePercent ?? 0,
         trailingPE:                  q.trailingPE,
         priceToBook:                 q.priceToBook,
         bookValue:                   q.bookValue,
@@ -1317,20 +1424,29 @@ export class NexusEngine {
   }
 
   static async fetchNews(ticker: string): Promise<NewsItem[]> {
-    const clean = canonicalizeTicker(ticker);
-    try {
-      const isGlobal = clean === 'IBOVESPA' || clean === 'MARKET';
-      const query = isGlobal ? 'IBOVESPA' : clean;
+  const clean = canonicalizeTicker(ticker);
+  try {
+    const isGlobal = clean === 'IBOVESPA' || clean === 'MARKET';
+    const query = isGlobal ? 'IBOVESPA' : clean;
 
-      // Use yahoo finance search which is more reliable
-      const searchResult = await yahooFinance.search(query, {
-        newsCount: isGlobal ? 30 : 10,
-        quotesCount: 0
-      } as any);
+    // Primary: Library
+    let searchResult = await yahooFinance.search(query, {
+      newsCount: isGlobal ? 30 : 10,
+      quotesCount: 0
+    } as any);
 
-      const items: NewsItem[] = [];
-      
-      if (searchResult && searchResult.news) {
+    // Fallback: Direct
+    if (!searchResult || !searchResult.news || searchResult.news.length === 0) {
+      console.log(`[NEWS] Library failed for ${query}, attempting direct fetch...`);
+      const direct = await fetchYahooSearchDirect(query, isGlobal ? 30 : 10);
+      if (direct && direct.news) {
+        searchResult = direct;
+      }
+    }
+
+    const items: NewsItem[] = [];
+    
+    if (searchResult && searchResult.news) {
         for (const article of searchResult.news) {
           const pubDate = article.providerPublishTime ? new Date(Number(article.providerPublishTime) * 1000) : new Date();
           
@@ -1856,21 +1972,23 @@ export class NexusEngine {
       
     for (const symbol of symbols) {
       try {
-        const result = await yahooFinance.chart(symbol, {
+        // Primary: Library
+        let result = await yahooFinance.chart(symbol, {
           period1: period1,
           interval: interval as any,
           validate: false
         } as any);
         
-        if (!result) continue;
-
-        if ((result as any).errors || (result as any).error) {
-          console.warn(`[YAHOO] Chart for ${symbol} returned errors:`, formatYahooError((result as any).errors || (result as any).error));
-          continue;
+        // Fallback: Direct Fetch
+        if (!result || !result.quotes || result.quotes.length === 0) {
+           console.log(`[YAHOO CHART] Library failed for ${symbol}, attempting direct fetch...`);
+           const directQuotes = await fetchYahooChartDirect(symbol, range);
+           if (directQuotes && directQuotes.length > 0) {
+             return directQuotes;
+           }
+           continue;
         }
 
-        if (!(result as any).quotes || (result as any).quotes.length === 0) continue;
-        
         return (result as any).quotes.map((q: any) => ({
           date: q.date.toISOString(),
           open: q.open,

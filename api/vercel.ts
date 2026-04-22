@@ -156,6 +156,36 @@ app.get("/api/ranking", async (req, res) => {
   }
 });
 
+app.get("/api/debug/yahoo", async (req, res) => {
+  const ticker = (req.query.ticker as string) || "PETR4.SA";
+  const results: any = { logs: [] };
+  const log = (msg: string) => results.logs.push(`[${new Date().toISOString()}] ${msg}`);
+  
+  try {
+    log(`Testing Yahoo for ticker: ${ticker}`);
+    try {
+      const qLib = await yahooFinance.quote(ticker);
+      results.library = qLib ? "SUCCESS" : "EMPTY";
+      if (qLib) results.libraryData = qLib;
+    } catch (e: any) {
+      results.library = "ERROR";
+      results.libraryError = e.message;
+    }
+
+    try {
+      const qNexus = await NexusEngine.fetchAtivo(ticker, "ACAO");
+      results.nexus = qNexus ? "SUCCESS" : "EMPTY";
+      if (qNexus) results.nexusPrice = qNexus.results?.price;
+    } catch (e: any) {
+      results.nexus = "ERROR";
+      results.nexusError = e.message;
+    }
+    res.json(results);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, logs: results.logs });
+  }
+});
+
 app.get("/api/news", async (req, res) => {
   const ticker = req.query.ticker as string;
   try {
