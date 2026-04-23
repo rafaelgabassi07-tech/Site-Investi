@@ -1193,12 +1193,13 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
     // Check if Yahoo is overall throttled
     const mainCB = (NexusEngine as any)._circuitBreakers.get('query2.finance.yahoo.com');
     const isThrottled = mainCB && mainCB.isOpen();
+    let quoteList: any[] = [];
 
     if (!isThrottled) {
       // Primary: Library
       try {
         const quotes = await yahooFinance.quote(symbols);
-        const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+        quoteList = Array.isArray(quotes) ? quotes : [quotes];
         quoteList.forEach(addToResults);
       } catch (e: any) {
         if (e.message?.includes('429') || e.message?.includes('401')) {
@@ -1307,6 +1308,7 @@ export class NexusEngine {
   private static _tickerInFlight  = new Map<string, Promise<any>>();
   private static _cache           = new LRUCache<any>(300);
   private static _circuitBreakers = new Map<string, CircuitBreaker>();
+  // @ts-ignore - used in getCacheStats
   private static _startTime       = Date.now();
   private static _totalRequests   = 0;
   private static _totalSuccess    = 0;
@@ -1835,6 +1837,7 @@ export class NexusEngine {
       };
 
       const tickers = popularTickers[String(type).toUpperCase()] || popularTickers.ACAO;
+      const cat = category.toLowerCase();
       
       // Step 1: Bulk Fetch from Yahoo (Fast)
       let bulkQuotes = await yahooQuoteBulk(tickers);
@@ -1890,7 +1893,6 @@ export class NexusEngine {
 
       // Ordenação baseada na categoria
       let sorted = [...filteredResults];
-      const cat = category.toLowerCase();
 
       if (cat.includes('dividend') || cat.includes('yield') || cat.includes('bazin')) {
         sorted.sort((a, b) => {
@@ -2591,6 +2593,8 @@ export class NexusEngine {
       cb.recordFailure();
     }
   }
+
+  static async executeBatch<T>(
     tasks: (() => Promise<T>)[],
     concurrency = this._options.concurrencyLimit,
   ): Promise<(T | Error)[]> {
