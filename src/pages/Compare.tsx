@@ -47,12 +47,14 @@ export default function Compare() {
   ];
 
   const compareValues = (val1: any, val2: any, key: string) => {
-    if (val1 === undefined || val2 === undefined) return null;
+    if (val1 === undefined || val2 === undefined || val1 === null || val2 === null) return null;
     
     const parse = (v: any) => {
-      if (typeof v === 'number') return v;
+      if (v == null) return 0;
+      if (typeof v === 'number') return isNaN(v) ? 0 : v;
       if (typeof v === 'string') {
-        return parseFloat(v.replace('%', '').replace(',', '.'));
+        const val = parseFloat(v.replace(/%/g, '').replace(/\./g, '').replace(/,/g, '.'));
+        return isNaN(val) ? 0 : val;
       }
       return 0;
     };

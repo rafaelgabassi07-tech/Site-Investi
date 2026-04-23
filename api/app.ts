@@ -128,7 +128,10 @@ export async function createServer() {
         { sym: "^GSPC", label: "S&P 500" },
         { sym: "USDBRL=X", label: "DÓLAR" },
         { sym: "BTC-USD", label: "BITCOIN" },
-        { sym: "IFIX.SA", label: "IFIX" }
+        { sym: "IFIX.SA", label: "IFIX" },
+        { sym: "PETR4.SA", label: "PETR4" },
+        { sym: "VALE3.SA", label: "VALE3" },
+        { sym: "ITUB4.SA", label: "ITUB4" }
       ];
       try {
         const symbols = tickers.map(t => t.sym);

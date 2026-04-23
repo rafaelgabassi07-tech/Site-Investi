@@ -26,7 +26,8 @@ export default function Dividends() {
   const handleAddDividend = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const parsedAmount = parseFloat(amount.toString().replace(/\./g, '').replace(',', '.'));
+      const amtStr = amount ? String(amount) : '0';
+      const parsedAmount = parseFloat(amtStr.replace(/\./g, '').replace(',', '.'));
       if (isNaN(parsedAmount)) throw new Error('Valor inválido');
 
       const newDiv = { 
@@ -101,7 +102,13 @@ export default function Dividends() {
       const qtyAtDate = getHistoricalQuantity(div.ticker, div.date || '', portfolio);
       // Consistent future check: if payment is ahead or if explicitly marked future
       const isFuture = paymentDate.getTime() > Date.now() || div.is_future === true;
-      const amount = typeof div.amount === 'string' ? parseFloat(div.amount.replace(',', '.')) : (Number(div.amount) || 0);
+      const getAmount = (a: any) => {
+        if (a == null) return 0;
+        if (typeof a === 'number') return isNaN(a) ? 0 : a;
+        if (typeof a === 'string') return parseFloat(a.replace(/,/g, '.')) || 0;
+        return 0;
+      };
+      const amount = getAmount(div.amount);
       
       const now = new Date();
       now.setHours(0,0,0,0);

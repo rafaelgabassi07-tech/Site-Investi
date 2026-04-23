@@ -325,13 +325,25 @@ export default function Home() {
               ) : (
                 [...(rankings['ACAO'] || []), ...(rankings['FII'] || [])]
                   .sort((a, b) => {
-                    const dyA = typeof a.raw?.dividendYield === 'string' ? parseFloat(a.raw.dividendYield.replace('%', '').replace(',', '.')) : (a.value ? parseFloat(a.value.toString().replace('%', '')) : 0);
-                    const dyB = typeof b.raw?.dividendYield === 'string' ? parseFloat(b.raw.dividendYield.replace('%', '').replace(',', '.')) : (b.value ? parseFloat(b.value.toString().replace('%', '')) : 0);
-                    return dyB - dyA;
+                    const getDy = (i: any) => {
+                      try {
+                        const raw = i?.raw?.dividendYield || i?.value || '0';
+                        const parsed = parseFloat(String(raw).replace('%', '').replace(',', '.'));
+                        return isNaN(parsed) ? 0 : parsed;
+                      } catch { return 0; }
+                    };
+                    return getDy(b) - getDy(a);
                   })
                   .slice(0, 5)
                   .map((item, idx) => {
-                    const dyValue = typeof item.raw?.dividendYield === 'string' ? parseFloat(item.raw.dividendYield.replace('%', '').replace(',', '.')) : (item.value ? parseFloat(item.value.toString().replace('%', '')) : 0);
+                    const getDy = (i: any) => {
+                      try {
+                        const raw = i?.raw?.dividendYield || i?.value || '0';
+                        const parsed = parseFloat(String(raw).replace('%', '').replace(',', '.'));
+                        return isNaN(parsed) ? 0 : parsed;
+                      } catch { return 0; }
+                    };
+                    const dyValue = getDy(item);
                     return (
                     <Link key={idx} to={`/asset/${item.ticker}`} className="flex items-center justify-between py-2.5 px-4 hover:bg-emerald-500/[0.01] transition-all group/item">
                       <div className="flex items-center gap-3">

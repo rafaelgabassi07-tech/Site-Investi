@@ -45,8 +45,12 @@ export default function Screener() {
 
   const sortedResults = [...results].sort((a, b) => {
     const parse = (v: any) => {
-      if (typeof v === 'number') return v;
-      if (typeof v === 'string') return parseFloat(v.replace('%', '').replace(',', '.')) || 0;
+      if (v == null) return 0;
+      if (typeof v === 'number') return isNaN(v) ? 0 : v;
+      if (typeof v === 'string') {
+        const val = parseFloat(v.replace(/%/g, '').replace(/\./g, '').replace(/,/g, '.'));
+        return isNaN(val) ? 0 : val;
+      }
       return 0;
     };
 

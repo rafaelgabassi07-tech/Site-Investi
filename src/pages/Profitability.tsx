@@ -452,9 +452,9 @@ export default function Profitability() {
           <div className="py-6 px-6 bg-secondary/50 border border-border rounded-xl border-l-4 border-l-primary/50 shadow-sm relative overflow-hidden group">
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             <p className="text-[11px] font-bold text-foreground/80 leading-relaxed uppercase tracking-wider relative z-10">
-              {stats[2].value.startsWith('+') 
-                ? `Alpha Positivo: Sua estratégia está gerando um excedente de ${stats[2].value.replace('+', '')} sobre o benchmark.`
-                : `Benchmark Gap: A carteira está ${stats[2].value.replace('-', '')} atrás do IBOVESPA no período.`}
+              {String(stats[2]?.value || '').startsWith('+') 
+                ? `Alpha Positivo: Sua estratégia está gerando um excedente de ${String(stats[2]?.value || '').replace('+', '')} sobre o benchmark.`
+                : `Benchmark Gap: A carteira está ${String(stats[2]?.value || '').replace('-', '')} atrás do IBOVESPA no período.`}
             </p>
           </div>
         </motion.div>
