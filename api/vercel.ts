@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import os from 'os';
-import { NexusEngine, ensureYahooConfig, formatYahooError, yahooFinance, inferAssetType } from '../src/lib/nexus/engine';
+import { NexusEngine, ensureYahooConfig, formatYahooError, yahooFinance } from '../src/lib/nexus/engine';
 
 ensureYahooConfig();
 const app = express();
