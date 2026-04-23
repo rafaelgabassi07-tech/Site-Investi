@@ -1988,7 +1988,7 @@ export class NexusEngine {
           totalTimeMs,
           bytesProcessed:    scrape.bytes,
           foundKeys:         Object.keys(combined),
-          successRate:       preset ? Object.keys(combined).length / preset.template.rules.length : 0,
+          successRate:       (preset && (preset as any).template?.rules) ? Object.keys(combined).length / (preset as any).template.rules.length : 0,
           earlyAbort:        scrape.earlyAbort,
           source:            sources_used.join(' + ') || 'None',
           cpuUsageMs:        safeCpuDeltaMs(startCpu),
