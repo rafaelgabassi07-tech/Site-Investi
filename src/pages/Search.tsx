@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Search as SearchIcon, TrendingUp, ArrowUpRight, ArrowDownRight, Loader2, X, Layers, Globe, Activity } from 'lucide-react';
+import { Search as SearchIcon, TrendingUp, ArrowUpRight, ArrowDownRight, Loader2, X, Layers, Globe, Activity, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AssetIcon } from '../components/ui/AssetIcon';
@@ -13,6 +13,7 @@ export default function Search() {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [hasSearched, setHasSearched] = useState(initialQuery.length >= 2);
 
@@ -24,6 +25,7 @@ export default function Search() {
       } else {
         setSearchParams({});
       }
+      setError(null); // Clear error on new query
     }, 500);
     return () => clearTimeout(timer);
   }, [query, setSearchParams]);
@@ -38,11 +40,16 @@ export default function Search() {
     const performSearch = async () => {
       setLoading(true);
       setHasSearched(true);
+      setError(null);
       try {
         const data = await financeService.search(debouncedQuery);
-        setResults(data);
-      } catch (err) {
+        setResults(data || []);
+        if (!data || data.length === 0) {
+           // We keep results empty but don't show technical error if it's just no results
+        }
+      } catch (err: any) {
         console.error('Search failed', err);
+        setError(err.message || 'O motor de busca Nexus está temporariamente inacessível.');
         setResults([]);
       } finally {
         setLoading(false);
@@ -116,7 +123,27 @@ export default function Search() {
             </span>
           )}
         </div>
-              <div className="overflow-hidden bg-card border border-border rounded-xl md:rounded-2xl shadow-2xl">
+
+        {error ? (
+          <div className="bg-red-500/5 border border-dashed border-red-500/20 rounded-2xl p-12 text-center space-y-4">
+             <div className="flex justify-center">
+                <div className="p-3 bg-red-500/10 rounded-full">
+                   <ShieldAlert className="w-8 h-8 text-red-500" />
+                </div>
+             </div>
+             <div className="space-y-1">
+                <p className="text-sm font-black text-red-500 uppercase tracking-widest italic">Interrupção no Motor Nexus</p>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">{error}</p>
+             </div>
+             <button 
+              onClick={() => { setError(null); setDebouncedQuery(query); }}
+              className="px-6 py-2 bg-secondary border border-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all"
+             >
+                Tentar Forçar Link
+             </button>
+          </div>
+        ) : (
+          <div className="overflow-hidden bg-card border border-border rounded-xl md:rounded-2xl shadow-2xl">
           <div className="divide-y divide-border">
             <AnimatePresence mode="popLayout">
               {(hasSearched ? results : mostSearched).map((asset, idx) => {
@@ -206,7 +233,8 @@ export default function Search() {
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
-  );
+  </div>
+);
 }

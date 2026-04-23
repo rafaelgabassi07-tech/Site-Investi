@@ -97,6 +97,8 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:133.0) Gecko/20100101 Firefox/133.0',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1',
 ];
 
 /**
@@ -466,15 +468,14 @@ function getStealthHeaders(url: string): Record<string, string> {
 
   const userAgent = getRandomAgent();
   const isChrome = userAgent.includes('Chrome');
-  const chromeVersion = isChrome ? userAgent.match(/Chrome\/(\d+)/)?.[1] || '120' : '';
+  const chromeVersion = isChrome ? userAgent.match(/Chrome\/(\d+)/)?.[1] || '131' : '131';
   
   const headers: Record<string, string> = {
     'User-Agent'               : userAgent,
-    'Accept'                   : isYahoo ? '*/*' : (isI10 ? 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'),
+    'Accept'                   : isYahoo ? '*/*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Accept-Language'          : lang,
     'Accept-Encoding'          : 'gzip, deflate, br',
-    'Cache-Control'            : 'no-cache',
-    'Pragma'                   : 'no-cache',
+    'Cache-Control'            : 'max-age=0',
     'DNT'                      : '1',
     'Connection'               : 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
@@ -483,13 +484,17 @@ function getStealthHeaders(url: string): Record<string, string> {
   };
 
   if (isChrome) {
-    headers['sec-ch-ua'] = `"Not_A Brand";v="8", "Chromium";v="${chromeVersion}", "Google Chrome";v="${chromeVersion}"`;
+    const brands = Math.random() > 0.5 
+      ? `\"Google Chrome\";v=\"${chromeVersion}\", \"Chromium\";v=\"${chromeVersion}\", \"Not=A?Brand\";v=\"24\"`
+      : `\"Chromium\";v=\"${chromeVersion}\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"${chromeVersion}\"`;
+
+    headers['sec-ch-ua'] = brands;
     headers['sec-ch-ua-mobile'] = '?0';
     headers['sec-ch-ua-platform'] = '"Windows"';
     headers['Sec-Fetch-Dest'] = isYahoo ? 'empty' : 'document';
     headers['Sec-Fetch-Mode'] = isYahoo ? 'cors' : 'navigate';
-    headers['Sec-Fetch-Site'] = isYahoo ? 'same-site' : (isI10 ? 'none' : 'cross-site');
-    headers['Sec-Fetch-User'] = '?1';
+    headers['Sec-Fetch-Site'] = isYahoo ? 'same-site' : 'cross-site';
+    headers['Sec-Fetch-User'] = isYahoo ? '?1' : '?1';
   }
 
   return headers;
@@ -794,12 +799,19 @@ async function fetchYahooChartDirect(symbol: string, range: string = '1y'): Prom
     
     const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
     for (const domain of domains) {
+        // Check if blocked
+        if ((NexusEngine as any)._circuitBreakers?.get(domain)?.isOpen()) continue;
+
         const url = `https://${domain}/v8/finance/chart/${encodeURIComponent(symbol)}?range=${r}&interval=1d&includePrePost=false`;
         try {
             const res = await fetch(url, { headers: getStealthHeaders(url) });
             if (!res.ok) {
-                console.warn(`[YAHOO CHART DIRECT] Fetch failed for ${symbol} on ${domain} with status ${res.status}`);
-                if (res.status === 429) NexusEngine.recordFailure(domain, true);
+                if (res.status === 429) {
+                  console.log(`[YAHOO] ${domain} throttled (429) during chart fetch.`);
+                  NexusEngine.recordFailure(domain, true);
+                } else {
+                  console.warn(`[YAHOO] ${domain} failed with status ${res.status} for ${symbol}`);
+                }
                 continue;
             }
             const data = await res.json();
@@ -823,21 +835,145 @@ async function fetchYahooChartDirect(symbol: string, range: string = '1y'): Prom
 
 async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Promise<any> {
     const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
-    for (const domain of domains) {
-      const url = `https://${domain}/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=0&newsCount=${newsCount}&enableFuzzyQuery=false`;
+    let lastError: any = null;
+
+    // Shuffle domains to distribute load
+    const shuffledDomains = [...domains].sort(() => Math.random() - 0.5);
+
+    for (const domain of shuffledDomains) {
+      // Check if domain is blocked before trying
+      const isBlocked = (NexusEngine as any)._circuitBreakers?.get(domain)?.isOpen();
+      if (isBlocked) continue;
+
+      // 1. Try News specific endpoint first if news are requested
+      if (newsCount > 0) {
+        try {
+          const newsUrl = `https://${domain}/v1/finance/news?count=${newsCount}&symbols=${encodeURIComponent(query)}`;
+          const newsRes = await fetch(newsUrl, { 
+            headers: getStealthHeaders(newsUrl),
+            signal: AbortSignal.timeout(4000)
+          });
+          if (newsRes.ok) {
+            const newsData = await newsRes.json();
+            const newsItems = newsData?.news?.result || newsData?.news || [];
+            if (newsItems.length > 0) {
+              return { 
+                news: newsItems.map((n: any) => ({ 
+                  ...n, 
+                  publisher: n.source || n.publisher || 'Yahoo Finance',
+                  providerPublishTime: n.providerPublishTime || n.pubtime || Math.floor(Date.now() / 1000)
+                })) 
+              };
+            }
+          } else if (newsRes.status === 429) {
+             NexusEngine.recordFailure(domain, true);
+             continue; // Try next domain
+          }
+        } catch (e) { /* silent fail for news-only endpoint */ }
+      }
+
+      // 2. Try General Search endpoint
+      const url = `https://${domain}/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=0&newsCount=${newsCount}&enableFuzzyQuery=false&quotesQueryId=tss_search_query_id&multiQuoteQueryId=tss_multi_quote_query_id`;
+      
       try {
-          const res = await fetch(url, { headers: getStealthHeaders(url) });
+          const res = await fetch(url, { 
+            headers: {
+              ...getStealthHeaders(url),
+              'Cookie': `A3=d=AQABBPYdOGcEELJ_G_mH1XG_fG_fG_fG_fG_fG_f&S=AQAAA...; GUC=AQEBAQFh...; B=39h...; gucc=...;`
+            },
+            signal: AbortSignal.timeout(5000)
+          });
+
           if (!res.ok) {
-              console.warn(`[YAHOO SEARCH DIRECT] Fetch failed for ${query} on ${domain} with status ${res.status}`);
-              if (res.status === 429) NexusEngine.recordFailure(domain, true);
+              if (res.status === 429) {
+                console.log(`[YAHOO] ${domain} throttled (429). Activating circuit breaker.`);
+                NexusEngine.recordFailure(domain, true);
+              } else {
+                console.warn(`[YAHOO] ${domain} failed with status ${res.status}`);
+              }
               continue;
           }
-          return await res.json();
+          const result = await res.json();
+          if (result && result.news && result.news.length > 0) return result;
       } catch (err) {
-          console.error(`[YAHOO SEARCH DIRECT] Error on ${domain}:`, err);
+          lastError = err;
       }
     }
+    
+    // Deep fallbacks for news if all direct Yahoo search endpoints are throttled/dead
+    if (newsCount > 0) {
+      console.log(`[NEWS] All Yahoo search endpoints throttled. Trying RSS and Google sources...`);
+      const newsFeed = await Promise.race([
+        fetchYahooNewsRSSFallback(),
+        fetchGoogleNewsRSSFallback(query),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+      ]).catch(() => null);
+
+      if (newsFeed && newsFeed.news && newsFeed.news.length > 0) return newsFeed;
+    }
+
     return null;
+}
+
+/**
+ * Fallback to Google News RSS for the ticker
+ */
+async function fetchGoogleNewsRSSFallback(query: string): Promise<any> {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}+stock+news&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+  try {
+    const res = await fetch(url, { 
+      headers: { 'User-Agent': getRandomAgent() },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) return null;
+    const xml = await res.text();
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const news = items.slice(0, 15).map(match => {
+      const content = match[1];
+      const title = content.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+      const link = content.match(/<link>([\s\S]*?)<\/link>/)?.[1];
+      const pubDate = content.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1];
+      const source = content.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1];
+      
+      return {
+        title,
+        link,
+        publisher: source || 'Google News',
+        providerPublishTime: Math.floor(new Date(pubDate || '').getTime() / 1000)
+      };
+    }).filter(i => i.title && i.link);
+    return { news };
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Fallback to Yahoo News RSS if search API is blocked
+ */
+async function fetchYahooNewsRSSFallback(): Promise<any> {
+  const rssUrl = 'https://finance.yahoo.com/rss/topstories';
+  try {
+    const res = await fetch(rssUrl, { 
+      headers: getStealthHeaders(rssUrl),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) return null;
+    const xml = await res.text();
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const news = items.map(match => {
+      const content = match[1];
+      return {
+        title: content.match(/<title>([\s\S]*?)<\/title>/)?.[1],
+        link: content.match(/<link>([\s\S]*?)<\/link>/)?.[1],
+        publisher: 'Yahoo Finance (RSS)',
+        providerPublishTime: Math.floor(new Date(content.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '').getTime() / 1000)
+      };
+    }).filter(i => i.title && i.link);
+    return { news };
+  } catch (e) {
+    return null;
+  }
 }
 
 async function fetchYahooSearchQuote(symbol: string): Promise<any> {
@@ -942,7 +1078,7 @@ async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
 
       if (res.status === 429) {
         NexusEngine.recordFailure(domain, true);
-        console.warn(`[YAHOO DIRECT] 429 Too Many Requests for ${symbol} on ${domain}`);
+        console.log(`[YAHOO] ${domain} throttled (429) for ${symbol}`);
         continue;
       }
 
@@ -1017,6 +1153,36 @@ async function fetchYahooQuoteFromChart(symbol: string): Promise<any> {
   return null;
 }
 
+/** @ts-expect-error */
+async function fetchYahooQuoteHTML(symbol: string): Promise<any> {
+    const url = `https://finance.yahoo.com/quote/${symbol}`;
+    try {
+        const res = await fetch(url, { 
+            headers: getStealthHeaders(url),
+            // @ts-ignore
+            signal: AbortSignal.timeout(6000) 
+        });
+        if (!res.ok) return null;
+        const html = await res.text();
+        
+        // Strategy: Regex extraction for speed and robustness on partial loads
+        const priceMatch = html.match(/"regularMarketPrice":\s*{"raw":\s*([\d.]+)/);
+        const changeMatch = html.match(/"regularMarketChangePercent":\s*{"raw":\s*([-.\d]+)/);
+        const shortNameMatch = html.match(/"shortName":"([^"]+)"/);
+        
+        if (priceMatch) {
+            return {
+                symbol,
+                regularMarketPrice: parseFloat(priceMatch[1]),
+                regularMarketChangePercent: changeMatch ? parseFloat(changeMatch[1]) * 100 : 0,
+                shortName: shortNameMatch ? shortNameMatch[1] : symbol,
+                currency: symbol.endsWith('.SA') ? 'BRL' : 'USD'
+            };
+        }
+    } catch (e) {}
+    return null;
+}
+
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   ensureYahooConfig();
   
@@ -1047,10 +1213,15 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
       
       // Secondary: Direct Fetch Fallback
       if (!q || q.regularMarketPrice == null) {
-        // Always try direct if we need it, respecting circuit breaker logic
-        if (!mainCB || !mainCB.isOpen()) {
+        const directCB = (NexusEngine as any)._circuitBreakers.get('query1.finance.yahoo.com');
+        if (!directCB || !directCB.isOpen()) {
            q = await fetchYahooQuoteDirect(symbol);
         }
+      }
+
+      // Tertiary: HTML Scraping (Deep Fallback) - Always try if others failed
+      if (!q || q.regularMarketPrice == null) {
+        q = await fetchYahooQuoteHTML(symbol);
       }
 
       if (!q) continue;
@@ -1091,7 +1262,7 @@ async function fetchYahooBulkDirect(symbols: string[]): Promise<any[]> {
 
       if (res.status === 429) {
         NexusEngine.recordFailure(domain, true);
-        console.warn(`[YAHOO BULK DIRECT] 429 Throttled on ${domain}`);
+        console.log(`[YAHOO] ${domain} throttled (429) during bulk fetch.`);
         continue;
       }
 
@@ -1701,39 +1872,49 @@ export class NexusEngine {
   }
 
   static async fetchNews(ticker: string): Promise<NewsItem[]> {
-  const clean = canonicalizeTicker(ticker);
-  try {
-    const isGlobal = clean === 'IBOVESPA' || clean === 'MARKET';
-    const query = isGlobal ? 'IBOVESPA' : clean;
-
-    let searchResult: any = null;
+    const clean = canonicalizeTicker(ticker);
+    const cacheKey = `nexus:news:${clean}`;
     
-    // Primary: Library
+    // 1. Check Cache
+    const cached = this._cache.get(cacheKey);
+    if (cached && !cached.isStale) return cached.data;
+
     try {
-      if (!this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen()) {
-        searchResult = await yahooFinance.search(query, {
-          newsCount: isGlobal ? 30 : 10,
-          quotesCount: 0
-        } as any);
-      }
-    } catch (e) {
-      // Library search failed, will fallback to direct search
-    }
-    if (!searchResult || !searchResult.news || searchResult.news.length === 0) {
-      console.log(`[NEWS] Library failed for ${query}, attempting direct fetch...`);
-      const direct = await fetchYahooSearchDirect(query, isGlobal ? 30 : 10);
-      if (direct && direct.news && direct.news.length > 0) {
-        searchResult = direct;
-      }
-    }
+      const isGlobal = clean === 'IBOVESPA' || clean === 'MARKET';
+      const query = isGlobal ? 'IBOVESPA' : clean;
 
-    const items: NewsItem[] = [];
-    
-    if (searchResult && searchResult.news) {
+      let searchResult: any = null;
+      
+      // Primary: Library
+      try {
+        const cb = this._circuitBreakers.get('query2.finance.yahoo.com');
+        if (!cb || !cb.isOpen()) {
+          searchResult = await yahooFinance.search(query, {
+            newsCount: isGlobal ? 30 : 10,
+            quotesCount: 0
+          } as any);
+        }
+      } catch (e) {
+        // Library search failed
+      }
+
+      if (!searchResult || !searchResult.news || searchResult.news.length === 0) {
+        // Only log if we are clearly not blocked yet, to keep logs clean
+        const isBlocked = this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen();
+        if (!isBlocked) {
+           console.log(`[NEWS] Library failed for ${query}, attempting direct fetch...`);
+        }
+        const direct = await fetchYahooSearchDirect(query, isGlobal ? 30 : 10);
+        if (direct && direct.news && direct.news.length > 0) {
+          searchResult = direct;
+        }
+      }
+
+      const items: NewsItem[] = [];
+      
+      if (searchResult && searchResult.news) {
         for (const article of searchResult.news) {
           const pubDate = article.providerPublishTime ? new Date(Number(article.providerPublishTime) * 1000) : new Date();
-          
-          // Only keep news from last 15 days
           const diffDays = (new Date().getTime() - pubDate.getTime()) / (1000 * 3600 * 24);
           
           if (diffDays <= 15) {
@@ -1742,20 +1923,28 @@ export class NexusEngine {
               link: article.link,
               pubDate: pubDate,
               source: article.publisher || 'Yahoo Finance',
-              thumbnail: (article.thumbnail as any)?.resolutions?.[0]?.url
+              thumbnail: (article.thumbnail as any)?.resolutions?.[1]?.url || (article.thumbnail as any)?.resolutions?.[0]?.url
             });
           }
         }
       }
-      
+
       // Sort newest to oldest
       items.sort((a, b) => (b.pubDate as Date).getTime() - (a.pubDate as Date).getTime());
       
       const finalItems = items.slice(0, isGlobal ? 30 : 8);
+
+      // Save to Cache
+      if (finalItems.length > 0) {
+        this._cache.set(cacheKey, finalItems, 30 * 60 * 1000, 15 * 60 * 1000);
+      } else if (cached) {
+        return cached.data;
+      }
+      
       return finalItems;
     } catch (e) {
-      console.error(`[Nexus] Error fetching news for ${ticker}:`, e);
-      return [];
+      console.error(`[Nexus] Total failure for news ${ticker}:`, e);
+      return cached ? cached.data : [];
     }
   }
 
@@ -2531,6 +2720,22 @@ export class NexusEngine {
       return enrichedQuotes;
     } catch (e) {
       console.warn(`[YAHOO] Erro ao buscar ticker para ${query}:`, formatYahooError(e));
+      
+      // DEEP FALLBACK: If Yahoo search failed completely, and it looks like a ticker, return a synthetic result
+      // This ensures the site "works" even when completely blocked, allowing users to at least go to the asset page
+      if (query.length >= 4 && query.length <= 7 && /^[A-Z]{4}[3456]$|^[A-Z]{4}11$/.test(query.toUpperCase())) {
+         const t = query.toUpperCase();
+         return [{
+           symbol: `${t}.SA`,
+           ticker: `${t}.SA`,
+           shortname: t,
+           exchange: 'SAO',
+           quoteType: 'EQUITY',
+           price: '0.00',
+           change: '0.00%',
+           positive: true
+         }];
+      }
       return [];
     }
   }

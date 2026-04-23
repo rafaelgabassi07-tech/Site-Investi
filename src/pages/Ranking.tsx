@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/PageHeader';
-import { Award, TrendingUp, DollarSign, PieChart, Heart, BarChart3, ArrowUpRight, ArrowDownRight, Briefcase, ChevronLeft, Loader2, Star, Zap, Shield, Target, Flame, Gem, Trophy, Info, Search } from 'lucide-react';
+import { Award, TrendingUp, DollarSign, PieChart, Heart, BarChart3, ArrowUpRight, ArrowDownRight, Briefcase, ChevronLeft, Loader2, Star, Zap, Shield, Target, Flame, Gem, Trophy, Info, Search, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { AssetIcon } from '../components/ui/AssetIcon';
@@ -12,6 +12,7 @@ export default function Ranking() {
   const [loading, setLoading] = useState(false);
   const [rankingData, setRankingData] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const categories = [
     { title: 'Dividend Yield', icon: DollarSign, color: 'emerald', description: 'Ativos que mais pagam dividendos.', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-500', glow: 'group-hover:bg-emerald-500/10' },
@@ -31,11 +32,16 @@ export default function Ranking() {
   const handleCategoryClick = async (cat: string) => {
     setSelectedCategory(cat);
     setLoading(true);
+    setError(null);
     try {
       const data = await financeService.getRanking(cat, selectedType);
-      setRankingData(data);
-    } catch (error) {
+      setRankingData(data || []);
+      if (!data || data.length === 0) {
+        setError('O motor Nexus não encontrou dados para este ranking. Os servidores de dados podem estar temporariamente congestionados.');
+      }
+    } catch (error: any) {
       console.error('Failed to fetch ranking:', error);
+      setError(error.message || 'Falha crítica na conexão com os servidores Nexus.');
       setRankingData([]);
     } finally {
       setLoading(false);
@@ -195,6 +201,22 @@ export default function Ranking() {
                   <p className="text-[11px] font-black text-foreground uppercase tracking-[0.3em] italic animate-pulse">Processando Dados</p>
                   <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest italic">Calculando métricas fundamentalistas...</p>
                 </div>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center space-y-6 bg-red-500/5 border border-dashed border-red-500/20 rounded-2xl">
+                 <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+                    <ShieldAlert className="w-8 h-8 text-red-500" />
+                 </div>
+                 <div className="space-y-2 max-w-sm">
+                    <p className="text-xs font-black text-red-500 uppercase tracking-widest italic">Falha no Link de Dados</p>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider leading-relaxed">{error}</p>
+                 </div>
+                 <button 
+                  onClick={() => handleCategoryClick(selectedCategory!)}
+                  className="px-6 py-2 bg-secondary border border-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all"
+                 >
+                   Tentar Novamente
+                 </button>
               </div>
             ) : (
               <div className="space-y-3">
