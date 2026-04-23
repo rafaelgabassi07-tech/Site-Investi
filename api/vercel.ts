@@ -97,19 +97,21 @@ app.get("/api/market-stats", async (_req, res) => {
   ];
   try {
     const symbols = tickers.map(t => t.sym);
-    const quotes = await yahooFinance.quote(symbols);
-    const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+    // Use NexusEngine to leverage fallbacks and ticker mappings
+    const quoteList = await NexusEngine.fetchQuotesBatch(symbols);
 
     const results = tickers.map(({ sym, label }) => {
-      const data = quoteList.find((q: any) => q.symbol.toUpperCase() === sym.toUpperCase());
-      const price = data?.regularMarketPrice ?? data?.postMarketPrice;
-      const change = data?.regularMarketChangePercent;
+      const data = quoteList.find((q: any) => q.ticker.toUpperCase() === sym.toUpperCase());
+      const price = data?.price;
+      const changeStr = data?.change || "0.00%";
+      const change = parseFloat(changeStr.replace('%', ''));
+      
       return {
         ticker: sym,
         label,
-        value: price?.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) || "---",
-        change: change != null ? (change > 0 ? "+" : "") + change.toFixed(2) + "%" : "0.00%",
-        color: change && change < 0 ? "red" : "emerald"
+        value: price && price > 0 ? price.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : "---",
+        change: changeStr,
+        color: change < 0 ? "red" : "emerald"
       };
     });
     res.json(results);

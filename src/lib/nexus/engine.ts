@@ -791,25 +791,71 @@ async function fetchYahooChartDirect(symbol: string, range: string = '1y'): Prom
 }
 
 async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Promise<any> {
-    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=0&newsCount=${newsCount}&enableFuzzyQuery=false`;
-    try {
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': 'application/json',
-                'Referer': 'https://finance.yahoo.com/',
-                'Origin': 'https://finance.yahoo.com'
-            }
-        });
-        if (!res.ok) {
-            console.warn(`[YAHOO SEARCH DIRECT] Fetch failed for ${query} with status ${res.status}`);
-            return null;
-        }
-        return await res.json();
-    } catch (err) {
-        console.error(`[YAHOO SEARCH DIRECT] Error:`, err);
-        return null;
+    const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
+    for (const domain of domains) {
+      const url = `https://${domain}/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=0&newsCount=${newsCount}&enableFuzzyQuery=false`;
+      try {
+          const res = await fetch(url, {
+              headers: {
+                  'User-Agent': getRandomAgent(),
+                  'Accept': 'application/json',
+                  'Referer': 'https://finance.yahoo.com/',
+                  'Origin': 'https://finance.yahoo.com'
+              }
+          });
+          if (!res.ok) {
+              console.warn(`[YAHOO SEARCH DIRECT] Fetch failed for ${query} on ${domain} with status ${res.status}`);
+              continue;
+          }
+          return await res.json();
+      } catch (err) {
+          console.error(`[YAHOO SEARCH DIRECT] Error on ${domain}:`, err);
+      }
     }
+    return null;
+}
+
+async function fetchGoogleNewsRSS(query: string): Promise<NewsItem[]> {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+      }
+    });
+    if (!res.ok) return [];
+    const text = await res.text();
+    
+    const items: NewsItem[] = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const titleRegex = /<title>([\s\S]*?)<\/title>/;
+    const linkRegex = /<link>([\s\S]*?)<\/link>/;
+    const pubDateRegex = /<pubDate>([\s\S]*?)<\/pubDate>/;
+    const sourceRegex = /<source[^>]*>([\s\S]*?)<\/source>/;
+
+    let match;
+    while ((match = itemRegex.exec(text)) !== null) {
+      const itemHtml = match[1];
+      const title = itemHtml.match(titleRegex)?.[1] || '';
+      const link = itemHtml.match(linkRegex)?.[1] || '';
+      const pubDateStr = itemHtml.match(pubDateRegex)?.[1] || '';
+      const source = itemHtml.match(sourceRegex)?.[1] || 'Google News';
+
+      if (title && link) {
+        items.push({
+          title: title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'"),
+          link,
+          pubDate: new Date(pubDateStr),
+          source
+        });
+      }
+      if (items.length >= 15) break;
+    }
+    return items;
+  } catch (err) {
+    console.error(`[GOOGLE NEWS] Error:`, err);
+    return [];
+  }
 }
 
 async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
@@ -839,6 +885,44 @@ async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
       if (quote) return quote;
     } catch (err) {
       console.error(`[YAHOO DIRECT] Error fetching ${symbol} from ${domain}:`, err);
+    }
+  }
+
+  // Final level fallback using Chart API if v7 quote is blocked
+  console.log(`[YAHOO] Trying chart fallback for ${symbol}...`);
+  return await fetchYahooQuoteFromChart(symbol);
+}
+
+async function fetchYahooQuoteFromChart(symbol: string): Promise<any> {
+  const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
+  for (const domain of domains) {
+    const url = `https://${domain}/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1m&includePrePost=false`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': getRandomAgent(),
+          'Accept': 'application/json',
+          'Referer': 'https://finance.yahoo.com/',
+          'Origin': 'https://finance.yahoo.com'
+        }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (!meta) continue;
+      
+      return {
+        symbol: meta.symbol,
+        regularMarketPrice: meta.regularMarketPrice || meta.chartPreviousClose,
+        regularMarketChangePercent: (meta.regularMarketPrice && meta.chartPreviousClose) 
+          ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100 
+          : 0,
+        currency: meta.currency,
+        longName: meta.symbol,
+        shortName: meta.symbol
+      };
+    } catch (e) {
+      continue;
     }
   }
   return null;
@@ -1475,8 +1559,15 @@ export class NexusEngine {
     if (!searchResult || !searchResult.news || searchResult.news.length === 0) {
       console.log(`[NEWS] Library failed for ${query}, attempting direct fetch...`);
       const direct = await fetchYahooSearchDirect(query, isGlobal ? 30 : 10);
-      if (direct && direct.news) {
+      if (direct && direct.news && direct.news.length > 0) {
         searchResult = direct;
+      } else {
+        // Tertiary fallback: Google News RSS
+        console.log(`[NEWS] Yahoo direct failed, attempting Google News RSS...`);
+        const googleNews = await fetchGoogleNewsRSS(query);
+        if (googleNews.length > 0) {
+          return googleNews;
+        }
       }
     }
 
