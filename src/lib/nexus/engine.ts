@@ -815,38 +815,61 @@ async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Pr
     return null;
 }
 
+async function fetchYahooSearchQuote(symbol: string): Promise<any> {
+  const data = await fetchYahooSearchDirect(symbol, 0);
+  if (!data || !data.quotes || data.quotes.length === 0) return null;
+  
+  const q = data.quotes.find((item: any) => 
+    item.symbol === symbol || 
+    item.symbol === `${symbol.replace(RE_SA, '')}.SA` ||
+    item.symbol.replace(RE_SA, '') === symbol.replace(RE_SA, '')
+  );
+
+  if (q && q.regularMarketPrice != null) {
+    return {
+      symbol: q.symbol,
+      regularMarketPrice: q.regularMarketPrice,
+      regularMarketChangePercent: q.regularMarketChangePercent || 0,
+      currency: q.currency || (q.symbol.endsWith('.SA') ? 'BRL' : 'USD'),
+      longName: q.longName || q.shortName || q.symbol,
+      shortName: q.shortName || q.symbol
+    };
+  }
+  return null;
+}
+
 async function fetchGoogleNewsRSS(query: string): Promise<NewsItem[]> {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+        'User-Agent': getRandomAgent()
       }
     });
     if (!res.ok) return [];
     const text = await res.text();
     
     const items: NewsItem[] = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    const titleRegex = /<title>([\s\S]*?)<\/title>/;
-    const linkRegex = /<link>([\s\S]*?)<\/link>/;
-    const pubDateRegex = /<pubDate>([\s\S]*?)<\/pubDate>/;
+    const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/g;
+    const titleRegex = /<title[^>]*>([\s\S]*?)<\/title>/;
+    const linkRegex = /<link[^>]*>([\s\S]*?)<\/link>/;
+    const pubDateRegex = /<pubDate[^>]*>([\s\S]*?)<\/pubDate>/;
     const sourceRegex = /<source[^>]*>([\s\S]*?)<\/source>/;
 
     let match;
     while ((match = itemRegex.exec(text)) !== null) {
       const itemHtml = match[1];
-      const title = itemHtml.match(titleRegex)?.[1] || '';
-      const link = itemHtml.match(linkRegex)?.[1] || '';
+      const titleAttr = itemHtml.match(titleRegex)?.[1] || '';
+      const linkAttr = itemHtml.match(linkRegex)?.[1] || '';
       const pubDateStr = itemHtml.match(pubDateRegex)?.[1] || '';
       const source = itemHtml.match(sourceRegex)?.[1] || 'Google News';
 
-      if (title && link) {
+      if (titleAttr && linkAttr) {
         items.push({
-          title: title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'"),
-          link,
+          title: titleAttr.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1'),
+          link: linkAttr.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1'),
           pubDate: new Date(pubDateStr),
-          source
+          source: source.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
         });
       }
       if (items.length >= 15) break;
@@ -889,6 +912,10 @@ async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
   }
 
   // Final level fallback using Chart API if v7 quote is blocked
+  console.log(`[YAHOO] Trying search fallback for ${symbol}...`);
+  const sQuote = await fetchYahooSearchQuote(symbol);
+  if (sQuote) return sQuote;
+
   console.log(`[YAHOO] Trying chart fallback for ${symbol}...`);
   return await fetchYahooQuoteFromChart(symbol);
 }
@@ -1008,55 +1035,82 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
   const results = new Map<string, YahooQuoteData>();
   if (tickers.length === 0) return results;
 
-  const symbols = tickers.map(t => {
+  const validTickers = tickers.filter(t => t && t.length >= 2);
+  const symbols = validTickers.map(t => {
     const isBRLSymbol = t.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(t);
     return isBRLSymbol ? `${t.replace(RE_SA, '')}.SA` : t.toUpperCase();
   });
+
+  const addToResults = (q: any) => {
+    if (!q || !q.symbol) return;
+    const price = q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice;
+    if (price == null) return;
+
+    const data: YahooQuoteData = {
+      regularMarketPrice:          price,
+      regularMarketChangePercent:  q.regularMarketChangePercent ?? q.postMarketChangePercent ?? 0,
+      trailingPE:                  q.trailingPE,
+      priceToBook:                 q.priceToBook,
+      bookValue:                   q.bookValue,
+      epsTrailingTwelveMonths:     q.epsTrailingTwelveMonths,
+      trailingAnnualDividendYield: q.trailingAnnualDividendYield,
+      marketCap:                   q.marketCap,
+      longName:                    q.longName,
+      shortName:                   q.shortName,
+      currency:                    q.currency || (q.symbol.endsWith('.SA') ? 'BRL' : 'USD'),
+    };
+    
+    const baseTicker = q.symbol.indexOf('.') !== -1 ? q.symbol.split('.')[0].toUpperCase() : q.symbol.toUpperCase();
+    results.set(baseTicker, data);
+    if (q.symbol.includes('-')) results.set(q.symbol.split('-')[0].toUpperCase(), data);
+    results.set(q.symbol.toUpperCase(), data);
+  };
 
   try {
     // Primary: Library
     let quotes = await yahooFinance.quote(symbols);
     let quoteList = Array.isArray(quotes) ? quotes : [quotes];
-    
-    // Check if library returned empty or mostly empty results
-    if (quoteList.length === 0 || quoteList.every((q: any) => !q || q.regularMarketPrice == null)) {
-      console.log(`[YAHOO BULK] Library failed or returned empty, attempting direct fetch...`);
-      const directQuotes = await fetchYahooBulkDirect(symbols);
-      if (directQuotes.length > 0) {
-        quoteList = directQuotes;
+    quoteList.forEach(addToResults);
+
+    // Identify missing symbols
+    const missingSymbols = symbols.filter(s => !results.has(s) && !results.has(s.split('.')[0]));
+
+    if (missingSymbols.length > 0 || quoteList.length === 0) {
+      console.log(`[YAHOO BULK] ${missingSymbols.length} missing, attempting direct fetch...`);
+      const directQuotes = await fetchYahooBulkDirect(missingSymbols.length > 0 ? missingSymbols : symbols);
+      directQuotes.forEach(addToResults);
+
+      // Final individual fallback for still missing symbols
+      const stillMissing = symbols.filter(s => !results.has(s) && !results.has(s.split('.')[0]));
+      if (stillMissing.length > 0) {
+        console.log(`[YAHOO BULK] Still missing ${stillMissing.length} symbols, falling back individually...`);
+        const individualPromises = stillMissing.slice(0, 10).map(async (s) => {
+          try {
+            const q = await yahooQuote(s, 5000);
+            if (q) {
+              const baseTicker = s.indexOf('.') !== -1 ? s.split('.')[0].toUpperCase() : s.toUpperCase();
+              results.set(baseTicker, q);
+              results.set(s.toUpperCase(), q);
+            }
+          } catch (err) { /* ignore */ }
+        });
+        await Promise.allSettled(individualPromises);
       }
     }
-    
-    quoteList.forEach((q: any) => {
-      if (!q || !q.symbol) return;
-      
-      const price = q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice;
-      if (price == null) return;
-
-      const data: YahooQuoteData = {
-        regularMarketPrice:          price,
-        regularMarketChangePercent:  q.regularMarketChangePercent ?? q.postMarketChangePercent ?? 0,
-        trailingPE:                  q.trailingPE,
-        priceToBook:                 q.priceToBook,
-        bookValue:                   q.bookValue,
-        epsTrailingTwelveMonths:     q.epsTrailingTwelveMonths,
-        trailingAnnualDividendYield: q.trailingAnnualDividendYield,
-        marketCap:                   q.marketCap,
-        longName:                    q.longName,
-        shortName:                   q.shortName,
-        currency:                    q.currency || (q.symbol.endsWith('.SA') ? 'BRL' : 'USD'),
-      };
-      
-      const baseTicker = q.symbol.replace(RE_SA, '').toUpperCase();
-      results.set(baseTicker, data);
-      // Fallback aliases
-      if (q.symbol.includes('-')) results.set(q.symbol.split('-')[0].toUpperCase(), data);
-      results.set(q.symbol.toUpperCase(), data);
-    });
   } catch (e) {
-    console.error('[Nexus Bulk] Error in bulk quote:', e);
+    console.warn(`[YAHOO BULK] Fatal error, falling back to individuals:`, e);
+    // On total failure, try first 15 individual
+    for (const s of symbols.slice(0, 15)) {
+      try {
+        const q = await yahooQuote(s, 3000);
+        if (q) {
+          const baseTicker = s.indexOf('.') !== -1 ? s.split('.')[0].toUpperCase() : s.toUpperCase();
+          results.set(baseTicker, q);
+          results.set(s.toUpperCase(), q);
+        }
+      } catch (err) { /* ignore */ }
+    }
   }
-  
   return results;
 }
 
@@ -1654,7 +1708,7 @@ export class NexusEngine {
       const results = await this.executeBatch(
         tickers.map((ticker: string) => async () => {
           try {
-            const q = bulkQuotes.get(ticker);
+            const q = bulkQuotes.get(ticker) || bulkQuotes.get(`${ticker}.SA`);
             
             // If we have Yahoo data, use it to avoid slow scraper hits in ranking
             if (q) {
