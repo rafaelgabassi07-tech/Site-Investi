@@ -407,6 +407,13 @@ class CircuitBreaker {
     if (this.failures >= this.threshold) this.state = 'ABERTO';
   }
 
+  // Extend cooldown if specifically requested (e.g. on 429)
+  setLongCooldown(): void {
+    this.lastFailureTime = Date.now();
+    this.state = 'ABERTO';
+    this.failures = this.threshold + 1;
+  }
+
   reset(): void {
     this.state    = 'FECHADO';
     this.failures = 0;
@@ -441,8 +448,10 @@ function getStealthHeaders(url: string): Record<string, string> {
     ? 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
     : 'pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3';
 
-  return {
-    'User-Agent'               : getRandomAgent(),
+  const userAgent = getRandomAgent();
+  
+  const headers: Record<string, string> = {
+    'User-Agent'               : userAgent,
     'Accept'                   : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'Accept-Language'          : lang,
     'Accept-Encoding'          : 'gzip, deflate, br',
@@ -455,7 +464,16 @@ function getStealthHeaders(url: string): Record<string, string> {
     'Sec-Fetch-Mode'           : 'navigate',
     'Sec-Fetch-Site'           : 'none',
     'Sec-Fetch-User'           : '?1',
+    'Connection'               : 'keep-alive'
   };
+
+  if (hostname.includes('yahoo')) {
+    headers['Accept'] = 'application/json, text/plain, */*';
+    headers['Origin'] = 'https://finance.yahoo.com';
+    headers['Referer'] = 'https://finance.yahoo.com/quote/AAPL'; // Spoof a common quote page
+  }
+
+  return headers;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -838,6 +856,72 @@ async function fetchYahooSearchQuote(symbol: string): Promise<any> {
   return null;
 }
 
+async function fetchRankingFromInvestidor10(category: string): Promise<any[]> {
+  try {
+    const catMap: Record<string, string> = {
+      'dividendos': 'dividend-yield',
+      'dy': 'dividend-yield',
+      'pl': 'p-l',
+      'baratas': 'p-l',
+      'roe': 'roe',
+      'margem': 'margem-liquida',
+      'pvp': 'p-vp'
+    };
+
+    const cat = Object.entries(catMap).find(([k]) => category.toLowerCase().includes(k))?.[1] || 'dividend-yield';
+    const url = `https://investidor10.com.br/acoes/rankings/${cat}/`;
+    
+    const res = await fetch(url, { headers: getStealthHeaders(url) });
+    if (!res.ok) return [];
+    const html = await res.text();
+    
+    // Simple regex to extract tickers from the ranking table
+    // Matches <span class="ticker">PETR4</span> or similar patterns
+    const tickerRegex = /class="ticker"[^>]*>\s*([A-Z0-9]{4,6})\s*<\/span>|href="\/acoes\/([A-Z0-9]{4,6})\/"/g;
+    const tickers = new Set<string>();
+    let match;
+    while ((match = tickerRegex.exec(html)) !== null) {
+      const t = match[1] || match[2];
+      if (t && t.length >= 4 && !/^\d+$/.test(t)) tickers.add(t);
+      if (tickers.size >= 25) break;
+    }
+
+    if (tickers.size === 0) return [];
+
+    // Now we have a list of tickers. We need some basic data for them.
+    // Since this is a fallback, we can use yahooQuoteBulk which will likely be checked again
+    // but at least we have a more relevant list of tickers for this category.
+    const quotes = await yahooQuoteBulk([...tickers]);
+    
+    const finalData: any[] = [];
+    tickers.forEach(ticker => {
+      const q = quotes.get(ticker) || quotes.get(`${ticker}.SA`);
+      if (q) {
+        finalData.push({
+          ticker,
+          name: q.longName || q.shortName || ticker,
+          value: 'N/A', // Will be filled by sorting logic
+          subValue: `R$ ${q.regularMarketPrice || '0,00'}`,
+          raw: {
+            precoAtual: q.regularMarketPrice,
+            variacaoDay: q.regularMarketChangePercent != null ? `${q.regularMarketChangePercent > 0 ? '+' : ''}${q.regularMarketChangePercent.toFixed(2)}%` : '0,00%',
+            dividendYield: q.trailingAnnualDividendYield != null ? `${(q.trailingAnnualDividendYield * 100).toFixed(2)}%` : '0,00%',
+            pl: q.trailingPE != null ? q.trailingPE.toFixed(2) : '0,00',
+            pvp: q.priceToBook != null ? q.priceToBook.toFixed(2) : '0,00',
+            marketCap: q.marketCap,
+            currency: q.currency || 'BRL'
+          }
+        });
+      }
+    });
+
+    return finalData;
+  } catch (e) {
+    console.error(`[INVESTIDOR10 RANK] Error:`, e);
+    return [];
+  }
+}
+
 async function fetchGoogleNewsRSS(query: string): Promise<NewsItem[]> {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
   try {
@@ -889,14 +973,14 @@ async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
     const url = `https://${domain}/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
     try {
       const res = await fetch(url, {
-        headers: {
-          'User-Agent': getRandomAgent(),
-          'Accept': 'application/json',
-          'Referer': 'https://finance.yahoo.com/',
-          'Origin': 'https://finance.yahoo.com',
-          'Cache-Control': 'no-cache'
-        }
+        headers: getStealthHeaders(url)
       });
+
+      if (res.status === 429) {
+        NexusEngine.recordFailure(domain, true);
+        console.warn(`[YAHOO DIRECT] 429 Too Many Requests for ${symbol} on ${domain}`);
+        continue;
+      }
 
       if (!res.ok) {
         console.warn(`[YAHOO DIRECT] Fetch failed for ${symbol} on ${domain} with status ${res.status}`);
@@ -911,13 +995,34 @@ async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
     }
   }
 
-  // Final level fallback using Chart API if v7 quote is blocked
+  // Fallback 1: Options API (sometimes reveals more data and is less throttled)
+  console.log(`[YAHOO] Trying options fallback for ${symbol}...`);
+  const oQuote = await fetchYahooOptionsQuote(symbol);
+  if (oQuote) return oQuote;
+
+  // Fallback 2: Search API
   console.log(`[YAHOO] Trying search fallback for ${symbol}...`);
   const sQuote = await fetchYahooSearchQuote(symbol);
   if (sQuote) return sQuote;
 
+  // Fallback 3: Chart API
   console.log(`[YAHOO] Trying chart fallback for ${symbol}...`);
   return await fetchYahooQuoteFromChart(symbol);
+}
+
+async function fetchYahooOptionsQuote(symbol: string): Promise<any> {
+    const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
+    for (const domain of domains) {
+        const url = `https://${domain}/v7/finance/options/${encodeURIComponent(symbol)}`;
+        try {
+            const res = await fetch(url, { headers: getStealthHeaders(url) });
+            if (!res.ok) continue;
+            const data = await res.json();
+            const quote = data?.optionChain?.result?.[0]?.quote;
+            if (quote && quote.regularMarketPrice != null) return quote;
+        } catch (e) { continue; }
+    }
+    return null;
 }
 
 async function fetchYahooQuoteFromChart(symbol: string): Promise<any> {
@@ -958,6 +1063,9 @@ async function fetchYahooQuoteFromChart(symbol: string): Promise<any> {
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
   ensureYahooConfig();
   
+  const mainCB = (NexusEngine as any)._circuitBreakers.get('query2.finance.yahoo.com');
+  const isThrottled = mainCB && mainCB.isOpen();
+
   const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(ticker);
   const symbols = isBRLSymbol ? [`${ticker.replace(RE_SA, '')}.SA`] : [ticker.toUpperCase()];
   
@@ -967,13 +1075,26 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
 
   for (const symbol of symbols) {
     try {
-      // Primary: Library
-      let q = await yahooFinance.quote(symbol) as any;
+      let q: any = null;
+
+      // Primary: Library (only if not throttled)
+      if (!isThrottled) {
+        try {
+          q = await yahooFinance.quote(symbol) as any;
+        } catch (e: any) {
+          if (e.message?.includes('429') || e.message?.includes('401')) {
+            NexusEngine.recordFailure('query2.finance.yahoo.com', e.message?.includes('429'));
+          }
+        }
+      }
       
       // Secondary: Direct Fetch Fallback
       if (!q || q.regularMarketPrice == null) {
-        console.log(`[YAHOO] Library failed for ${symbol}, attempting direct fetch...`);
-        q = await fetchYahooQuoteDirect(symbol);
+        // If not already known throttled, try direct
+        if (!isThrottled) {
+           console.log(`[YAHOO] Library failed for ${symbol}, attempting direct fetch...`);
+           q = await fetchYahooQuoteDirect(symbol);
+        }
       }
 
       if (!q) continue;
@@ -1009,22 +1130,24 @@ async function fetchYahooBulkDirect(symbols: string[]): Promise<any[]> {
     const url = `https://${domain}/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`;
     try {
       const res = await fetch(url, {
-        headers: {
-          'User-Agent': getRandomAgent(),
-          'Accept': 'application/json',
-          'Referer': 'https://finance.yahoo.com/',
-          'Origin': 'https://finance.yahoo.com'
-        }
+        headers: getStealthHeaders(url)
       });
+
+      if (res.status === 429) {
+        NexusEngine.recordFailure(domain, true);
+        console.warn(`[YAHOO BULK DIRECT] 429 Throttled on ${domain}`);
+        continue;
+      }
 
       if (!res.ok) {
         console.warn(`[YAHOO BULK DIRECT] Fetch failed on ${domain} with status ${res.status}`);
         continue;
       }
       const data = await res.json();
-      return data?.quoteResponse?.result || [];
+      const results = data?.quoteResponse?.result || [];
+      if (results.length > 0) return results;
     } catch (err) {
-      console.error(`[YAHOO BULK DIRECT] Error fetching from ${domain}:`, err);
+      console.error(`[YAHOO BULK_DIRECT] Error on ${domain}:`, err);
     }
   }
   return [];
@@ -1067,17 +1190,29 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
   };
 
   try {
-    // Primary: Library
-    let quotes = await yahooFinance.quote(symbols);
-    let quoteList = Array.isArray(quotes) ? quotes : [quotes];
-    quoteList.forEach(addToResults);
+    // Check if Yahoo is overall throttled
+    const mainCB = (NexusEngine as any)._circuitBreakers.get('query2.finance.yahoo.com');
+    const isThrottled = mainCB && mainCB.isOpen();
+
+    if (!isThrottled) {
+      // Primary: Library
+      try {
+        const quotes = await yahooFinance.quote(symbols);
+        const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+        quoteList.forEach(addToResults);
+      } catch (e: any) {
+        if (e.message?.includes('429') || e.message?.includes('401')) {
+          NexusEngine.recordFailure('query2.finance.yahoo.com', e.message?.includes('429'));
+        }
+      }
+    }
 
     // Identify missing symbols
     const missingSymbols = symbols.filter(s => !results.has(s) && !results.has(s.split('.')[0]));
 
     if (missingSymbols.length > 0 || quoteList.length === 0) {
       console.log(`[YAHOO BULK] ${missingSymbols.length} missing, attempting direct fetch...`);
-      const directQuotes = await fetchYahooBulkDirect(missingSymbols.length > 0 ? missingSymbols : symbols);
+      const directQuotes = !isThrottled ? await fetchYahooBulkDirect(missingSymbols.length > 0 ? missingSymbols : symbols) : [];
       directQuotes.forEach(addToResults);
 
       // Final individual fallback for still missing symbols
@@ -1702,10 +1837,17 @@ export class NexusEngine {
       const tickers = popularTickers[String(type).toUpperCase()] || popularTickers.ACAO;
       
       // Step 1: Bulk Fetch from Yahoo (Fast)
-      const bulkQuotes = await yahooQuoteBulk(tickers);
+      let bulkQuotes = await yahooQuoteBulk(tickers);
+      let preScrapedResults: any[] = [];
+
+      // Fallback: If Yahoo is throttled/empty and we are looking for a ranking, try Investidor10 ranking page
+      if (bulkQuotes.size === 0 && !cat.includes('crypto')) {
+        console.log(`[Nexus] Yahoo throttled, falling back to Investidor10 ranking for ${category}`);
+        preScrapedResults = await fetchRankingFromInvestidor10(category);
+      }
 
       // Step 2: Complement with individual fetches only if missing
-      const results = await this.executeBatch(
+      const batchResults = preScrapedResults.length > 0 ? preScrapedResults : await this.executeBatch(
         tickers.map((ticker: string) => async () => {
           try {
             const q = bulkQuotes.get(ticker) || bulkQuotes.get(`${ticker}.SA`);
@@ -1720,7 +1862,9 @@ export class NexusEngine {
                 pvp: q.priceToBook != null ? q.priceToBook.toFixed(2) : '0,00',
                 marketCap: q.marketCap,
                 name: q.longName || q.shortName || ticker,
-                currency: q.currency || 'BRL'
+                currency: q.currency || 'BRL',
+                vpa: q.bookValue, // Useful for graham
+                lpa: q.epsTrailingTwelveMonths // Useful for graham
               };
 
               return {
@@ -1741,6 +1885,7 @@ export class NexusEngine {
         })
       );
 
+      const results = batchResults as any[];
       const filteredResults = results.filter((r): r is any => r !== null && (r as any).raw && Object.keys((r as any).raw).length > 0);
 
       // Ordenação baseada na categoria
@@ -2432,7 +2577,20 @@ export class NexusEngine {
     }
   }
 
-  static async executeBatch<T>(
+  static recordFailure(urlOrDomain: string, is429: boolean = false): void {
+    const domain = urlOrDomain.includes('://') ? extractHostname(urlOrDomain) : urlOrDomain;
+    let cb = this._circuitBreakers.get(domain);
+    if (!cb) {
+      cb = new CircuitBreaker(3, is429 ? 180_000 : 30_000);
+      this._circuitBreakers.set(domain, cb);
+    }
+    if (is429) {
+      // @ts-ignore - setLongCooldown is present in our manual instance
+      if (typeof cb.setLongCooldown === 'function') (cb as any).setLongCooldown();
+    } else {
+      cb.recordFailure();
+    }
+  }
     tasks: (() => Promise<T>)[],
     concurrency = this._options.concurrencyLimit,
   ): Promise<(T | Error)[]> {

@@ -106,7 +106,7 @@ export function NewsWidget({ limit = 3, compact = false }: NewsWidgetProps) {
               <div className={`${compact ? 'w-10 h-10' : 'w-14 h-14'} rounded-xl overflow-hidden shrink-0 bg-secondary/80 relative border border-border`}>
                 {item.thumbnail ? (
                   <img 
-                    src={item.thumbnail?.resolutions?.[0]?.url} 
+                    src={typeof item.thumbnail === 'string' ? item.thumbnail : (item.thumbnail?.resolutions?.[0]?.url || item.thumbnail?.url)} 
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     referrerPolicy="no-referrer"
