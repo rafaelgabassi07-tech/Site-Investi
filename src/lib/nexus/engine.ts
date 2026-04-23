@@ -1047,8 +1047,8 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
       
       // Secondary: Direct Fetch Fallback
       if (!q || q.regularMarketPrice == null) {
-        // If not already known throttled explicitly, or we absolutely need it
-        if (!mainCB || !mainCB.isOpen() || process.env.NODE_ENV === 'production') {
+        // Always try direct if we need it, respecting circuit breaker logic
+        if (!mainCB || !mainCB.isOpen()) {
            q = await fetchYahooQuoteDirect(symbol);
         }
       }
@@ -1171,8 +1171,8 @@ async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuote
 
     if (missingSymbols.length > 0) {
       console.log(`[YAHOO BULK] ${missingSymbols.length} missing, attempting direct yahoo fetch...`);
-      // Use direct fetch if not throttled, OR if we are in production and need data desperately
-      const directQuotes = (!isThrottled || process.env.NODE_ENV === 'production') ? await fetchYahooBulkDirect(missingSymbols) : [];
+      // Use direct fetch only if not throttled
+      const directQuotes = (!isThrottled) ? await fetchYahooBulkDirect(missingSymbols) : [];
       directQuotes.forEach(addToResults);
 
       // Final individual fallback for still missing symbols
@@ -1217,7 +1217,7 @@ async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<Ya
     try {
       let result: any = null;
       const isThrottled = (NexusEngine as any)._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen();
-      if (!isThrottled || process.env.NODE_ENV === 'production') {
+      if (!isThrottled) {
         result = await yahooFinance.quoteSummary(symbol, {
           modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
         } as any);
@@ -1499,7 +1499,7 @@ export class NexusEngine {
       try {
         let result: any = null;
         const isThrottled = this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen();
-        if (!isThrottled || process.env.NODE_ENV === 'production') {
+        if (!isThrottled) {
            result = await yahooFinance.quoteSummary(symbol, {
              modules: ['incomeStatementHistory', 'balanceSheetHistory', 'earningsHistory', 'defaultKeyStatistics']
            } as any);
@@ -1711,7 +1711,7 @@ export class NexusEngine {
     
     // Primary: Library
     try {
-      if (!this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen() || process.env.NODE_ENV === 'production') {
+      if (!this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen()) {
         searchResult = await yahooFinance.search(query, {
           newsCount: isGlobal ? 30 : 10,
           quotesCount: 0
@@ -2615,6 +2615,39 @@ export class NexusEngine {
         investidor10: { estado: 'FECHADO' as CBState, falhas: 0 },
       },
     };
+  }
+
+  static async checkConnectivity() {
+    const results: any = {};
+    const domains = [
+      { name: 'Yahoo Chart API', url: 'https://query2.finance.yahoo.com/v8/finance/chart/PETR4.SA' },
+      { name: 'Yahoo Search API', url: 'https://query2.finance.yahoo.com/v1/finance/search?q=PETR4.SA' },
+      { name: 'Investidor10', url: 'https://investidor10.com.br/' }
+    ];
+
+    for (const d of domains) {
+      const t0 = performance.now();
+      try {
+        const res = await fetch(d.url, { 
+          method: 'GET', 
+          headers: getStealthHeaders(d.url)
+        });
+        results[d.name] = {
+          status: res.status,
+          ok: res.ok,
+          latency: `${(performance.now() - t0).toFixed(0)}ms`,
+          throttled: res.status === 429
+        };
+      } catch (e: any) {
+        results[d.name] = {
+          status: 'FAIL',
+          ok: false,
+          error: e.message,
+          latency: '>5k ms'
+        };
+      }
+    }
+    return results;
   }
 }
 

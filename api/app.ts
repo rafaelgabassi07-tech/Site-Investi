@@ -158,6 +158,16 @@ export async function createServer() {
       }
     });
 
+    app.get("/api/nexus/health", async (_req, res) => {
+      try {
+        const stats = NexusEngine.getCacheStats();
+        const network = await NexusEngine.checkConnectivity();
+        res.json({ ...stats, network });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch nexus health" });
+      }
+    });
+
     app.get("/api/search-suggestions", async (req, res) => {
       const q = req.query.q as string;
       if (!q) return res.json([]);

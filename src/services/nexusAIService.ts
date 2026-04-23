@@ -27,6 +27,18 @@ addLog('info', 'Sistema Neural Nexus Inicializado com Sucesso.');
 addLog('info', 'Motor Lógico pronto para escanear WebSockets.');
 
 export const nexusAI = {
+  getEngineHealth: async () => {
+    try {
+      const response = await fetch('/api/nexus/health');
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (e) {
+      console.error("Failed to fetch nexus engine health", e);
+    }
+    return null;
+  },
+
   getSystemHealth: () => {
     // Inject dynamic logs based on random intervals to simulate background work
     if (Math.random() > 0.8) {

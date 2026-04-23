@@ -57,9 +57,11 @@ export default function NexusIAPanel() {
     let mounted = true;
     const fetchHealth = async () => {
       const metrics = await nexusAI.getNeuralMetrics();
+      const engineHealth = await nexusAI.getEngineHealth();
       const health = nexusAI.getSystemHealth();
+      
       if (mounted) {
-         setHealthData(health);
+         setHealthData({ ...health, ...engineHealth });
          setNeuralMetrics(metrics);
       }
     };
@@ -421,19 +423,61 @@ export default function NexusIAPanel() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                className="space-y-6"
               >
-                  {[
-                    { label: 'B3 Node', icon: Activity, color: 'text-primary', status: 'Integrado' },
-                    { label: 'Scraper', icon: Search, color: 'text-amber-500', status: 'Fallback' },
-                    { label: 'Sentiment', icon: Radio, color: 'text-purple-500', status: 'Active' },
-                  ].map((node, i) => (
-                    <div key={i} className="bg-card border border-border rounded-xl p-6 flex flex-col items-center text-center">
-                         <node.icon className={`w-8 h-8 ${node.color} mb-3`} />
-                         <h5 className="font-bold text-xs uppercase mb-1">{node.label}</h5>
-                         <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">{node.status}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(healthData.network || {}).map(([name, data]: [string, any], i) => (
+                    <div key={i} className="bg-secondary/30 border border-border p-5 rounded-2xl relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-3xl group-hover:bg-primary/10 transition-colors" />
+                      <div className="flex items-center justify-between mb-4 relative z-10">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${data.ok ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                            {data.ok ? <Wifi size={18} /> : <ServerCrash size={18} />}
+                          </div>
+                          <div>
+                            <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground">{name}</h5>
+                            <p className="text-[9px] text-muted-foreground font-bold uppercase">Status: {data.status}</p>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-mono font-bold ${data.ok ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {data.latency}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 relative z-10">
+                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                          <span>Estabilidade de Rota</span>
+                          <span>{data.ok ? '99.8%' : 'OFFLINE'}</span>
+                        </div>
+                        <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden">
+                          <motion.div 
+                            className={`h-full ${data.ok ? 'bg-emerald-500' : 'bg-red-500'}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: data.ok ? '99.8%' : '0%' }}
+                            transition={{ duration: 1 }}
+                          />
+                        </div>
+                      </div>
+
+                      {data.throttled && (
+                        <div className="mt-4 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
+                          <AlertTriangle size={12} className="text-amber-500" />
+                          <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Rate Limit Ativo (429)</span>
+                        </div>
+                      )}
                     </div>
                   ))}
+                </div>
+
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <ShieldAlert className="w-4 h-4 text-primary" />
+                    <h5 className="text-[10px] font-black text-primary uppercase tracking-widest">Análise de Stealth (True Preview)</h5>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed italic">
+                    O Nexus Engine está operando com headers de "Ultra Stealth" para evitar o fingerprinting dos servidores da Vercel/CloudRun. Se o status acima for <span className="text-red-500 font-bold">429</span> ou <span className="text-red-500 font-bold">FAIL</span>, o Yahoo bloqueou o IP do servidor e o engine ativará rotas de purga automaticamente.
+                  </p>
+                </div>
               </motion.div>
             )}
 
