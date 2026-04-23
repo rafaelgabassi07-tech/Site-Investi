@@ -1271,7 +1271,6 @@ export class NexusEngine {
   private static _tickerInFlight  = new Map<string, Promise<any>>();
   private static _cache           = new LRUCache<any>(300);
   private static _circuitBreakers = new Map<string, CircuitBreaker>();
-  // @ts-expect-error - used in getCacheStats
   private static _startTime       = Date.now();
   private static _totalRequests   = 0;
   private static _totalSuccess    = 0;
@@ -2511,23 +2510,24 @@ export class NexusEngine {
         } catch (e) {
           // Direct fetch failed too
         }
-        const symbols = quotes.map(q => q.symbol);
-        const quoteMap = await yahooQuoteBulk(symbols);
-        return quotes.map(q => {
-          const quoteData = quoteMap.get(q.symbol);
-          return {
-            ...q,
-            ticker: q.symbol,
-            name: q.shortname || q.longname || q.symbol,
-            exchange: q.exchange,
-            type: q.quoteType,
-            price: quoteData?.regularMarketPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-            change: quoteData?.regularMarketChangePercent ? `${quoteData.regularMarketChangePercent > 0 ? '+' : ''}${quoteData.regularMarketChangePercent.toFixed(2)}%` : undefined,
-            positive: quoteData?.regularMarketChangePercent ? quoteData.regularMarketChangePercent >= 0 : undefined
-          };
-        });
-      })();
-      
+      }
+
+      const symbols = quotes.map(q => q.symbol);
+      const quoteMap = await yahooQuoteBulk(symbols);
+      const enrichedQuotes = quotes.map(q => {
+        const quoteData = quoteMap.get(q.symbol);
+        return {
+          ...q,
+          ticker: q.symbol,
+          name: q.shortname || q.longname || q.symbol,
+          exchange: q.exchange,
+          type: q.quoteType,
+          price: quoteData?.regularMarketPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+          change: quoteData?.regularMarketChangePercent ? `${quoteData.regularMarketChangePercent > 0 ? '+' : ''}${quoteData.regularMarketChangePercent.toFixed(2)}%` : undefined,
+          positive: quoteData?.regularMarketChangePercent ? quoteData.regularMarketChangePercent >= 0 : undefined
+        };
+      });
+
       return enrichedQuotes;
     } catch (e) {
       console.warn(`[YAHOO] Erro ao buscar ticker para ${query}:`, formatYahooError(e));
@@ -2543,7 +2543,6 @@ export class NexusEngine {
       this._circuitBreakers.set(domain, cb);
     }
     if (is429) {
-      // @ts-expect-error - setLongCooldown is present in our manual instance
       if (typeof cb.setLongCooldown === 'function') (cb as any).setLongCooldown();
     } else {
       cb.recordFailure();
