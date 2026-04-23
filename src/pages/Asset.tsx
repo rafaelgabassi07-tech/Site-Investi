@@ -973,7 +973,7 @@ export default function Asset() {
       {/* SOBRE A EMPRESA (Imagem 14) */}
       <section className="p-10 bg-card/40 backdrop-blur-md border border-border/50 rounded-[48px] shadow-sm space-y-8 hover:bg-card/50 transition-all relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
-          <NexusAIIntel ticker={ticker} type="minimal" />
+          <BrainCircuit className="w-48 h-48 text-primary" />
         </div>
         <div className="flex items-center gap-4">
           <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(59,130,246,0.4)]" />
@@ -1044,7 +1044,7 @@ export default function Asset() {
       </section>
 
       {/* INTELIGENCIA ARTIFICIAL (Mantida do Nexus) */}
-      <NexusAIIntel ticker={ticker || ''} assetData={assetData} history={history} />
+      <NexusAIIntel ticker={ticker || ''} />
     </div>
   );
 }

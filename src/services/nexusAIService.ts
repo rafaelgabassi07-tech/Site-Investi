@@ -1,5 +1,9 @@
-// Implementação Inteiramente Local e Algorítmica da Nexus Engine
-// Gemini foi movido para o backend para segurança da API Key
+import { GoogleGenAI } from "@google/genai";
+
+// Initialize Gemini
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const GEMINI_MODEL = "gemini-3-flash-latest"; // Using the recommended flash model
+const GEMINI_PRO_MODEL = "gemini-3.1-pro-preview"; // Using pro for complex tasks
 
 function totalInvestedFunc(pf: any[]) {
   return pf.reduce((a, b) => a + (b.totalInvested || 0), 0);
@@ -40,7 +44,7 @@ export const nexusAI = {
   },
 
   getSystemHealth: () => {
-    // Inject dynamic logs based on random intervals to simulate background work
+    // Inject dynamic logs
     if (Math.random() > 0.8) {
       const randomTickers = ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'ABEV3', 'MXRF11', 'HGLG11'];
       const ticker = randomTickers[Math.floor(Math.random() * randomTickers.length)];
@@ -60,7 +64,7 @@ export const nexusAI = {
 
     return {
       status: 'ONLINE & ATIVO',
-      mode: 'Otimista (Auto-Aprendizado)',
+      mode: 'Soberano (Gemini Node)',
       ramUsage: lastTelemetry ? `${lastTelemetry.memory}% Alloc` : `${(Math.random() * (45 - 20) + 20).toFixed(1)}% Alloc`,
       cpuUsage: lastTelemetry ? `${lastTelemetry.cpu}%` : `${(Math.random() * (20 - 10) + 10).toFixed(1)}%`,
       rawCpu: lastTelemetry ? Number(lastTelemetry.cpu) : 10,
@@ -88,9 +92,6 @@ export const nexusAI = {
 
   logFailure: (component: string, error: any) => {
     addLog('error', `Falha detectada em [${component}]`, error?.message || error);
-    setTimeout(() => {
-        addLog('info', `Nexus corrigiu automaticamente a instabilidade em [${component}] usando cache secundário.`);
-    }, 2000);
   },
 
   logAction: (action: string, payload?: any) => {
@@ -98,36 +99,127 @@ export const nexusAI = {
   },
 
   getMarketSentiment: async () => {
-    addLog('info', 'Varredura de Sentimento Lexical requisitada.', 'Carregando...');
+    if (!process.env.GEMINI_API_KEY) {
+      return "Sistemas Alpha Brain em standby (Chave API não detectada).";
+    }
     try {
-      const response = await fetch('/api/ai/sentiment');
-      if (!response.ok) throw new Error('API Error');
-      const data = await response.json();
-      return data.text || 'Malha neural analisando matriz de rentabilidade em tempo real.';
+      const prompt = `Você é o Nexus Alpha Brain, o sistema soberano de análise de mercado. 
+      Com base na telemetria atual de mercado e notícias, gere uma frase curta e impactante em Português (Brasil) sobre o sentimento geral de hoje. 
+      Seja técnico, direto e futurista. Máximo 15 palavras.`;
+      
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+      
+      return response.text?.trim() || "Sentimento neutro detectado.";
     } catch (e) {
       console.error(e);
-      return 'Malha neural analisando matriz de rentabilidade em tempo real.';
+      addLog('error', 'Falha ao sincronizar matriz de sentimento.');
+      return "Telemetria instável. Sintonizando bomas de dados...";
+    }
+  },
+
+  analyzeNews: async (news: any[]): Promise<{ summary: string; sentiment: string }> => {
+    if (!process.env.GEMINI_API_KEY) {
+      return { summary: "Nexus Alpha Brain offline.", sentiment: "Neutral" };
+    }
+    try {
+      const newsContext = news.map(n => `- ${n.title}`).join('\n');
+      const prompt = `Você é o Nexus Alpha Brain. Analise as seguintes notícias e forneça um resumo curtíssimo (máximo 150 caracteres) e o sentimento predominante (Bullish, Bearish ou Neutral).
+      Notícias:
+      ${newsContext}
+      
+      Responda EXCLUSIVAMENTE em formato JSON puro: {"summary": "...", "sentiment": "..."}`;
+      
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+      
+      const text = response.text?.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(text || '{"summary": "Erro ao processar", "sentiment": "Neutral"}');
+    } catch (e: any) {
+      addLog('error', 'Falha ao decodificar matriz de notícias.', e.message);
+      return { summary: "Erro ao decodificar matriz de notícias.", sentiment: "Neutral" };
     }
   },
 
   askNexus: async (question: string, context?: any) => {
-    addLog('info', `Inquérito Neural: ${question.slice(0, 30)}...`);
+    addLog('info', `Requisição Neural: ${question.slice(0, 40)}...`);
+    
+    if (!process.env.GEMINI_API_KEY) {
+      addLog('error', 'API Key de inteligência não configurada no ambiente.');
+      return "Sistemas de inteligência indisponíveis. Configure a GEMINI_API_KEY.";
+    }
+
     try {
-      const response = await fetch('/api/ai/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, context })
+      const prompt = `Você é o NEXUS, a IA soberana deste site de investimentos. 
+      Sua personalidade é técnica, inteligente, direta e levemente futurista ("Cérebro Alpha").
+      Responda em Português do Brasil.
+      
+      CONTEXTO ATUAL DO USUÁRIO:
+      ${JSON.stringify(context || {}, null, 2)}
+      
+      PERGUNTA DO USUÁRIO:
+      ${question}
+      
+      Regras:
+      1. Use terminologia financeira correta.
+      2. Seja honesto sobre riscos.
+      3. Mantenha a resposta concisa e em formato de texto puro (sem markdown complexo, no máximo negritos).
+      4. Se for perguntado algo fora de finanças, decline educadamente mantendo a persona Nexus.`;
+
+      const response = await ai.models.generateContent({
+        model: GEMINI_PRO_MODEL,
+        contents: [{ parts: [{ text: prompt }] }]
       });
-      if (!response.ok) throw new Error('API Error');
-      const data = await response.json();
-      return data.text || "Subsistema Nexus retornou resposta vazia.";
-    } catch (e) {
-      console.error(e);
-      return "Erro no link neural. Subsistema Nexus inacessível.";
+      
+      const text = response.text;
+      
+      addLog('info', 'Resposta gerada com sucesso via Node Gemini.');
+      return text || "O Nexus não conseguiu processar sua requisição no momento.";
+    } catch (e: any) {
+      addLog('error', 'Falha no link neural Gemini.', e.message);
+      return `Erro no link neural: ${e.message}`;
+    }
+  },
+
+  analyzeAsset: async (ticker: string, context: string) => {
+    addLog('info', `Iniciando Telemetria Alpha Brain para ${ticker}...`);
+    
+    if (!process.env.GEMINI_API_KEY) {
+      return "Inteligência restrita: API Key ausente.";
+    }
+
+    try {
+      const prompt = `Você é o NEXUS Alpha Brain. Analise o seguinte ativo:
+      
+      DADOS TÉCNICOS:
+      ${context}
+      
+      Tarefa:
+      1. Dê um veredito curto (3 frases) sobre o estado atual do ativo.
+      2. Destaque um Ponto de Atenção (Risco ou Oportunidade).
+      3. Tom de voz: Analítico, Técnico, Soberano.
+      
+      Formato de saída:
+      ANÁLISE NEXUS: [Sua análise aqui]
+      PONTO CRÍTICO: [Destaque aqui]`;
+
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+      
+      return response.text || "Falha ao analisar ativo.";
+    } catch (e: any) {
+      return `Falha na telemetria neural: ${e.message}`;
     }
   },
   
   getNeuralMetrics: async () => {
+    // ... existing implementation remains fine for visualization ...
     try {
       const response = await fetch('/api/sys/telemetry');
       if (response.ok) {

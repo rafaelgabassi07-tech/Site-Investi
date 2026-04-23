@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Newspaper, TrendingUp, TrendingDown, Minus, Brain } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { financeService, NewsItem } from '../services/financeService';
+import { nexusAI } from '../services/nexusAIService';
 
 interface NewsWidgetProps {
   limit?: number;
@@ -30,10 +31,9 @@ export function NewsWidget({ limit = 3, compact = false }: NewsWidgetProps) {
 
         setNews(sorted.slice(0, limit));
         
-        // Mock analysis or local analysis can be done here
-        // For now using the mock from service
-        const mockAnalysis = await financeService.analyzeNews(sorted.slice(0, 5));
-        setAnalysis(mockAnalysis);
+        // Use real Gemini analysis
+        const aiAnalysis = await nexusAI.analyzeNews(sorted.slice(0, 5));
+        setAnalysis(aiAnalysis);
       } catch (err) {
         console.error('Failed to load news in widget:', err);
       } finally {

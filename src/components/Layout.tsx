@@ -39,6 +39,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { Logo } from './ui/Logo';
 import { MarketMarquee } from './MarketMarquee';
 import { CommandCenter } from './CommandCenter';
+import { NexusFloatingChat } from './NexusFloatingChat';
 
 export default function Layout() {
   const location = useLocation();
@@ -466,6 +467,8 @@ export default function Layout() {
           </button>
         </div>
       </div>
+
+      <NexusFloatingChat />
 
       {/* Footer Tecnológico */}
       <footer className="bg-[#020617] border-t border-white/5 py-12 md:py-16 relative overflow-hidden">

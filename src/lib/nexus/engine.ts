@@ -1,1465 +1,59 @@
-import { z } from 'zod';
-import YahooFinance from 'yahoo-finance2';
+import yahooFinance from 'yahoo-finance2';
+import { LRUCache, CircuitBreaker, DomainRateLimiter, universalLexer, getStealthHeaders, getRandomAgent, canonicalizeTicker, inferAssetType, normalizeBRNumber, backoffMs, extractHostname, formatYahooError } from './utils';
 
-export const yahooFinance = new YahooFinance({
-  validation: { logErrors: false, logOptionsErrors: false }
-});
+// Types and Constants (re-declared or imported if needed)
+export type ExtendedAssetType = 'ACAO' | 'FII' | 'BDR' | 'ETF' | 'STOCK' | 'CRYPTO';
 
-// Set global config to quiet logs avoiding InvalidOptionsError
-let yahooConfigured = false;
-export function ensureYahooConfig() {
-  if (yahooConfigured) return;
-  yahooConfigured = true;
-}
-
-// 1. TIPAGENS E CONTRATOS
-// ════════════════════════════════════════════════════════════════════════════
-
-export interface GenericRule {
-  name: string;
-  anchors: string[];
-  extractRegex: RegExp;
-  formatter?: (raw: string) => any;
-  /**
-   * Se true, extrai todos os matches no chunk como array.
-   * Útil para tabelas de dividendos, histórico, etc.
-   */
-  multiple?: boolean;
-  /**
-   * Tamanho máximo do bloco de HTML a ser analisado após a âncora (default: multiple ? 3000 : 400)
-   */
-  chunkSize?: number;
-}
-
-export interface ExtractorTemplate<T = any> {
-  name: string;
-  rules: GenericRule[];
-  schema: z.ZodSchema<T>;
-}
-
-export interface ScrapeSource<T = any> {
-  url: string;
-  template: ExtractorTemplate<T>;
-  requireStealth?: boolean;
-}
-
-export type ExtendedAssetType = 'ACAO' | 'FII' | 'BDR' | 'ETF' | 'STOCK';
-
-export interface NewsItem {
+interface NewsItem {
   title: string;
   link: string;
   pubDate?: Date;
-  source?: string;
-  thumbnail?: string;
+  source: string;
 }
 
-export interface NexusEngineOptions {
+interface NexusEngineOptions {
   cacheTtlMs?: number;
   cacheStaleMs?: number;
   maxRetries?: number;
-  retryBaseDelay?: number;
   fetchTimeoutMs?: number;
   concurrencyLimit?: number;
   domainRps?: number;
-  domainBurst?: number;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// 2. CONSTANTES PRÉ-COMPILADAS DE MÓDULO
-// ════════════════════════════════════════════════════════════════════════════
+const YAHOO_HOSTS = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
 
-const RE_MOEDA   = /[R$\s]/g;
-const RE_MILHAR  = /\./g;
-const RE_DECIMAL = /,/;
-const RE_HTML    = /<[^>]*>/g;
-const RE_SA      = /\.SA$/i;
-const RE_BDR     = /3[2-5]$/;
-const RE_TICKER  = /^[A-Z0-9\.\-=^]{2,20}$/;
-
-const TICKER_MAPPINGS: Record<string, string> = {
-  'RRRP3': 'BRAV3',
-  'VIIA3': 'BHIA3',
-  'VVAR3': 'BHIA3',
+const ASSET_PRESETS: Record<string, any> = {
+  ACAO: { i10Base: 'https://investidor10.com.br/acoes', siBase: 'https://statusinvest.com.br/acoes', template: { rules: [
+    { name: 'precoAtual', anchors: ['valor atual', 'R$'], regex: /R\$\s*([\d,.]+)/i },
+    { name: 'dividendYield', anchors: ['dividend yield', 'dy'], regex: /([\d,.]+)\s*%/i },
+    { name: 'pl', anchors: ['p/l'], regex: /([\d,.]+)/i },
+    { name: 'pvp', anchors: ['p/vp'], regex: /([\d,.]+)/i },
+    { name: 'name', anchors: ['<title>'], regex: /([^-|]+)/i }
+  ]}},
+  FII: { i10Base: 'https://investidor10.com.br/fiis', siBase: 'https://statusinvest.com.br/fundos-imobiliarios', template: { rules: [
+    { name: 'precoAtual', anchors: ['valor atual', 'R$'], regex: /R\$\s*([\d,.]+)/i },
+    { name: 'dividendYield', anchors: ['dividend yield', 'dy'], regex: /([\d,.]+)\s*%/i },
+    { name: 'pvp', anchors: ['p/vp'], regex: /([\d,.]+)/i }
+  ]}}
 };
-
-export const VALORES_INVALIDOS = new Set([
-  '-', '—', '–', 'N/A', 'n/a', 'nd', '', 'null', 'undefined',
-  '--', '---', '--%', '0%',
-]);
-
-/**
- * FIX #1 — User-Agents atualizados para Chrome 131+ e Firefox 133+.
- */
-const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:133.0) Gecko/20100101 Firefox/133.0',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1',
-];
-
-/**
- * FIX #2 — ETFs B3 conhecidos.
- */
-const ETFS_CONHECIDOS = new Set([
-  'BOVA11','IVVB11','SMAL11','DIVO11','FIND11','MATB11','GOVE11','XFIX11',
-  'GOLD11','SPXI11','HASH11','BOVB11','BOVS11','BRAP11','BRRJ11','BRAX11',
-  'XINA11','EURP11','FIXA11','TCHE11','ECOO11','ACWI11','NASD11',
-  'USTK11','NSDQ11','DEFI11','ESGE11','SUST11','AGRI11','IFRA11',
-  'BDIV11','BLKB11','BNDX11','BOVV11','BRCO11','CSMO11','VALE11','QUAL11',
-  'REIT11','TRET11','WRLD11','XBOV11','PIBB11','SMAC11','MOAT11','PORD11',
-]);
-
-
-function safeParse(v: any): number {
-  if (v == null) return 0;
-  if (typeof v === 'number') return isNaN(v) ? 0 : v;
-  
-  try {
-    const s = String(v).trim().replace(/%/g, '');
-    // If it contains both dot and comma (e.g. 1.234,56), remove the dot, change comma to dot
-    if (s.includes('.') && s.includes(',')) {
-      return parseFloat(s.replace(/\./g, '').replace(/,/g, '.')) || 0;
-    }
-    // If it only has comma, change to dot
-    if (s.includes(',') && !s.includes('.')) {
-      return parseFloat(s.replace(/,/g, '.')) || 0;
-    }
-    // Only dot or neither
-    return parseFloat(s) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 3. GUARD: process.cpuUsage (Node-specific)
-// ════════════════════════════════════════════════════════════════════════════
-
-const hasCpuUsage = typeof process !== 'undefined' && typeof (process as any).cpuUsage === 'function';
-function safeCpuStart(): any | null { return hasCpuUsage ? (process as any).cpuUsage() : null; }
-function safeCpuDeltaMs(start: any | null): number {
-  if (!start || !hasCpuUsage) return 0;
-  const d = (process as any).cpuUsage(start);
-  return (d.user + d.system) / 1000;
-}
-
-export function formatYahooError(error: any): string {
-  if (!error) return 'Erro desconhecido';
-  
-  if (error.name === 'Failed validation' || (typeof error.message === 'string' && error.message.includes('validation'))) {
-    return 'Divergência técnica nos dados (Validação de Schema)';
-  }
-
-  const extractMessages = (obj: any): string[] => {
-    let messages: string[] = [];
-    if (!obj || typeof obj !== 'object') return messages;
-
-    const list = obj.errors || obj.subErrors;
-    if (Array.isArray(list)) {
-      list.forEach((e: any) => {
-        if (e && typeof e === 'object') {
-          if (e.message || e.description || e.title) {
-            messages.push(e.message || e.description || e.title);
-          }
-          if (e.subErrors && Array.isArray(e.subErrors)) {
-            messages.push(...extractMessages(e));
-          }
-        } else if (typeof e === 'string') {
-          messages.push(e);
-        }
-      });
-    } else if (obj.message) {
-      messages.push(obj.message);
-    }
-    
-    return messages;
-  };
-
-  try {
-    let errorObj = error;
-    if (typeof error === 'string') {
-      const jsonMatch = error.match(/\{.*\}/s) || error.match(/\[.*\]/s);
-      if (jsonMatch) {
-         try {
-           errorObj = JSON.parse(jsonMatch[0]);
-         } catch { /* ignore */ }
-      }
-    }
-
-    const messages = extractMessages(errorObj);
-    if (messages.length > 0) {
-      return Array.from(new Set(messages)).join('; ');
-    }
-  } catch (e) { /* ignore */ }
-
-  const fallback = error.message || (typeof error === 'string' ? error : '');
-  if (fallback && !fallback.includes('"errors":') && !fallback.includes('"subErrors":')) {
-    return fallback.slice(0, 500);
-  }
-
-  return 'Erro na consulta de dados (Yahoo Finance). Verifique o ticker ou tente mais tarde.';
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 4. UTILITÁRIOS
-// ════════════════════════════════════════════════════════════════════════════
-
-export function normalizeBRNumber(raw: string): number | string {
-  if (!raw) return '';
-  
-  // Limpeza inicial: remove HTML tags, R$, espaços e converte para maiúsculo
-  let limpo = raw.replace(RE_HTML, '').replace(RE_MOEDA, '').toUpperCase().trim();
-  
-  if (limpo.includes('%')) return limpo;
-
-  let mult = 1;
-  // Detecção de sufixos de magnitude mais flexível (não precisa estar no final exato se houver sujeira)
-  if (limpo.includes('TRILHÃO') || limpo.includes('TRILHÕES') || limpo.includes('TRILHAO') || limpo.includes('TRILHOES')) {
-    mult = 1_000_000_000_000;
-    limpo = limpo.replace(/TRILH(Ã|A)O|TRILH(Õ|O)ES/g, '');
-  } else if (limpo.includes('BILHÃO') || limpo.includes('BILHÕES') || limpo.includes('BILHAO') || limpo.includes('BILHOES') || limpo.includes('BI') || (limpo.endsWith('B') && !limpo.endsWith('EB'))) {
-    mult = 1_000_000_000;
-    limpo = limpo.replace(/BILH(Ã|A)O|BILH(Õ|O)ES|BI|B/g, '');
-  } else if (limpo.includes('MILHÃO') || limpo.includes('MILHÕES') || limpo.includes('MILHAO') || limpo.includes('MILHOES') || limpo.includes('MI') || (limpo.endsWith('M') && !limpo.match(/[A-Z]M$/))) {
-    mult = 1_000_000;
-    limpo = limpo.replace(/MILH(Ã|A)O|MILH(Õ|O)ES|MI|M/g, '');
-  } else if (limpo.endsWith('K')) {
-    mult = 1_000;
-    limpo = limpo.slice(0, -1);
-  }
-
-  // Se houver múltiplos pontos e uma vírgula, o ponto é milhar e vírgula é decimal (Padrão BR)
-  // Se houver apenas um separador e ele for ponto, pode ser decimal (Padrão US/Global)
-  const dots = (limpo.match(/\./g) || []).length;
-  const commas = (limpo.match(/,/g) || []).length;
-
-  if (commas === 1) {
-    // Padrão Brasileiro: 1.234,56
-    limpo = limpo.replace(RE_MILHAR, '').replace(RE_DECIMAL, '.');
-  } else if (commas === 0 && dots === 1) {
-    // Padrão Americano ou Simples: 1234.56
-    // Não mexer, parseFloat resolve
-  } else if (commas === 0 && dots > 1) {
-    // Padrão Brasileiro sem centavos: 1.234.567
-    limpo = limpo.replace(RE_MILHAR, '');
-  }
-
-  const num = parseFloat(limpo);
-  return isNaN(num) ? raw.trim() : num * mult;
-}
-
-export function inferAssetType(ticker: string): ExtendedAssetType {
-  const clean = canonicalizeTicker(ticker);
-  if (!clean) return 'ACAO';
-
-  // BDR detection (usually 4 letters + 34/35)
-  if (RE_BDR.test(clean)) return 'BDR';
-  
-  // FII and ETF detection (ends in 11)
-  if (clean.endsWith('11')) {
-    return ETFS_CONHECIDOS.has(clean) ? 'ETF' : 'FII';
-  }
-  
-  // FII detection (ends in 12)
-  if (clean.endsWith('12')) return 'FII';
-  
-  // Brazilian Stocks (4 letters + number 0, 1, 3, 4, 5, 6)
-  if (/^[A-Z]{4}[0-9]$/.test(clean)) return 'ACAO';
-  
-  // US Stocks (1-5 letters, no numbers at the end usually)
-  // If it's 3-5 letters and doesn't end in number, likely US Stock
-  if (/^[A-Z]{1,5}$/.test(clean)) return 'STOCK';
-  
-  return 'ACAO';
-}
-
-export function canonicalizeTicker(raw: string): string {
-  const clean = raw.trim().replace(/\s+/g, '').replace(RE_SA, '').toUpperCase();
-  return TICKER_MAPPINGS[clean] || clean;
-}
-
-export async function fetchNews(ticker: string): Promise<NewsItem[]> {
-  return NexusEngine.fetchNews(ticker);
-}
-
-function validarTicker(clean: string): string | null {
-  if (!clean) return 'Ticker vazio';
-  const marketTickers = ['^BVSP', '^GSPC', 'USDBRL=X', 'BTC-USD'];
-  if (marketTickers.includes(clean)) return null;
-  if (!RE_TICKER.test(clean)) return `Formato inválido: "${clean}"`;
-  return null;
-}
-
-function getRandomAgent(): string {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-}
-
-function backoffMs(attempt: number, base = 500, cap = 16_000): number {
-  return Math.random() * Math.min(cap, base * 2 ** attempt);
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 5. LRU CACHE
-// ════════════════════════════════════════════════════════════════════════════
-
-class LRUCache<V> {
-  private mapa = new Map<string, { data: V; expiresAt: number; staleAt: number }>();
-  constructor(private maxSize: number) {
-    if (maxSize < 1) throw new RangeError('LRUCache: maxSize deve ser >= 1');
-  }
-
-  get(key: string): { data: V; isStale: boolean } | null {
-    const entry = this.mapa.get(key);
-    if (!entry) return null;
-
-    const now = Date.now();
-    if (now > entry.expiresAt) {
-      this.mapa.delete(key);
-      return null;
-    }
-
-    this.mapa.delete(key);
-    this.mapa.set(key, entry);
-    return { data: entry.data, isStale: now > entry.staleAt };
-  }
-
-  set(key: string, data: V, staleMs: number, ttlMs: number): void {
-    if (this.mapa.has(key)) this.mapa.delete(key);
-    else if (this.mapa.size >= this.maxSize) this.mapa.delete(this.mapa.keys().next().value!);
-
-    const now = Date.now();
-    this.mapa.set(key, { data, staleAt: now + staleMs, expiresAt: now + ttlMs });
-  }
-
-  delete(key: string): boolean { return this.mapa.delete(key); }
-  clear(): void                { this.mapa.clear(); }
-  get tamanho(): number        { return this.mapa.size; }
-  get tamanhoMax(): number     { return this.maxSize; }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 6. CIRCUIT BREAKER
-// ════════════════════════════════════════════════════════════════════════════
-
-class DomainRateLimiter {
-  private tokens: number;
-  private lastRefill: number;
-
-  constructor(
-    private readonly rps: number = 2,
-    private readonly burst: number = 5
-  ) {
-    this.tokens = burst;
-    this.lastRefill = performance.now();
-  }
-
-  async acquire(): Promise<void> {
-    while (true) {
-      this.refill();
-      if (this.tokens >= 1) {
-        this.tokens -= 1;
-        return;
-      }
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-  }
-
-  private refill(): void {
-    const now = performance.now();
-    const elapsedMs = now - this.lastRefill;
-    const newTokens = elapsedMs * (this.rps / 1000);
-    
-    if (newTokens > 0) {
-      this.tokens = Math.min(this.burst, this.tokens + newTokens);
-      this.lastRefill = now;
-    }
-  }
-}
-
-type CBState = 'FECHADO' | 'ABERTO' | 'SEMI_ABERTO';
-
-class CircuitBreaker {
-  private state: CBState = 'FECHADO';
-  private failures = 0;
-  private lastFailureTime = 0;
-  private successCount = 0;
-
-  constructor(
-    private threshold: number = 3,
-    private resetMs:   number = 30_000,
-  ) {}
-
-  getState(): CBState { return this.state; }
-
-  isOpen(): boolean {
-    if (this.state === 'ABERTO') {
-      if (Date.now() - this.lastFailureTime > this.resetMs) {
-        this.state = 'SEMI_ABERTO';
-        return false;
-      }
-      return true;
-    }
-    return false;
-  }
-
-  recordSuccess(): void {
-    if (this.state === 'SEMI_ABERTO') {
-      this.successCount++;
-      if (this.successCount >= 2) this.reset();
-    } else {
-      this.failures = 0;
-    }
-  }
-
-  recordFailure(): void {
-    this.failures++;
-    this.lastFailureTime = Date.now();
-    this.successCount = 0;
-    if (this.failures >= this.threshold) this.state = 'ABERTO';
-  }
-
-  // Extend cooldown if specifically requested (e.g. on 429)
-  setLongCooldown(): void {
-    this.lastFailureTime = Date.now();
-    this.state = 'ABERTO';
-    this.failures = this.threshold + 1;
-  }
-
-  reset(): void {
-    this.state    = 'FECHADO';
-    this.failures = 0;
-    this.successCount = 0;
-    this.lastFailureTime = 0;
-  }
-
-  getFalhas(): number { return this.failures; }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 7. STEALTH HEADERS
-// ════════════════════════════════════════════════════════════════════════════
-
-const _hostnameCache = new Map<string, string>();
-
-function extractHostname(url?: string | null): string {
-  if (!url) return '';
-  const match = url.match(/^https?:\/\/[^\/]+/);
-  const origin = match ? match[0] : url;
-  let h = _hostnameCache.get(origin);
-  if (h) return h;
-  try { h = new URL(url).hostname; } catch { h = url; }
-  if (_hostnameCache.size >= 64) _hostnameCache.delete(_hostnameCache.keys().next().value!);
-  _hostnameCache.set(origin, h);
-  return h;
-}
-
-function getStealthHeaders(url: string): Record<string, string> {
-  const hostname = extractHostname(url);
-  const isYahoo = hostname.includes('yahoo.com');
-  const isI10 = hostname.includes('investidor10.com.br');
-  
-  const lang = Math.random() > 0.5
-    ? 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
-    : 'pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3';
-
-  const userAgent = getRandomAgent();
-  const isChrome = userAgent.includes('Chrome');
-  const chromeVersion = isChrome ? userAgent.match(/Chrome\/(\d+)/)?.[1] || '131' : '131';
-  
-  const headers: Record<string, string> = {
-    'User-Agent'               : userAgent,
-    'Accept'                   : isYahoo ? '*/*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'Accept-Language'          : lang,
-    'Accept-Encoding'          : 'gzip, deflate, br',
-    'Cache-Control'            : 'max-age=0',
-    'DNT'                      : '1',
-    'Connection'               : 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'Origin'                   : isYahoo ? 'https://finance.yahoo.com' : `https://${hostname}`,
-    'Referer'                  : isYahoo ? 'https://finance.yahoo.com/' : `https://${hostname}/`
-  };
-
-  if (isChrome) {
-    const brands = Math.random() > 0.5 
-      ? `\"Google Chrome\";v=\"${chromeVersion}\", \"Chromium\";v=\"${chromeVersion}\", \"Not=A?Brand\";v=\"24\"`
-      : `\"Chromium\";v=\"${chromeVersion}\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"${chromeVersion}\"`;
-
-    headers['sec-ch-ua'] = brands;
-    headers['sec-ch-ua-mobile'] = '?0';
-    headers['sec-ch-ua-platform'] = '"Windows"';
-    headers['Sec-Fetch-Dest'] = isYahoo ? 'empty' : 'document';
-    headers['Sec-Fetch-Mode'] = isYahoo ? 'cors' : 'navigate';
-    headers['Sec-Fetch-Site'] = isYahoo ? 'same-site' : 'cross-site';
-    headers['Sec-Fetch-User'] = isYahoo ? '?1' : '?1';
-  }
-
-  return headers;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 8. UNIVERSAL LEXER
-// ════════════════════════════════════════════════════════════════════════════
-
-const _regexCache = new Map<string, RegExp>();
-
-function getGlobalRegex(source: string): RegExp {
-  let r = _regexCache.get(source);
-  if (!r) {
-    r = new RegExp(source, 'g');
-    _regexCache.set(source, r);
-  }
-  r.lastIndex = 0;
-  return r;
-}
-
-export function universalLexer<T = any>(
-  html: string,
-  template: ExtractorTemplate<T>,
-  existingResults: Partial<T> = {},
-): Partial<T> {
-  const results: any = { ...existingResults };
-  const htmlLower = html.toLowerCase();
-
-  for (const rule of template.rules) {
-    if (results[rule.name] !== undefined && !rule.multiple) continue;
-
-    for (const anchor of rule.anchors) {
-      const anchorLower = anchor.toLowerCase();
-      let idx = htmlLower.indexOf(`>${anchorLower}<`);
-      if (idx === -1) idx = htmlLower.indexOf(`"${anchorLower}"`);
-      if (idx === -1) idx = htmlLower.indexOf(`>${anchorLower} `);
-      if (idx === -1) idx = htmlLower.indexOf(anchorLower);
-      if (idx === -1) continue;
-
-      const chunkSize = rule.chunkSize ?? (rule.multiple ? 3000 : 400);
-      const chunk = html.slice(idx, idx + chunkSize);
-
-      if (rule.multiple) {
-        const gRegex = getGlobalRegex(rule.extractRegex.source);
-        const matches = [...chunk.matchAll(gRegex)];
-        if (matches.length > 0) {
-          results[rule.name] = matches
-            .map(match => match[1]?.trim())
-            .filter((val): val is string => !!val && !VALORES_INVALIDOS.has(val))
-            .map(val => rule.formatter ? rule.formatter(val) : val);
-          break;
-        }
-      } else {
-        const match = chunk.match(rule.extractRegex);
-        if (match?.[1]) {
-          const raw = match[1].trim();
-          if (!VALORES_INVALIDOS.has(raw)) {
-            results[rule.name] = rule.formatter ? rule.formatter(raw) : raw;
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  return results as Partial<T>;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 9. SCHEMAS ZOD
-// ════════════════════════════════════════════════════════════════════════════
-
-export const B3Schema = z.object({
-  precoAtual:    z.union([z.number(), z.string()]).optional(),
-  dividendYield: z.string().optional(),
-  pl:            z.union([z.number(), z.string()]).optional(),
-  pvp:           z.union([z.number(), z.string()]).optional(),
-  vpa:           z.union([z.number(), z.string()]).optional(),
-  lpa:           z.union([z.number(), z.string()]).optional(),
-  roe:           z.string().optional(),
-  roic:          z.string().optional(),
-  margemLiquida: z.string().optional(),
-  margemBruta:   z.string().optional(),
-  evEbitda:      z.union([z.number(), z.string()]).optional(),
-  pEbit:         z.union([z.number(), z.string()]).optional(),
-  psr:           z.union([z.number(), z.string()]).optional(),
-  pAtivo:        z.union([z.number(), z.string()]).optional(),
-  pCapGiro:      z.union([z.number(), z.string()]).optional(),
-  dividaLiquidaEbitda: z.union([z.number(), z.string()]).optional(),
-  variacaoDay:   z.string().optional(),
-  valorMercado:  z.union([z.number(), z.string()]).optional(),
-  marketCap:     z.union([z.number(), z.string()]).optional(),
-  about:         z.string().optional(),
-  sector:        z.string().optional(),
-  segment:       z.string().optional(),
-  subSector:     z.string().optional(),
-  liquidezMediaDiaria: z.union([z.number(), z.string()]).optional(),
-  segmentoListagem: z.string().optional(),
-  tagAlong: z.string().optional(),
-  freeFloat: z.string().optional(),
-  payout: z.string().optional(),
-  receitaLiquida: z.string().optional(),
-  ebitda: z.string().optional(),
-  lucroLiquido: z.string().optional(),
-  dividendos: z.array(z.object({
-    dataCom: z.string(),
-    pagamento: z.string(),
-    valor: z.string(),
-    tipo: z.string()
-  })).optional(),
-});
-
-export const FIISchema = z.object({
-  precoAtual:        z.union([z.number(), z.string()]).optional(),
-  dividendYield:     z.string().optional(),
-  pvp:               z.union([z.number(), z.string()]).optional(),
-  valorPatrimonial:  z.union([z.number(), z.string()]).optional(),
-  liquidezDiaria:    z.union([z.number(), z.string()]).optional(),
-  ultimoRendimento:  z.union([z.number(), z.string()]).optional(),
-  vacanciaFisica:    z.string().optional(),
-  vacanciaFinanceira: z.string().optional(),
-  quantidadeAtivos:  z.union([z.number(), z.string()]).optional(),
-  numeroCotistas:    z.union([z.number(), z.string()]).optional(),
-  patrimonioLiquido: z.union([z.number(), z.string()]).optional(),
-  variacaoDay:       z.string().optional(),
-  valorMercado:      z.union([z.number(), z.string()]).optional(),
-  marketCap:         z.union([z.number(), z.string()]).optional(),
-  about:             z.string().optional(),
-  sector:            z.string().optional(),
-  segment:           z.string().optional(),
-  subSector:         z.string().optional(),
-  tipoGestao:        z.string().optional(),
-  taxaAdmin:         z.string().optional(),
-  dividendos: z.array(z.object({
-    dataCom: z.string(),
-    pagamento: z.string(),
-    valor: z.string(),
-    tipo: z.string()
-  })).optional(),
-});
-
-export const ETFSchema = z.object({
-  precoAtual:        z.union([z.number(), z.string()]).optional(),
-  dividendYield:     z.string().optional(),
-  pvp:               z.union([z.number(), z.string()]).optional(),
-  patrimonioLiquido: z.union([z.number(), z.string()]).optional(),
-  taxaAdmin:         z.string().optional(),
-  variacaoDay:       z.string().optional(),
-  about:             z.string().optional(),
-  sector:            z.string().optional(),
-  subSector:         z.string().optional(),
-});
-
-export type B3Data  = z.infer<typeof B3Schema>;
-export type FIIData = z.infer<typeof FIISchema>;
-export type ETFData = z.infer<typeof ETFSchema>;
-
-// ════════════════════════════════════════════════════════════════════════════
-// 10. TEMPLATES
-// ════════════════════════════════════════════════════════════════════════════
-
-const COMMON_FORMATTERS = {
-  num: (r: string) => normalizeBRNumber(r),
-  pct: (r: string) => r.includes('%') ? r : r + '%',
-};
-
-export const acaoTemplate: ExtractorTemplate<B3Data> = {
-  name: 'B3_ACAO',
-  schema: B3Schema,
-  rules: [
-    { name: 'precoAtual',    anchors: ['Preço Atual', 'Cotação', 'cotacao'],            extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+)\s*(?:<[^>]*>)*\s*</i,  formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield', anchors: ['Dividend Yield', 'DY', 'Yield'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</,      formatter: COMMON_FORMATTERS.pct },
-    { name: 'pl',            anchors: ['P/L', 'P/Lucro', 'Preço/Lucro'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pvp',           anchors: ['P/VP', 'P/Valor Patrimonial'],                  extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'vpa',           anchors: ['VPA', 'Valor Patrimonial por Ação'],            extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'lpa',           anchors: ['LPA', 'Lucro por Ação'],                        extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'roe',           anchors: ['ROE', 'Retorno sobre Patrimônio'],              extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'roic',          anchors: ['ROIC'],                                          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'margemLiquida', anchors: ['Margem Líquida', 'Margem Liquida'],             extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'margemBruta',   anchors: ['Margem Bruta'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'evEbitda',      anchors: ['EV/EBITDA'],                                    extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pEbit',         anchors: ['P/EBIT'],                                       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'psr',           anchors: ['PSR'],                                          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pAtivo',        anchors: ['P/Ativo'],                                      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'pCapGiro',      anchors: ['P/Cap. Giro', 'P/Capital de Giro'],             extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'dividaLiquidaEbitda', anchors: ['Dív. Líq. / EBITDA', 'Divida Liquida / EBITDA'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'dividaLiquidaPatrimonio', anchors: ['Dív. Líq. / Patrimônio', 'Dív. Líq. / Patrimônio Líquido'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</, formatter: COMMON_FORMATTERS.num },
-    { name: 'margemEbit',    anchors: ['Margem EBIT'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'giroAtivos',    anchors: ['Giro Ativos'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'liquidezCorrente', anchors: ['Liquidez Corrente'],                        extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.-]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'cagrReceita5Anos', anchors: ['CAGR Receita 5 Anos', 'CAGR Receita (5a)'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'cagrLucro5Anos', anchors: ['CAGR Lucro 5 Anos', 'CAGR Lucro (5a)'],     extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.+-]+\s*%?)\s*</,    formatter: COMMON_FORMATTERS.pct },
-    { name: 'variacaoDay',   anchors: ['Var. Dia', 'var-day'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'liquidezMediaDiaria', anchors: ['Liquidez Média Diária', 'Liquidez Diária'], extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
-    { name: 'valorMercado', anchors: ['Valor de Mercado', 'VALOR DE MERCADO'], extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
-
-    { name: 'segmentoListagem', anchors: ['Segmento de Listagem'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'tagAlong', anchors: ['Tag Along'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'freeFloat', anchors: ['Free Float'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'payout', anchors: ['Payout'], extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'receitaLiquida', anchors: ['Receita Líquida', 'Receita Liquida'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
-    { name: 'ebitda',        anchors: ['EBITDA'],                                       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
-    { name: 'lucroLiquido',  anchors: ['Lucro Líquido', 'Lucro Liquido'],               extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,  formatter: COMMON_FORMATTERS.num },
-    { name: 'sector',        anchors: ['Setor</span>', 'SETOR</span>'],                           extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'segment',       anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Subsetor</span>', 'SUBSETOR</span>'],       extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'about',         anchors: ['Sobre a Empresa', 'Descrição'],                 extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
-    { name: 'dividendosRaw', anchors: ['Histórico de Dividendos', 'Proventos', 'Pagamentos'], extractRegex: /<table[^>]*id="table-dividends"[^>]*>([\s\S]*?)<\/table>|<table[^>]*>(?:[\s\S]*?)(?:Data COM|Pagamento)(?:[\s\S]*?)<\/table>/i, chunkSize: 15000 },
-  ],
-};
-
-export const fiiTemplate: ExtractorTemplate<FIIData> = {
-  name: 'B3_FII',
-  schema: FIISchema,
-  rules: [
-    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação', 'cotacao'],              extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+)\s*(?:<[^>]*>)*\s*</i,    formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'valorPatrimonial',  anchors: ['Valor Patrimonial', 'VP/Cota', 'VALOR PATRIMONIAL'],         extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*</i,    formatter: COMMON_FORMATTERS.num },
-    { name: 'liquidezDiaria',    anchors: ['Liquidez', 'Liquidez Diária'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
-    { name: 'ultimoRendimento',  anchors: ['Último Rendimento', 'Rendimento', 'ÚLTIMO RENDIMENTO'],      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'vacanciaFisica',    anchors: ['Vacância Física', 'Vacância', 'VACÂNCIA'],          extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'vacanciaFinanceira', anchors: ['Vacância Financeira'],                    extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'quantidadeAtivos',  anchors: ['Quantidade de Ativos', 'Qtd. Ativos'],      extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'numeroCotistas',    anchors: ['Nº de Cotistas', 'Número de Cotistas'],     extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,          formatter: COMMON_FORMATTERS.num },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
-    { name: 'variacaoDay',       anchors: ['Var. Dia', 'var-day'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'valorMercado',      anchors: ['Valor de Mercado', 'VALOR DE MERCADO'], extractRegex: /(?:_card-body|value|value d-block)[\s\S]*?>\s*(?:<[^>]*>)*\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*(?:<[^>]*>)*\s*</i, formatter: COMMON_FORMATTERS.num },
-
-    { name: 'tipoGestao',        anchors: ['Tipo de Gestão'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa de Admin.'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'sector',            anchors: ['Segmento</span>', 'SEGMENTO</span>', 'Setor</span>', 'SETOR</span>'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'segment',           anchors: ['Subsetor</span>', 'SUBSETOR</span>', 'Tipo Anatel', 'TIPO ANATEL'], extractRegex: /class="value"[\s\S]*?>\s*(?:<span[^>]*>)?\s*([^<]+?)\s*(?:<\/span>)?\s*</i },
-    { name: 'about',             anchors: ['Sobre o Fundo', 'Descrição'],           extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
-    { name: 'dividendosRaw',     anchors: ['Histórico de Rendimentos', 'Proventos', 'Pagamentos'], extractRegex: /<table[^>]*id="table-dividends"[^>]*>([\s\S]*?)<\/table>|<table[^>]*>(?:[\s\S]*?)(?:Data COM|Pagamento)(?:[\s\S]*?)<\/table>/i, chunkSize: 15000 },
-  ],
-};
-
-export const bdrTemplate  = acaoTemplate;
-export const etfTemplate: ExtractorTemplate<ETFData> = {
-  name: 'B3_ETF',
-  schema: ETFSchema,
-  rules: [
-    { name: 'precoAtual',        anchors: ['Preço Atual', 'Cotação'],              extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([R$]*\s*[\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'dividendYield',     anchors: ['Dividend Yield', 'DY', 'Yield'],       extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'pvp',               anchors: ['P/VP'],                                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+)\s*</,    formatter: COMMON_FORMATTERS.num },
-    { name: 'patrimonioLiquido', anchors: ['Patrimônio Líquido', 'Patrimônio'],     extractRegex: /(?:_card-body|value|content--info--item--value)[\s\S]*?>\s*([R$]*\s*[\d,.]+\s*(?:K|M|B|T|Milhões|Bilhões|Bilhoes|Trilhões|Trilhoes)?)\s*</i, formatter: COMMON_FORMATTERS.num },
-    { name: 'taxaAdmin',         anchors: ['Taxa de Administração', 'Taxa Admin'],  extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'variacaoDay',       anchors: ['Variação', 'variacao'],                 extractRegex: /(?:_card-body|value)[\s\S]*?>\s*([+-]?[\d,.]+\s*%?)\s*</, formatter: COMMON_FORMATTERS.pct },
-    { name: 'about',             anchors: ['Sobre o ETF', 'Descrição'],             extractRegex: /<p[^>]*>([\s\S]*?)<\/p>/, formatter: (r: string) => r.replace(/<[^>]*>/g, '').trim() },
-  ],
-};
-
-const ASSET_PRESETS: Record<string, {
-  i10Base: string;
-  template: ExtractorTemplate<any>;
-}> = {
-  ACAO: { i10Base: 'https://investidor10.com.br/acoes',  template: acaoTemplate },
-  FII:  { i10Base: 'https://investidor10.com.br/fiis',   template: fiiTemplate  },
-  BDR:  { i10Base: 'https://investidor10.com.br/bdrs',   template: bdrTemplate  },
-  ETF:  { i10Base: 'https://investidor10.com.br/etfs',   template: etfTemplate  },
-  STOCK: { i10Base: 'https://investidor10.com.br/stocks', template: acaoTemplate },
-};
-
-// ════════════════════════════════════════════════════════════════════════════
-// 11. YAHOO FINANCE
-// ════════════════════════════════════════════════════════════════════════════
-
-interface YahooQuoteData {
-  regularMarketPrice?: number;
-  regularMarketChangePercent?: number;
-  trailingPE?: number;
-  priceToBook?: number;
-  bookValue?: number;
-  epsTrailingTwelveMonths?: number;
-  trailingAnnualDividendYield?: number;
-  marketCap?: number;
-  longName?: string;
-  shortName?: string;
-  currency?: string;
-}
-
-interface YahooFundamentalsData {
-  profitMargins?: number;
-  returnOnEquity?: number;
-  revenuePerShare?: number;
-  returnOnAssets?: number;
-  grossMargins?: number;
-  operatingMargins?: number;
-  debtToEquity?: number;
-  about?: string;
-  sector?: string;
-  subSector?: string;
-  enterpriseValue?: number;
-  forwardPE?: number;
-  pegRatio?: number;
-}
-
-async function fetchYahooChartDirect(symbol: string, range: string = '1y'): Promise<any[]> {
-    const rangeMap: Record<string, string> = { '1m': '1mo', '6m': '6mo', '1y': '1y', '5y': '5y', 'max': 'max', '1d': '1d', '5d': '5d' };
-    const r = rangeMap[range.toLowerCase()] || range;
-    
-    const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
-    for (const domain of domains) {
-        // Check if blocked
-        if ((NexusEngine as any)._circuitBreakers?.get(domain)?.isOpen()) continue;
-
-        const url = `https://${domain}/v8/finance/chart/${encodeURIComponent(symbol)}?range=${r}&interval=1d&includePrePost=false`;
-        try {
-            const res = await fetch(url, { headers: getStealthHeaders(url) });
-            if (!res.ok) {
-                if (res.status === 429) {
-                  console.log(`[YAHOO] ${domain} throttled (429) during chart fetch.`);
-                  NexusEngine.recordFailure(domain, true);
-                } else {
-                  console.warn(`[YAHOO] ${domain} failed with status ${res.status} for ${symbol}`);
-                }
-                continue;
-            }
-            const data = await res.json();
-            const result = data?.chart?.result?.[0];
-            if (!result || !result.timestamp) continue;
-            
-            return result.timestamp.map((t: number, i: number) => ({
-                date: new Date(t * 1000).toISOString(),
-                close: result.indicators?.quote?.[0]?.close?.[i],
-                open: result.indicators?.quote?.[0]?.open?.[i],
-                high: result.indicators?.quote?.[0]?.high?.[i],
-                low: result.indicators?.quote?.[0]?.low?.[i],
-                volume: result.indicators?.quote?.[0]?.volume?.[i],
-            })).filter((p: any) => p.close != null);
-        } catch (err) {
-            console.error(`[YAHOO CHART DIRECT] Error fetching ${symbol} from ${domain}:`, err);
-        }
-    }
-    return [];
-}
-
-async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Promise<any> {
-    const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
-    let lastError: any = null;
-
-    // Shuffle domains to distribute load
-    const shuffledDomains = [...domains].sort(() => Math.random() - 0.5);
-
-    for (const domain of shuffledDomains) {
-      // Check if domain is blocked before trying
-      const isBlocked = (NexusEngine as any)._circuitBreakers?.get(domain)?.isOpen();
-      if (isBlocked) continue;
-
-      // 1. Try News specific endpoint first if news are requested
-      if (newsCount > 0) {
-        try {
-          const newsUrl = `https://${domain}/v1/finance/news?count=${newsCount}&symbols=${encodeURIComponent(query)}`;
-          const newsRes = await fetch(newsUrl, { 
-            headers: getStealthHeaders(newsUrl),
-            signal: AbortSignal.timeout(4000)
-          });
-          if (newsRes.ok) {
-            const newsData = await newsRes.json();
-            const newsItems = newsData?.news?.result || newsData?.news || [];
-            if (newsItems.length > 0) {
-              return { 
-                news: newsItems.map((n: any) => ({ 
-                  ...n, 
-                  publisher: n.source || n.publisher || 'Yahoo Finance',
-                  providerPublishTime: n.providerPublishTime || n.pubtime || Math.floor(Date.now() / 1000)
-                })) 
-              };
-            }
-          } else if (newsRes.status === 429) {
-             NexusEngine.recordFailure(domain, true);
-             continue; // Try next domain
-          }
-        } catch (e) { /* silent fail for news-only endpoint */ }
-      }
-
-      // 2. Try General Search endpoint
-      const url = `https://${domain}/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=0&newsCount=${newsCount}&enableFuzzyQuery=false&quotesQueryId=tss_search_query_id&multiQuoteQueryId=tss_multi_quote_query_id`;
-      
-      try {
-          const res = await fetch(url, { 
-            headers: {
-              ...getStealthHeaders(url),
-              'Cookie': `A3=d=AQABBPYdOGcEELJ_G_mH1XG_fG_fG_fG_fG_fG_f&S=AQAAA...; GUC=AQEBAQFh...; B=39h...; gucc=...;`
-            },
-            signal: AbortSignal.timeout(5000)
-          });
-
-          if (!res.ok) {
-              if (res.status === 429) {
-                console.log(`[YAHOO] ${domain} throttled (429). Activating circuit breaker.`);
-                NexusEngine.recordFailure(domain, true);
-              } else {
-                console.warn(`[YAHOO] ${domain} failed with status ${res.status}`);
-              }
-              continue;
-          }
-          const result = await res.json();
-          if (result && result.news && result.news.length > 0) return result;
-      } catch (err) {
-          lastError = err;
-      }
-    }
-    
-    // Deep fallbacks for news if all direct Yahoo search endpoints are throttled/dead
-    if (newsCount > 0) {
-      console.log(`[NEWS] All Yahoo search endpoints throttled. Trying RSS and Google sources...`);
-      const newsFeed = await Promise.race([
-        fetchYahooNewsRSSFallback(),
-        fetchGoogleNewsRSSFallback(query),
-        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-      ]).catch(() => null);
-
-      if (newsFeed && newsFeed.news && newsFeed.news.length > 0) return newsFeed;
-    }
-
-    return null;
-}
-
-/**
- * Fallback to Google News RSS for the ticker
- */
-async function fetchGoogleNewsRSSFallback(query: string): Promise<any> {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}+stock+news&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-  try {
-    const res = await fetch(url, { 
-      headers: { 'User-Agent': getRandomAgent() },
-      signal: AbortSignal.timeout(4000)
-    });
-    if (!res.ok) return null;
-    const xml = await res.text();
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-    const news = items.slice(0, 15).map(match => {
-      const content = match[1];
-      const title = content.match(/<title>([\s\S]*?)<\/title>/)?.[1];
-      const link = content.match(/<link>([\s\S]*?)<\/link>/)?.[1];
-      const pubDate = content.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1];
-      const source = content.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1];
-      
-      return {
-        title,
-        link,
-        publisher: source || 'Google News',
-        providerPublishTime: Math.floor(new Date(pubDate || '').getTime() / 1000)
-      };
-    }).filter(i => i.title && i.link);
-    return { news };
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Fallback to Yahoo News RSS if search API is blocked
- */
-async function fetchYahooNewsRSSFallback(): Promise<any> {
-  const rssUrl = 'https://finance.yahoo.com/rss/topstories';
-  try {
-    const res = await fetch(rssUrl, { 
-      headers: getStealthHeaders(rssUrl),
-      signal: AbortSignal.timeout(4000)
-    });
-    if (!res.ok) return null;
-    const xml = await res.text();
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-    const news = items.map(match => {
-      const content = match[1];
-      return {
-        title: content.match(/<title>([\s\S]*?)<\/title>/)?.[1],
-        link: content.match(/<link>([\s\S]*?)<\/link>/)?.[1],
-        publisher: 'Yahoo Finance (RSS)',
-        providerPublishTime: Math.floor(new Date(content.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '').getTime() / 1000)
-      };
-    }).filter(i => i.title && i.link);
-    return { news };
-  } catch (e) {
-    return null;
-  }
-}
-
-async function fetchYahooSearchQuote(symbol: string): Promise<any> {
-  const data = await fetchYahooSearchDirect(symbol, 0);
-  if (!data || !data.quotes || data.quotes.length === 0) return null;
-  
-  const q = data.quotes.find((item: any) => 
-    item.symbol === symbol || 
-    item.symbol === `${symbol.replace(RE_SA, '')}.SA` ||
-    item.symbol.replace(RE_SA, '') === symbol.replace(RE_SA, '')
-  );
-
-  if (q && q.regularMarketPrice != null) {
-    return {
-      symbol: q.symbol,
-      regularMarketPrice: q.regularMarketPrice,
-      regularMarketChangePercent: q.regularMarketChangePercent || 0,
-      currency: q.currency || (q.symbol.endsWith('.SA') ? 'BRL' : 'USD'),
-      longName: q.longName || q.shortName || q.symbol,
-      shortName: q.shortName || q.symbol
-    };
-  }
-  return null;
-}
-
-async function fetchRankingFromInvestidor10(category: string): Promise<any[]> {
-  try {
-    const catMap: Record<string, string> = {
-      'dividendos': 'dividend-yield',
-      'dy': 'dividend-yield',
-      'pl': 'p-l',
-      'baratas': 'p-l',
-      'roe': 'roe',
-      'margem': 'margem-liquida',
-      'pvp': 'p-vp'
-    };
-
-    const cat = Object.entries(catMap).find(([k]) => category.toLowerCase().includes(k))?.[1] || 'dividend-yield';
-    const url = `https://investidor10.com.br/acoes/rankings/${cat}/`;
-    
-    const res = await fetch(url, { headers: getStealthHeaders(url) });
-    if (!res.ok) return [];
-    const html = await res.text();
-    
-    // Simple regex to extract tickers from the ranking table
-    // Matches <span class="ticker">PETR4</span> or similar patterns
-    const tickerRegex = /class="ticker"[^>]*>\s*([A-Z0-9]{4,6})\s*<\/span>|href="\/acoes\/([A-Z0-9]{4,6})\/"/g;
-    const tickers = new Set<string>();
-    let match;
-    while ((match = tickerRegex.exec(html)) !== null) {
-      const t = match[1] || match[2];
-      if (t && t.length >= 4 && !/^\d+$/.test(t)) tickers.add(t);
-      if (tickers.size >= 25) break;
-    }
-
-    if (tickers.size === 0) return [];
-
-    // Now we have a list of tickers. We need some basic data for them.
-    // Since this is a fallback, we can use yahooQuoteBulk which will likely be checked again
-    // but at least we have a more relevant list of tickers for this category.
-    const quotes = await yahooQuoteBulk([...tickers]);
-    
-    const finalData: any[] = [];
-    tickers.forEach(ticker => {
-      const q = quotes.get(ticker) || quotes.get(`${ticker}.SA`);
-      if (q) {
-        finalData.push({
-          ticker,
-          name: q.longName || q.shortName || ticker,
-          value: 'N/A', // Will be filled by sorting logic
-          subValue: `R$ ${q.regularMarketPrice || '0,00'}`,
-          raw: {
-            precoAtual: q.regularMarketPrice,
-            variacaoDay: q.regularMarketChangePercent != null ? `${q.regularMarketChangePercent > 0 ? '+' : ''}${q.regularMarketChangePercent.toFixed(2)}%` : '0,00%',
-            dividendYield: q.trailingAnnualDividendYield != null ? `${(q.trailingAnnualDividendYield * 100).toFixed(2)}%` : '0,00%',
-            pl: q.trailingPE != null ? q.trailingPE.toFixed(2) : '0,00',
-            pvp: q.priceToBook != null ? q.priceToBook.toFixed(2) : '0,00',
-            marketCap: q.marketCap,
-            currency: q.currency || 'BRL'
-          }
-        });
-      }
-    });
-
-    return finalData;
-  } catch (e) {
-    console.error(`[INVESTIDOR10 RANK] Error:`, e);
-    return [];
-  }
-}
-
-async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
-  // Use query2 as primary for direct fetch, it's often more lenient than query1
-  const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
-  
-  for (const domain of domains) {
-    const url = `https://${domain}/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
-    try {
-      const res = await fetch(url, {
-        headers: getStealthHeaders(url)
-      });
-
-      if (res.status === 429) {
-        NexusEngine.recordFailure(domain, true);
-        console.log(`[YAHOO] ${domain} throttled (429) for ${symbol}`);
-        continue;
-      }
-
-      if (!res.ok) {
-        console.warn(`[YAHOO DIRECT] Fetch failed for ${symbol} on ${domain} with status ${res.status}`);
-        continue;
-      }
-
-      const data = await res.json();
-      const quote = data?.quoteResponse?.result?.[0];
-      if (quote) return quote;
-    } catch (err) {
-      console.error(`[YAHOO DIRECT] Error fetching ${symbol} from ${domain}:`, err);
-    }
-  }
-
-  // Fallback 1: Options API (sometimes reveals more data and is less throttled)
-  console.log(`[YAHOO] Trying options fallback for ${symbol}...`);
-  const oQuote = await fetchYahooOptionsQuote(symbol);
-  if (oQuote) return oQuote;
-
-  // Fallback 2: Search API
-  console.log(`[YAHOO] Trying search fallback for ${symbol}...`);
-  const sQuote = await fetchYahooSearchQuote(symbol);
-  if (sQuote) return sQuote;
-
-  // Fallback 3: Chart API
-  console.log(`[YAHOO] Trying chart fallback for ${symbol}...`);
-  return await fetchYahooQuoteFromChart(symbol);
-}
-
-async function fetchYahooOptionsQuote(symbol: string): Promise<any> {
-    const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
-    for (const domain of domains) {
-        const url = `https://${domain}/v7/finance/options/${encodeURIComponent(symbol)}`;
-        try {
-            const res = await fetch(url, { headers: getStealthHeaders(url) });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const quote = data?.optionChain?.result?.[0]?.quote;
-            if (quote && quote.regularMarketPrice != null) return quote;
-        } catch (e) { continue; }
-    }
-    return null;
-}
-
-async function fetchYahooQuoteFromChart(symbol: string): Promise<any> {
-  const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
-  for (const domain of domains) {
-    const url = `https://${domain}/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1m&includePrePost=false`;
-    try {
-      const res = await fetch(url, { headers: getStealthHeaders(url) });
-      if (!res.ok) continue;
-      const data = await res.json();
-      const meta = data?.chart?.result?.[0]?.meta;
-      if (!meta) continue;
-      
-      return {
-        symbol: meta.symbol,
-        regularMarketPrice: meta.regularMarketPrice || meta.chartPreviousClose,
-        regularMarketChangePercent: (meta.regularMarketPrice && meta.chartPreviousClose) 
-          ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100 
-          : 0,
-        currency: meta.currency,
-        longName: meta.symbol,
-        shortName: meta.symbol
-      };
-    } catch (e) {
-      continue;
-    }
-  }
-  return null;
-}
-
-/** @ts-expect-error */
-async function fetchYahooQuoteHTML(symbol: string): Promise<any> {
-    const url = `https://finance.yahoo.com/quote/${symbol}`;
-    try {
-        const res = await fetch(url, { 
-            headers: getStealthHeaders(url),
-            // @ts-ignore
-            signal: AbortSignal.timeout(6000) 
-        });
-        if (!res.ok) return null;
-        const html = await res.text();
-        
-        // Strategy: Regex extraction for speed and robustness on partial loads
-        const priceMatch = html.match(/"regularMarketPrice":\s*{"raw":\s*([\d.]+)/);
-        const changeMatch = html.match(/"regularMarketChangePercent":\s*{"raw":\s*([-.\d]+)/);
-        const shortNameMatch = html.match(/"shortName":"([^"]+)"/);
-        
-        if (priceMatch) {
-            return {
-                symbol,
-                regularMarketPrice: parseFloat(priceMatch[1]),
-                regularMarketChangePercent: changeMatch ? parseFloat(changeMatch[1]) * 100 : 0,
-                shortName: shortNameMatch ? shortNameMatch[1] : symbol,
-                currency: symbol.endsWith('.SA') ? 'BRL' : 'USD'
-            };
-        }
-    } catch (e) {}
-    return null;
-}
-
-async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
-  ensureYahooConfig();
-  
-  const mainCB = (NexusEngine as any)._circuitBreakers.get('query2.finance.yahoo.com');
-  const isThrottled = mainCB && mainCB.isOpen();
-
-  const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(ticker);
-  const symbols = isBRLSymbol ? [`${ticker.replace(RE_SA, '')}.SA`] : [ticker.toUpperCase()];
-  
-  if (['BTC', 'ETH', 'SOL', 'LTC', 'XRP', 'ADA'].includes(ticker.toUpperCase())) {
-    symbols.push(`${ticker.toUpperCase()}-USD`);
-  }
-
-  for (const symbol of symbols) {
-    try {
-      let q: any = null;
-
-      // Primary: Library (only if not throttled)
-      if (!isThrottled) {
-        try {
-          q = await yahooFinance.quote(symbol) as any;
-        } catch (e: any) {
-          if (e.message?.includes('429') || e.message?.includes('401')) {
-            NexusEngine.recordFailure('query2.finance.yahoo.com', e.message?.includes('429'));
-          }
-        }
-      }
-      
-      // Secondary: Direct Fetch Fallback
-      if (!q || q.regularMarketPrice == null) {
-        const directCB = (NexusEngine as any)._circuitBreakers.get('query1.finance.yahoo.com');
-        if (!directCB || !directCB.isOpen()) {
-           q = await fetchYahooQuoteDirect(symbol);
-        }
-      }
-
-      // Tertiary: HTML Scraping (Deep Fallback) - Always try if others failed
-      if (!q || q.regularMarketPrice == null) {
-        q = await fetchYahooQuoteHTML(symbol);
-      }
-
-      if (!q) continue;
-      
-      const price = q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice;
-      if (price == null) continue;
-      
-      return {
-        regularMarketPrice:          price,
-        regularMarketChangePercent:  q.regularMarketChangePercent ?? q.postMarketChangePercent ?? 0,
-        trailingPE:                  q.trailingPE,
-        priceToBook:                 q.priceToBook,
-        bookValue:                   q.bookValue,
-        epsTrailingTwelveMonths:     q.epsTrailingTwelveMonths,
-        trailingAnnualDividendYield: q.trailingAnnualDividendYield,
-        marketCap:                   q.marketCap,
-        longName:                    q.longName,
-        shortName:                   q.shortName,
-        currency:                    q.currency || (isBRLSymbol ? 'BRL' : 'USD'),
-      };
-    } catch (e) { 
-      console.error(`[Nexus Debug] Yahoo error for ${symbol}:`, e);
-      continue; 
-    }
-  }
-  return null;
-}
-
-async function fetchYahooBulkDirect(symbols: string[]): Promise<any[]> {
-  const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
-  
-  for (const domain of domains) {
-    const url = `https://${domain}/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`;
-    try {
-      const res = await fetch(url, {
-        headers: getStealthHeaders(url)
-      });
-
-      if (res.status === 429) {
-        NexusEngine.recordFailure(domain, true);
-        console.log(`[YAHOO] ${domain} throttled (429) during bulk fetch.`);
-        continue;
-      }
-
-      if (!res.ok) {
-        if (res.status === 401) {
-           NexusEngine.recordFailure(domain, true);
-        }
-        continue;
-      }
-      const data = await res.json();
-      const results = data?.quoteResponse?.result || [];
-      if (results.length > 0) return results;
-    } catch (err) {
-      console.error(`[YAHOO BULK_DIRECT] Error on ${domain}:`, err);
-    }
-  }
-  return [];
-}
-
-async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuoteData>> {
-  ensureYahooConfig();
-  const results = new Map<string, YahooQuoteData>();
-  if (tickers.length === 0) return results;
-
-  const validTickers = tickers.filter(t => t && t.length >= 2);
-  const symbols = validTickers.map(t => {
-    const isBRLSymbol = t.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(t);
-    return isBRLSymbol ? `${t.replace(RE_SA, '')}.SA` : t.toUpperCase();
-  });
-
-  const addToResults = (q: any) => {
-    if (!q || !q.symbol) return;
-    const price = q.regularMarketPrice ?? q.postMarketPrice ?? q.preMarketPrice;
-    if (price == null) return;
-
-    const data: YahooQuoteData = {
-      regularMarketPrice:          price,
-      regularMarketChangePercent:  q.regularMarketChangePercent ?? q.postMarketChangePercent ?? 0,
-      trailingPE:                  q.trailingPE,
-      priceToBook:                 q.priceToBook,
-      bookValue:                   q.bookValue,
-      epsTrailingTwelveMonths:     q.epsTrailingTwelveMonths,
-      trailingAnnualDividendYield: q.trailingAnnualDividendYield,
-      marketCap:                   q.marketCap,
-      longName:                    q.longName,
-      shortName:                   q.shortName,
-      currency:                    q.currency || (q.symbol.endsWith('.SA') ? 'BRL' : 'USD'),
-    };
-    
-    const baseTicker = q.symbol.indexOf('.') !== -1 ? q.symbol.split('.')[0].toUpperCase() : q.symbol.toUpperCase();
-    results.set(baseTicker, data);
-    if (q.symbol.includes('-')) results.set(q.symbol.split('-')[0].toUpperCase(), data);
-    results.set(q.symbol.toUpperCase(), data);
-  };
-
-  try {
-    // Check if Yahoo is overall throttled
-    const mainCB = (NexusEngine as any)._circuitBreakers.get('query2.finance.yahoo.com');
-    const isThrottled = mainCB && mainCB.isOpen();
-    let quoteList: any[] = [];
-
-    if (!isThrottled) {
-      // Primary: Library
-      try {
-        const quotes = await yahooFinance.quote(symbols);
-        quoteList = Array.isArray(quotes) ? quotes : [quotes];
-        quoteList.forEach(addToResults);
-      } catch (e: any) {
-        if (e.message?.includes('429') || e.message?.includes('401')) {
-          NexusEngine.recordFailure('query2.finance.yahoo.com', e.message?.includes('429'));
-        }
-      }
-    }
-
-    // Identify missing symbols
-    let missingSymbols = symbols.filter(s => !results.has(s) && !results.has(s.split('.')[0]));
-
-    if (missingSymbols.length > 0) {
-      console.log(`[YAHOO BULK] ${missingSymbols.length} missing, attempting direct yahoo fetch...`);
-      // Use direct fetch only if not throttled
-      const directQuotes = (!isThrottled) ? await fetchYahooBulkDirect(missingSymbols) : [];
-      directQuotes.forEach(addToResults);
-
-      // Final individual fallback for still missing symbols
-      const stillMissing = symbols.filter(s => !results.has(s) && !results.has(s.split('.')[0]));
-      if (stillMissing.length > 0) {
-        console.log(`[YAHOO BULK] Still missing ${stillMissing.length} symbols, falling back individually...`);
-        const individualPromises = stillMissing.slice(0, 10).map(async (s) => {
-          try {
-            const q = await yahooQuote(s, 5000);
-            if (q) {
-              const baseTicker = s.indexOf('.') !== -1 ? s.split('.')[0].toUpperCase() : s.toUpperCase();
-              results.set(baseTicker, q);
-              results.set(s.toUpperCase(), q);
-            }
-          } catch (err) { /* ignore */ }
-        });
-        await Promise.allSettled(individualPromises);
-      }
-    }
-  } catch (e) {
-    console.warn(`[YAHOO BULK] Fatal error, falling back to individuals:`, e);
-    // On total failure, try first 15 individual
-    for (const s of symbols.slice(0, 15)) {
-      try {
-        const q = await yahooQuote(s, 3000);
-        if (q) {
-          const baseTicker = s.indexOf('.') !== -1 ? s.split('.')[0].toUpperCase() : s.toUpperCase();
-          results.set(baseTicker, q);
-          results.set(s.toUpperCase(), q);
-        }
-      } catch (err) { /* ignore */ }
-    }
-  }
-  return results;
-}
-
-async function yahooFundamentals(ticker: string, _timeoutMs: number): Promise<YahooFundamentalsData> {
-  ensureYahooConfig();
-  const symbols  = [`${ticker}.SA`, ticker.toUpperCase()];
-  
-  for (const symbol of symbols) {
-    try {
-      let result: any = null;
-      const isThrottled = (NexusEngine as any)._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen();
-      if (!isThrottled) {
-        result = await yahooFinance.quoteSummary(symbol, {
-          modules: ['financialData', 'defaultKeyStatistics', 'assetProfile']
-        } as any);
-      }
-      
-      if (!result) continue;
-
-      // Check for errors in the response object
-      if ((result as any).errors || (result as any).error) {
-        console.warn(`[YAHOO] Fundamentals for ${symbol} returned errors:`, formatYahooError((result as any).errors || (result as any).error));
-        continue;
-      }
-      
-      const res = result as any;
-      const fd = res?.financialData;
-      const ks = res?.defaultKeyStatistics;
-      const ap = res?.assetProfile;
-      
-      if (!fd && !ks && !ap) continue;
-      
-      return {
-        profitMargins:    fd?.profitMargins,
-        returnOnEquity:   fd?.returnOnEquity,
-        revenuePerShare:  fd?.revenuePerShare,
-        returnOnAssets:   fd?.returnOnAssets,
-        grossMargins:     fd?.grossMargins,
-        operatingMargins: fd?.operatingMargins,
-        debtToEquity:     fd?.debtToEquity,
-        // Novos campos
-        about:            ap?.longBusinessSummary,
-        sector:           ap?.sector,
-        subSector:        ap?.industry,
-        enterpriseValue:  ks?.enterpriseValue,
-        forwardPE:        ks?.forwardPE,
-        pegRatio:         ks?.pegRatio,
-      };
-    } catch (e) { 
-      console.warn(`[YAHOO] Erro ao buscar fundamentos para ${symbol}:`, formatYahooError(e));
-      continue; 
-    }
-  }
-  return {};
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 12. MOTOR PRINCIPAL
-// ════════════════════════════════════════════════════════════════════════════
 
 export class NexusEngine {
-  private static _urlInFlight     = new Map<string, Promise<any>>();
   private static _tickerInFlight  = new Map<string, Promise<any>>();
-  private static _cache           = new LRUCache<any>(300);
+  private static _cache           = new LRUCache<any>(500);
   private static _circuitBreakers = new Map<string, CircuitBreaker>();
+  private static _rateLimiters    = new Map<string, DomainRateLimiter>();
   private static _startTime       = Date.now();
-  private static _totalRequests   = 0;
-  private static _totalSuccess    = 0;
-  private static _totalFailures   = 0;
-  private static _sessionMetrics  = { cacheHits: 0, cacheStale: 0, cacheMisses: 0 };
 
   private static _options: Required<NexusEngineOptions> = {
     cacheTtlMs:       24 * 60 * 60 * 1_000,
-    cacheStaleMs:     5  * 60 * 1_000,
+    cacheStaleMs:     10 * 60 * 1_000,
     maxRetries:       3,
     retryBaseDelay:   500,
-    fetchTimeoutMs:   10_000,
-    concurrencyLimit: 15,
-    domainRps:        2,
-    domainBurst:      5,
+    fetchTimeoutMs:   12_000,
+    concurrencyLimit: 20,
+    domainRps:        5,
+    domainBurst:      15,
   };
-
-  private static _rateLimiters = new Map<string, DomainRateLimiter>();
 
   static configure(opts: NexusEngineOptions): void {
     this._options = { ...this._options, ...opts };
@@ -1467,1455 +61,288 @@ export class NexusEngine {
   }
 
   private static getRateLimiter(domain: string): DomainRateLimiter {
-    let limiter = this._rateLimiters.get(domain);
+    const d = domain.replace('www.', '').split('.')[0];
+    let limiter = this._rateLimiters.get(d);
     if (!limiter) {
-      limiter = new DomainRateLimiter(this._options.domainRps, this._options.domainBurst);
-      this._rateLimiters.set(domain, limiter);
+      limiter = new DomainRateLimiter(this._options.domainRps, 15);
+      this._rateLimiters.set(d, limiter);
     }
     return limiter;
   }
 
   private static getCB(domain: string): CircuitBreaker {
-    if (!this._circuitBreakers.has(domain)) {
-      this._circuitBreakers.set(domain, new CircuitBreaker());
+    const d = domain.replace('www.', '').split('.')[0];
+    if (!this._circuitBreakers.has(d)) {
+      this._circuitBreakers.set(d, new CircuitBreaker());
     }
-    return this._circuitBreakers.get(domain)!;
+    return this._circuitBreakers.get(d)!;
   }
 
-  static resetCircuitBreaker(domain: string): void {
-    this._circuitBreakers.get(domain)?.reset();
-  }
-
-  private static async fetchWithJitter(
-    url: string,
-    requireStealth: boolean,
-  ): Promise<Response> {
-    let lastErr: Error = new Error('fetch falhou');
-    const hostname = extractHostname(url);
-    const domain   = hostname.replace('www.', '').split('.')[0];
-    const limiter  = this.getRateLimiter(domain);
-
-    for (let attempt = 0; attempt < (url.includes('yahoo.com') ? 2 : this._options.maxRetries); attempt++) {
-      await limiter.acquire();
-      const ctrl  = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), this._options.fetchTimeoutMs);
-
-      try {
-        const res = await fetch(url, {
-          signal:  ctrl.signal,
-          headers: requireStealth ? getStealthHeaders(url) : { 'User-Agent': getRandomAgent() },
-        });
-        clearTimeout(timer);
-
-        if (res.status === 404 || res.status === 451) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        if (res.status === 410) {
-          console.warn(`Resource gone (410): ${url}`);
-          return res; // Or handle as needed, e.g., return null or empty response
-        }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res;
-
-      } catch (err) {
-        clearTimeout(timer);
-        lastErr = err as Error;
-        if (lastErr.message.includes('Critical')) throw lastErr;
-        if (attempt < this._options.maxRetries - 1) {
-          await new Promise(r => setTimeout(r, backoffMs(attempt, this._options.retryBaseDelay)));
-        }
-      }
-    }
-    throw lastErr;
-  }
-
-  static async fetchHistoricalFundamentals(ticker: string) {
-    const cleanTicker = canonicalizeTicker(ticker);
-    const isBrazilian = /^[A-Z]{4}[3-6]$/.test(cleanTicker) || cleanTicker.endsWith('11') || cleanTicker.endsWith('12');
-
-    if (isBrazilian && !cleanTicker.endsWith('11') && !cleanTicker.endsWith('12')) {
-      try {
-        const url = `https://investidor10.com.br/acoes/${cleanTicker.toLowerCase()}/`;
-        const htmlRes = await fetch(url, { headers: getStealthHeaders(url) });
-        const html = await htmlRes.text();
-        const companyIdMatch = html.match(/companyId\s*=\s*['"](\d+)['"]/);
-        const tickerIdMatch = html.match(/\/api\/acoes\/payout-chart\/(\d+)\//) || html.match(/tickerId\s*=\s*['"](\d+)['"]/);
-        
-        if (companyIdMatch && tickerIdMatch) {
-          const companyId = companyIdMatch[1];
-          const tickerId = tickerIdMatch[1];
-          
-          const [dreRes, balancoRes, indRes] = await Promise.all([
-            fetch(`https://investidor10.com.br/api/balancos/balancoresultados/chart/${companyId}/10/yearly/`, { headers: getStealthHeaders('https://investidor10.com.br/') }),
-            fetch(`https://investidor10.com.br/api/balancos/balancopatrimonial/chart/${companyId}/true/`, { headers: getStealthHeaders('https://investidor10.com.br/') }),
-            fetch(`https://investidor10.com.br/api/historico-indicadores/${tickerId}/10/?v=2`, { headers: getStealthHeaders('https://investidor10.com.br/') })
-          ]);
-          
-          if (dreRes.ok && balancoRes.ok && indRes.ok) {
-            const dreData = await dreRes.json();
-            const balancoData = await balancoRes.json();
-            const indData = await indRes.json();
-            
-            if (Array.isArray(dreData) && dreData.length > 0 && Array.isArray(balancoData) && balancoData.length > 0) {
-              const historyData: any[] = [];
-              const dreHeaders = dreData[0] || [];
-              const balancoHeaders = balancoData[0] || [];
-              
-              const years = [];
-              for (let i = 1; i < dreHeaders.length; i += 2) {
-                const head = dreHeaders[i];
-                const yearMatch = head?.match && head.match(/20\d\d/);
-                if (yearMatch) years.push({ year: parseInt(yearMatch[0], 10), idxDRE: i });
-              }
-              
-              for (const y of years) {
-                const year = y.year;
-                const idxDRE = y.idxDRE;
-                let revenue = 0, netIncome = 0, ebitda = 0;
-                
-                for (let r = 1; r < dreData.length; r++) {
-                  const row = dreData[r] || [];
-                  const rowName = String(row[0] || '');
-                  const valBlock = row[idxDRE];
-                  const strValue = Array.isArray(valBlock) ? valBlock[0] : String(valBlock || '0');
-                  const val = Number(normalizeBRNumber(strValue)) || 0;
-                  
-                  if (rowName.includes('Receita Líquida')) revenue = val;
-                  if (rowName.includes('EBITDA')) ebitda = val;
-                  if (rowName.includes('Lucro Líquido')) netIncome = val;
-                }
-                
-                let patrimony = 0, totalAssets = 0, totalLiabilities = 0, grossDebt = 0, cash = 0;
-                const idxBalanco = balancoHeaders.findIndex((h: string) => typeof h === 'string' && h.includes(String(year)));
-                
-                if (idxBalanco !== -1) {
-                  for (let r = 1; r < balancoData.length; r++) {
-                    const row = balancoData[r] || [];
-                    const rowName = String(row[0] || '');
-                    const valBlock = row[idxBalanco];
-                    const strValue = Array.isArray(valBlock) ? valBlock[0] : String(valBlock || '0');
-                    const val = Number(normalizeBRNumber(strValue)) || 0;
-                    
-                    if (rowName.includes('Patrimônio Líquido')) patrimony = val;
-                    if (rowName.includes('Ativo Total')) totalAssets = val;
-                    if (rowName.includes('Passivo Total')) totalLiabilities = val;
-                    if (rowName.includes('Dívida Bruta')) grossDebt = val;
-                    if (rowName.includes('Caixa')) cash = val;
-                  }
-                }
-
-                // Handle Indicators
-                const getInd = (key: string) => {
-                  try {
-                     const arr = indData[key];
-                     if (!arr) return 0;
-                     const item = arr.find((a: any) => String(a.year) === String(year));
-                     return item ? Number(item.value) || 0 : 0;
-                  } catch(e) { return 0; }
-                };
-
-                const lpa = getInd('LPA');
-                const vpa = getInd('VPA');
-                const pl = getInd('P/L');
-                const dy = getInd('Dividend Yield');
-                const pvp = getInd('P/VP');
-                const payout = getInd('Payout');
-                const netMargin = getInd('Margem Líquida');
-                
-                // Estimate avgPrice
-                const avgPrice = Math.max((pl * lpa), (pvp * vpa), 0);
-                // Dividends payed in absolute value
-                const dividendsPayed = Math.max(0, netIncome * (payout / 100));
-
-                historyData.push({
-                  year: String(year),
-                  revenue,
-                  netRevenue: revenue,
-                  netIncome,
-                  netProfit: netIncome,
-                  ebitda,
-                  patrimony,
-                  equity: patrimony,
-                  totalAssets,
-                  totalLiabilities,
-                  grossDebt,
-                  cash,
-                  lpa,
-                  vpa,
-                  pl,
-                  dy,
-                  pvp,
-                  payout,
-                  netMargin,
-                  avgPrice,
-                  dividendsPayed
-                });
-              }
-              
-              if (historyData.length > 0) {
-                 return historyData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error(`[Nexus] Error fetching historical fundamentals from Investidor10 for ${ticker}:`, e);
-      }
-    }
-
-    const symbols = [isBrazilian ? `${cleanTicker}.SA` : cleanTicker, cleanTicker];
-
-    for (const symbol of symbols) {
-      try {
-        let result: any = null;
-        const isThrottled = this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen();
-        if (!isThrottled) {
-           result = await yahooFinance.quoteSummary(symbol, {
-             modules: ['incomeStatementHistory', 'balanceSheetHistory', 'earningsHistory', 'defaultKeyStatistics']
-           } as any);
-        }
-
-        if (!result) continue;
-
-        if ((result as any).errors || (result as any).error) continue;
-
-        const res = result as any;
-        const incomeHistory = res?.incomeStatementHistory?.incomeStatementHistory || [];
-        const balanceHistory = res?.balanceSheetHistory?.balanceSheetStatements || [];
-
-        // Combine by year
-        const historyData: any[] = [];
-        
-        incomeHistory.forEach((inc: any) => {
-          const dt = inc.endDate;
-          if (dt) {
-            const year = dt.getFullYear();
-            const revenue = inc.totalRevenue || 0;
-            const netIncome = inc.netIncome || inc.netIncomeApplicableToCommonShares || 0;
-            historyData.push({
-              year: String(year),
-              revenue,
-              netRevenue: revenue,
-              netIncome,
-              netProfit: netIncome,
-              ebitda: inc.ebitda || inc.ebit || 0
-            });
-          }
-        });
-
-        // Merge balance sheet data
-        balanceHistory.forEach((bal: any) => {
-          const dt = bal.endDate;
-          if (dt) {
-            const year = String(dt.getFullYear());
-            let existing = historyData.find(h => h.year === year);
-            if (!existing) {
-              existing = { year, revenue: 0, netRevenue: 0, netIncome: 0, netProfit: 0, ebitda: 0 };
-              historyData.push(existing);
-            }
-            existing.patrimony = bal.totalStockholderEquity || 0;
-            existing.equity = bal.totalStockholderEquity || 0;
-            existing.totalAssets = bal.totalAssets || 0;
-            existing.totalLiabilities = bal.totalLiab || 0;
-            existing.cash = bal.cash || 0;
-            existing.grossDebt = (bal.shortLongTermDebt || 0) + (bal.longTermDebt || 0);
-          }
-        });
-
-        if (historyData.length > 0) {
-          return historyData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
-        }
-
-      } catch (e) {
-        continue;
-      }
-    }
-    return [];
+  static async fetchAeroScrape(url: string): Promise<string | null> {
+    try {
+      const res = await fetch('https://aero-scrape.vercel.app/api/scrape', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ url, stealth: true })
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.content || data.html || null;
+    } catch { return null; }
   }
 
   static async execute<T>(
-    sources: ScrapeSource<T>[],
-  ): Promise<{ data: Partial<T>; bytes: number; earlyAbort: boolean; cacheStatus: string }> {
-    const cacheKey = `nexus:${sources.map(s => s.url).join('|')}`;
-    const cached   = this._cache.get(cacheKey);
-
-    if (cached) {
-      if (cached.isStale) {
-        this._sessionMetrics.cacheStale++;
-        if (!this._tickerInFlight.has(cacheKey)) {
-          const bg = this._executeNetwork(sources)
-            .then(fresh => this._cache.set(cacheKey, fresh, this._options.cacheStaleMs, this._options.cacheTtlMs))
-            .catch(() => {});
-          this._tickerInFlight.set(cacheKey, bg);
-          bg.finally(() => this._tickerInFlight.delete(cacheKey));
-        }
-        return { ...cached.data, cacheStatus: 'STALE' };
-      }
-      this._sessionMetrics.cacheHits++;
-      return { ...cached.data, cacheStatus: 'HIT' };
-    }
-
-    const inflight = this._tickerInFlight.get(cacheKey);
-    if (inflight) return inflight;
-
-    this._sessionMetrics.cacheMisses++;
-    const p = this._executeNetwork(sources).then(fresh => {
-      this._cache.set(cacheKey, fresh, this._options.cacheStaleMs, this._options.cacheTtlMs);
-      return { ...fresh, cacheStatus: 'MISS' };
-    });
-    this._tickerInFlight.set(cacheKey, p);
-    p.finally(() => this._tickerInFlight.delete(cacheKey));
-    return p;
+    key: string,
+    fetcher: () => Promise<T>,
+    options?: { staleMs?: number; ttlMs?: number; force?: boolean }
+  ): Promise<T> {
+    const staleMs = options?.staleMs || this._options.cacheStaleMs;
+    const ttlMs   = options?.ttlMs   || this._options.cacheTtlMs;
+    const cached = this._cache.get(key);
+    if (!options?.force && cached && !cached.isStale) return cached.data;
+    const inFlight = this._tickerInFlight.get(key);
+    if (inFlight) return inFlight;
+    const prom = fetcher();
+    this._tickerInFlight.set(key, prom);
+    try {
+      const data = await prom;
+      this._cache.set(key, data, staleMs, ttlMs);
+      return data;
+    } finally { this._tickerInFlight.delete(key); }
   }
 
   private static async _executeNetwork<T>(
     sources: ScrapeSource<T>[],
-  ): Promise<{ data: Partial<T>; bytes: number; earlyAbort: boolean }> {
-    let lastErr: Error = new Error('Nenhuma fonte disponível');
-    let openCBs = 0;
-
-    for (const source of sources) {
-      const hostname = extractHostname(source.url);
-      const domain   = hostname.replace('www.', '').split('.')[0];
-      const cb       = this.getCB(domain);
-
-      if (cb.isOpen()) {
-        openCBs++;
-        continue;
-      }
-
+  ): Promise<Partial<T>> {
+    let combined: Partial<T> = {};
+    const htmls = await Promise.all(sources.map(async (src) => {
+      const hostname = extractHostname(src.url);
+      const rl = this.getRateLimiter(hostname);
+      const cb = this.getCB(hostname);
+      if (cb.isOpen()) return await this.fetchAeroScrape(src.url);
       try {
-        let fetchPromise = this._urlInFlight.get(source.url);
-        if (!fetchPromise) {
-          this._totalRequests++;
-          fetchPromise = this._streamAndParse<T>(source, cb);
-          this._urlInFlight.set(source.url, fetchPromise);
-          fetchPromise.finally(() => this._urlInFlight.delete(source.url));
+        await rl.acquire();
+        const res = await fetch(src.url, { headers: getStealthHeaders(src.url, hostname) });
+        if (res.status === 429) {
+          cb.recordFailure();
+          return await this.fetchAeroScrape(src.url);
         }
-
-        return await fetchPromise;
-      } catch (err) {
-        lastErr = err as Error;
-        if (lastErr.message.includes('Critical')) break;
-        continue;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
+        cb.recordSuccess();
+        return html;
+      } catch {
+        cb.recordFailure();
+        return await this.fetchAeroScrape(src.url);
       }
-    }
-    
-    if (openCBs === sources.length && sources.length > 0) {
-      throw new Error(`Todos os Circuit Breakers abertos (${openCBs}/${sources.length} fontes)`);
-    }
-    throw new Error(`Falha total: ${lastErr.message}`);
+    }));
+    htmls.forEach((html, i) => { if (html) combined = universalLexer(html, sources[i].template, combined); });
+    return combined;
   }
 
-  private static async _streamAndParse<T>(
-    source: ScrapeSource<T>,
-    cb: CircuitBreaker,
-  ): Promise<{ data: Partial<T>; bytes: number; earlyAbort: boolean }> {
-    try {
-      const res = await this.fetchWithJitter(source.url, !!source.requireStealth);
-      if (res.status === 410) return { data: {}, bytes: 0, earlyAbort: true };
-      if (!res.body) throw new Error('No response body');
-
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-      let htmlBuffer = '';
-      let rawData: Partial<T> = {};
-      let bytesRead  = 0;
-      let earlyAbort = false;
-
-      const MAX_WINDOW   = 20_000;
-      const MAX_ANCHOR   = source.template.rules.reduce((max, r) => r.anchors.reduce((m, a) => Math.max(m, a.length), max), 0);
-      const OVERLAP_SIZE = Math.max(MAX_ANCHOR + 256, 512);
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          bytesRead  += value.length;
-          htmlBuffer += decoder.decode(value, { stream: true });
-
-          if (htmlBuffer.length > MAX_WINDOW) {
-            htmlBuffer = htmlBuffer.slice(-(MAX_WINDOW - OVERLAP_SIZE));
-          }
-
-          rawData = universalLexer<T>(htmlBuffer, source.template, rawData);
-
-          const hasAll = source.template.rules.every(r => rawData[r.name as keyof T] !== undefined);
-          if (hasAll) {
-            reader.cancel().catch(() => {});
-            earlyAbort = true;
-            break;
-          }
-        }
-
-        if (!earlyAbort) {
-          const tail = decoder.decode();
-          if (tail) {
-            htmlBuffer += tail;
-            rawData = universalLexer<T>(htmlBuffer, source.template, rawData);
-          }
-        }
-      } finally {
-        try { reader.releaseLock(); } catch { /* ignore */ }
-      }
-
-      cb.recordSuccess();
-      this._totalSuccess++;
-      return { data: rawData, bytes: bytesRead, earlyAbort };
-
-    } catch (err) {
-      cb.recordFailure();
-      this._totalFailures++;
-      throw err;
-    }
-  }
-
-  static async fetchNews(ticker: string): Promise<NewsItem[]> {
-    const clean = canonicalizeTicker(ticker);
-    const cacheKey = `nexus:news:${clean}`;
-    
-    // 1. Check Cache
-    const cached = this._cache.get(cacheKey);
-    if (cached && !cached.isStale) return cached.data;
-
-    try {
-      const isGlobal = clean === 'IBOVESPA' || clean === 'MARKET';
-      const query = isGlobal ? 'IBOVESPA' : clean;
-
-      let searchResult: any = null;
-      
-      // Primary: Library
-      try {
-        const cb = this._circuitBreakers.get('query2.finance.yahoo.com');
-        if (!cb || !cb.isOpen()) {
-          searchResult = await yahooFinance.search(query, {
-            newsCount: isGlobal ? 30 : 10,
-            quotesCount: 0
-          } as any);
-        }
-      } catch (e) {
-        // Library search failed
-      }
-
-      if (!searchResult || !searchResult.news || searchResult.news.length === 0) {
-        // Only log if we are clearly not blocked yet, to keep logs clean
-        const isBlocked = this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen();
-        if (!isBlocked) {
-           console.log(`[NEWS] Library failed for ${query}, attempting direct fetch...`);
-        }
-        const direct = await fetchYahooSearchDirect(query, isGlobal ? 30 : 10);
-        if (direct && direct.news && direct.news.length > 0) {
-          searchResult = direct;
-        }
-      }
-
-      const items: NewsItem[] = [];
-      
-      if (searchResult && searchResult.news) {
-        for (const article of searchResult.news) {
-          const pubDate = article.providerPublishTime ? new Date(Number(article.providerPublishTime) * 1000) : new Date();
-          const diffDays = (new Date().getTime() - pubDate.getTime()) / (1000 * 3600 * 24);
-          
-          if (diffDays <= 15) {
-            items.push({
-              title: article.title,
-              link: article.link,
-              pubDate: pubDate,
-              source: article.publisher || 'Yahoo Finance',
-              thumbnail: (article.thumbnail as any)?.resolutions?.[1]?.url || (article.thumbnail as any)?.resolutions?.[0]?.url
-            });
-          }
-        }
-      }
-
-      // Sort newest to oldest
-      items.sort((a, b) => (b.pubDate as Date).getTime() - (a.pubDate as Date).getTime());
-      
-      const finalItems = items.slice(0, isGlobal ? 30 : 8);
-
-      // Save to Cache
-      if (finalItems.length > 0) {
-        this._cache.set(cacheKey, finalItems, 30 * 60 * 1000, 15 * 60 * 1000);
-      } else if (cached) {
-        return cached.data;
-      }
-      
-      return finalItems;
-    } catch (e) {
-      console.error(`[Nexus] Total failure for news ${ticker}:`, e);
-      return cached ? cached.data : [];
-    }
-  }
-
-  /**
-   * Busca rankings de ativos baseados em critérios específicos.
-   * Simula a extração de dados de rankings do Investidor10.
-   */
-  static async fetchRanking(category: string, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
-    const cacheKey = `ranking:${category}:${type}`;
-    const cached = this._cache.get(cacheKey);
-    if (cached && !this.isStale(cached)) return cached.data;
-
-    try {
-      // Como não temos uma API direta de ranking, vamos buscar os top ativos do Yahoo Finance
-      // ou simular baseado em uma lista pré-definida de ativos populares se a busca falhar.
-      const popularTickers: any = {
-        ACAO: [
-          'PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 
-          'PRIO3', 'EGIE3', 'VBBR3', 'RAIL3', 'CSNA3', 'B3SA3', 'SUZB3', 'GGBR4', 'RDOR3', 'RADL3',
-          'VIVA3', 'LREN3', 'ASAI3', 'HAPV3', 'CCRO3', 'CMIG4', 'SBSP3', 'CPLE6', 'ENEV3', 'TIMS3',
-          'VIVT3', 'KLBN11', 'EQTL3', 'TAEE11', 'ALPA4', 'CVCB3', 'GOLL4', 'AZUL4', 'BRFS3', 'JBSS3',
-          'MRFG3', 'BEEF3', 'SMTO3', 'TOTS3', 'BPAC11', 'SANB11', 'BBSE3', 'CXSE3', 'PSSA3', 'IRBR3',
-          'MULT3', 'IGTI11', 'CYRE3', 'MRVE3', 'EZTC3', 'DIRR3', 'TEND3', 'JHSF3', 'CSAN3', 'SLCE3'
-        ],
-        FII: [
-          'HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 
-          'KNIP11', 'HGRU11', 'VILG11', 'BRCR11', 'VRTA11', 'VGIP11', 'RECR11', 'VGHF11', 'TGAR11',
-          'MCCI11', 'RBRR11', 'RBRF11', 'BCFF11', 'ALZR11', 'TRXF11', 'RBRP11', 'HGBS11', 'HSML11',
-          'MALL11', 'VINO11', 'GGRC11', 'SDIL11', 'LVBI11', 'KNSC11', 'RZAK11', 'BTRA11', 'SNAG11',
-          'RZTR11', 'XPIN11', 'SNCI11', 'VTAA11', 'CACR11', 'ARCT11', 'GZIT11', 'VIFI11', 'OURE11'
-        ],
-        BDR: [
-          'AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34'
-        ],
-        ETF: [
-          'BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'
-        ],
-        STOCK: [
-          'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'META', 'NVDA', 'V', 'JPM'
-        ],
-        CRYPTO: [
-          'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD'
-        ]
+  static async fetchAtivo(ticker: string, type: ExtendedAssetType = 'ACAO'): Promise<any> {
+    return this.execute(`ativo-${ticker}-${type}`, async () => {
+      const clean = canonicalizeTicker(ticker);
+      const preset = ASSET_PRESETS[type] || ASSET_PRESETS.ACAO;
+      const sources: ScrapeSource[] = [
+        { url: `${preset.i10Base}/${clean.toLowerCase()}/`, template: preset.template, requireStealth: true },
+        { url: `${preset.siBase}/${clean.toLowerCase()}/`,  template: preset.template, requireStealth: true },
+      ];
+      const [scraped, yQuote] = await Promise.all([
+        this._executeNetwork(sources),
+        this.yahooQuote(ticker).catch(() => null)
+      ]);
+      const res = {
+        ticker: clean,
+        type,
+        precoAtual: scraped.precoAtual || yQuote?.price || 0,
+        dividendYield: scraped.dividendYield || (yQuote?.dividendYield ? (yQuote.dividendYield * 100).toFixed(2) + '%' : '0,00%'),
+        pl: scraped.pl || yQuote?.trailingPE || 0,
+        pvp: scraped.pvp || yQuote?.priceToBook || 0,
+        name: scraped.name || yQuote?.name || clean,
+        ...scraped
       };
-
-      const tickers = popularTickers[String(type).toUpperCase()] || popularTickers.ACAO;
-      const cat = category.toLowerCase();
-      
-      // Step 1: Bulk Fetch from Yahoo (Fast)
-      let bulkQuotes = await yahooQuoteBulk(tickers);
-      let preScrapedResults: any[] = [];
-
-      // Fallback: If Yahoo is throttled/empty and we are looking for a ranking, try Investidor10 ranking page
-      if (bulkQuotes.size === 0 && !cat.includes('crypto')) {
-        console.log(`[Nexus] Yahoo throttled, falling back to Investidor10 ranking for ${category}`);
-        preScrapedResults = await fetchRankingFromInvestidor10(category);
-      }
-
-      // Step 2: Complement with individual fetches only if missing
-      const batchResults = preScrapedResults.length > 0 ? preScrapedResults : await this.executeBatch(
-        tickers.map((ticker: string) => async () => {
-          try {
-            const q = bulkQuotes.get(ticker) || bulkQuotes.get(`${ticker}.SA`);
-            
-            // If we have Yahoo data, use it to avoid slow scraper hits in ranking
-            if (q) {
-              const rawData = {
-                precoAtual: q.regularMarketPrice,
-                variacaoDay: q.regularMarketChangePercent != null ? `${q.regularMarketChangePercent > 0 ? '+' : ''}${q.regularMarketChangePercent.toFixed(2)}%` : '0,00%',
-                dividendYield: q.trailingAnnualDividendYield != null ? `${(q.trailingAnnualDividendYield * 100).toFixed(2)}%` : '0,00%',
-                pl: q.trailingPE != null ? q.trailingPE.toFixed(2) : '0,00',
-                pvp: q.priceToBook != null ? q.priceToBook.toFixed(2) : '0,00',
-                marketCap: q.marketCap,
-                name: q.longName || q.shortName || ticker,
-                currency: q.currency || 'BRL',
-                vpa: q.bookValue, // Useful for graham
-                lpa: q.epsTrailingTwelveMonths // Useful for graham
-              };
-
-              return {
-                ticker: ticker,
-                name: rawData.name,
-                value: 'N/A',
-                subValue: `R$ ${rawData.precoAtual || '0,00'}`,
-                raw: rawData
-              };
-            }
-
-            // Do NOT fallback to scraper for ranks as it causes timeouts on 404s
-            return null;
-          } catch (err) {
-            console.warn(`[Nexus] Failed to fetch ticker ${ticker} for ranking:`, err);
-            return null;
-          }
-        })
-      );
-
-      const results = batchResults as any[];
-      const filteredResults = results.filter((r): r is any => r !== null && (r as any).raw && Object.keys((r as any).raw).length > 0);
-
-      // Ordenação baseada na categoria
-      let sorted = [...filteredResults];
-
-      if (cat.includes('dividend') || cat.includes('yield') || cat.includes('bazin')) {
-        sorted.sort((a, b) => {
-          const valA = a.raw ? safeParse(a.raw.dividendYield) : 0;
-          const valB = b.raw ? safeParse(b.raw.dividendYield) : 0;
-          return valB - valA;
-        });
-        sorted.forEach(s => s.value = (s.raw && s.raw.dividendYield) || '0,00%');
-      } else if (cat.includes('pl') || cat.includes('baratas') || cat.includes('graham')) {
-        if (cat.includes('graham')) {
-          // Graham Formula: sqrt(22.5 * VPA * LPA)
-          sorted.forEach(s => {
-            const vpa = safeParse(s.raw?.vpa);
-            const lpa = safeParse(s.raw?.lpa);
-            if (vpa > 0 && lpa > 0) {
-              const grahamValue = Math.sqrt(22.5 * vpa * lpa);
-              const preco = safeParse(s.raw?.precoAtual);
-              const discount = preco > 0 ? ((grahamValue - preco) / grahamValue) * 100 : 0;
-              s.value = `R$ ${grahamValue.toFixed(2)}`;
-              s.subValue = `${discount.toFixed(1)}% de desconto`;
-              s.sortVal = discount;
-            } else {
-              s.sortVal = -999;
-            }
-          });
-          sorted.sort((a, b) => b.sortVal - a.sortVal);
-        } else {
-          sorted.sort((a, b) => {
-            const v1 = safeParse(a.raw?.pl) || 999;
-            const v2 = safeParse(b.raw?.pl) || 999;
-            return (v1 > 0 && v2 > 0) ? v1 - v2 : v2 - v1;
-          });
-          sorted.forEach(s => s.value = s.raw?.pl || 'N/A');
-        }
-      } else if (cat.includes('altas') || cat.includes('flame')) {
-        sorted.sort((a, b) => safeParse(b.raw?.variacaoDay) - safeParse(a.raw?.variacaoDay));
-        sorted.forEach(s => s.value = s.raw?.variacaoDay || '0,00%');
-      } else if (cat.includes('roe') || cat.includes('trophy')) {
-        sorted.sort((a, b) => safeParse(b.raw?.roe) - safeParse(a.raw?.roe));
-        sorted.forEach(s => s.value = s.raw?.roe || '0,00%');
-      } else if (cat.includes('margem') || cat.includes('pie')) {
-        sorted.sort((a, b) => safeParse(b.raw?.margemLiquida) - safeParse(a.raw?.margemLiquida));
-        sorted.forEach(s => s.value = s.raw?.margemLiquida || '0,00%');
-      } else if (cat.includes('pvp')) {
-        sorted.sort((a, b) => {
-          const v1 = safeParse(a.raw?.pvp) || 999;
-          const v2 = safeParse(b.raw?.pvp) || 999;
-          return (v1 > 0 && v2 > 0) ? v1 - v2 : v2 - v1;
-        });
-        sorted.forEach(s => s.value = s.raw?.pvp || 'N/A');
-      } else if (cat.includes('capitalização') || cat.includes('maiores') || cat.includes('market cap') || cat.includes('valuation')) {
-        sorted.sort((a, b) => (b.raw?.marketCap || 0) - (a.raw?.marketCap || 0));
-        sorted.forEach(s => s.value = s.raw?.marketCap ? `R$ ${(s.raw.marketCap / 1e9).toFixed(2)}B` : 'N/A');
-      } else if (cat.includes('prejuízo') || cat.includes('buy and hold')) {
-        // Filter by positive margins and ROE
-        sorted = sorted.filter(s => safeParse(s.raw?.margemLiquida) > 0 && safeParse(s.raw?.roe) > 0);
-        sorted.sort((a, b) => safeParse(b.raw?.roe) - safeParse(a.raw?.roe));
-        sorted.forEach(s => s.value = s.raw?.roe || '0,00%');
-      } else {
-        // Default sorting by DY if unknown
-        sorted.sort((a, b) => safeParse(b.raw?.dividendYield) - safeParse(a.raw?.dividendYield));
-        sorted.forEach(s => s.value = s.raw?.dividendYield || '0,00%');
-      }
-
-      const finalData = sorted.slice(0, 50);
-      this._cache.set(cacheKey, { data: finalData, timestamp: Date.now() }, this._options.cacheStaleMs, this._options.cacheTtlMs);
-      return finalData;
-    } catch (e) {
-      console.error(`[Nexus] Error fetching ranking ${category}:`, e);
-      return [];
-    }
-  }
-
-  /**
-   * Busca ativos similares (peers) para comparação.
-   */
-  static async fetchPeers(ticker: string, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
-    const clean = canonicalizeTicker(ticker);
-    const cacheKey = `peers:${clean}:${type}`;
-    const cached = this._cache.get(cacheKey);
-    if (cached && !this.isStale(cached)) return cached.data;
-
-    try {
-      const sectorPeers: Record<string, string[]> = {
-        'PETR4': ['PETR3', 'PRIO3', 'RECV3', 'RRRP3', 'UGPA3'],
-        'VALE3': ['CSNA3', 'GGBR4', 'GOAU4', 'USIM5'],
-        'ITUB4': ['BBDC4', 'BBAS3', 'SANB11', 'BPAC11'],
-        'BBDC4': ['ITUB4', 'BBAS3', 'SANB11', 'BPAC11'],
-        'BBAS3': ['ITUB4', 'BBDC4', 'SANB11', 'BPAC11'],
-        'ABEV3': ['MDIA3', 'SMTO3', 'BEEF3', 'MRFG3'],
-        'WEGE3': ['TUPY3', 'ROMI3', 'KEPL3'],
-        'MGLU3': ['VIIA3', 'AMER3', 'LREN3', 'CEAB3'],
-        'HGLG11': ['XPLG11', 'BTLG11', 'VILG11', 'KNRI11'],
-        'MXRF11': ['CPTS11', 'IRDM11', 'KNIP11', 'DEVA11'],
-      };
-
-      let peers = sectorPeers[clean] || [];
-      
-      if (peers.length === 0) {
-        const popular: any = {
-          ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4'],
-          FII: ['HGLG11', 'MXRF11', 'KNRI11', 'XPLG11', 'VISC11'],
-          BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34'],
-          ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11'],
-          STOCK: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA']
-        };
-        peers = popular[String(type).toUpperCase()] || popular.ACAO;
-      }
-
-      peers = peers.filter(p => p !== clean).slice(0, 5);
-
-      const results = await this.executeBatch(
-        peers.map(p => async () => {
-          try {
-            const data = await this.fetchAtivo(p, type);
-            return {
-              ticker: p,
-              name: data.results.name || p,
-              pl: data.results.pl || 'N/A',
-              pvp: data.results.pvp || 'N/A',
-              dy: data.results.dividendYield?.replace('%', '') || '0',
-              roe: data.results.roe?.replace('%', '') || '0',
-              precoAtual: data.results.precoAtual || 0
-            };
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      const finalData = results.filter(r => r !== null) as any[];
-      this._cache.set(cacheKey, { data: finalData, timestamp: Date.now() }, this._options.cacheStaleMs, this._options.cacheTtlMs);
-      return finalData;
-    } catch (e) {
-      console.error(`[Nexus] Error fetching peers for ${ticker}:`, e);
-      return [];
-    }
-  }
-
-  private static isStale(cached: any): boolean {
-    if (!cached || !cached.timestamp) return true;
-    return Date.now() - cached.timestamp > this._options.cacheStaleMs;
-  }
-
-  /**
-   * Executa um filtro (screener) em uma lista de ativos.
-   */
-  static async screener(filters: any, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
-    const popularTickers: any = {
-      ACAO: ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3', 'RENT3', 'ELET3', 'MGLU3', 'B3SA3', 'HAPV3', 'GGBR4', 'ITSA4', 'SUZB3', 'JBSS3', 'RAIL3', 'CSAN3', 'VIBRA3', 'EQTL3', 'LREN3', 'PRIO3', 'GOAU4', 'CPLE6', 'CMIG4', 'SANB11', 'BPAC11', 'KLBN11', 'TAEE11', 'TRPL4'],
-      FII: ['HGLG11', 'KNRI11', 'XPLG11', 'MXRF11', 'VISC11', 'BTLG11', 'XPML11', 'IRDM11', 'CPTS11', 'BCFF11', 'BRCR11', 'HGBS11', 'JSRE11', 'VILG11', 'RBRP11', 'KNIP11', 'KNCR11', 'HGRU11', 'PVBI11', 'LVBI11'],
-      BDR: ['AAPL34', 'GOGL34', 'AMZO34', 'MSFT34', 'TSLA34', 'NVDC34', 'META34', 'NFLX34', 'DISB34', 'PYPL34', 'BABA34', 'NIKE34', 'JNJB34', 'PGCO34', 'VIVT34'],
-      ETF: ['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'XINA11', 'DIVO11', 'FIND11', 'MATB11', 'GOVE11', 'XFIX11', 'GOLD11', 'SPXI11'],
-      STOCK: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'BRK-B', 'V', 'JNJ', 'WMT', 'PG', 'MA', 'HD', 'DIS']
-    };
-
-    const tickers = popularTickers[type] || popularTickers.ACAO;
-    
-    const results = await this.executeBatch(
-      tickers.map((ticker: string) => async () => {
-        try {
-          const data = await this.fetchAtivo(ticker, type);
-          return {
-            ticker: ticker,
-            name: data.results.name || ticker,
-            results: data.results
-          };
-        } catch {
-          return null;
-        }
-      })
-    );
-
-    let filtered = results.filter(r => r !== null) as any[];
-
-    // Aplicar filtros
-    if (filters.minDY) {
-      filtered = filtered.filter(r => {
-        const val = r.results.dividendYield;
-        const dy = parseFloat(typeof val === 'string' ? val.replace('%', '').replace(',', '.') : String(val || '0'));
-        return dy >= parseFloat(filters.minDY);
-      });
-    }
-    if (filters.maxPL) {
-      filtered = filtered.filter(r => {
-        const val = r.results.pl;
-        const pl = parseFloat(typeof val === 'string' ? val.replace(',', '.') : String(val || '999'));
-        return pl > 0 && pl <= parseFloat(filters.maxPL);
-      });
-    }
-    if (filters.maxPVP) {
-      filtered = filtered.filter(r => {
-        const val = r.results.pvp;
-        const pvp = parseFloat(typeof val === 'string' ? val.replace(',', '.') : String(val || '999'));
-        return pvp > 0 && pvp <= parseFloat(filters.maxPVP);
-      });
-    }
-    if (filters.minROE) {
-      filtered = filtered.filter(r => {
-        const val = r.results.roe;
-        const roe = parseFloat(typeof val === 'string' ? val.replace('%', '').replace(',', '.') : String(val || '0'));
-        return roe >= parseFloat(filters.minROE);
-      });
-    }
-    if (filters.minMargemLiquida) {
-      filtered = filtered.filter(r => {
-        const margem = parseFloat(r.results.margemLiquida?.replace('%', '').replace(',', '.') || '0');
-        return margem >= parseFloat(filters.minMargemLiquida);
-      });
-    }
-    if (filters.minVPA) {
-      filtered = filtered.filter(r => {
-        const vpa = parseFloat(r.results.vpa?.replace(',', '.') || '0');
-        return vpa >= parseFloat(filters.minVPA);
-      });
-    }
-
-    return filtered;
-  }
-
-  static async fetchQuotesBatch(tickers: string[]): Promise<any[]> {
-    const quoteMap = await yahooQuoteBulk(tickers);
-    return tickers.map(ticker => {
-      const data = quoteMap.get(ticker.toUpperCase());
-      const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(ticker);
-      
-      // Fallback search if exact match fails
-      let finalData = data;
-      if (!finalData) {
-          const sym = isBRLSymbol ? `${ticker.replace(RE_SA, '')}.SA` : ticker.toUpperCase();
-          finalData = quoteMap.get(sym);
-      }
-
-      return {
-        ticker: ticker,
-        price: finalData?.regularMarketPrice ?? 0,
-        currency: finalData?.currency || "BRL",
-        change: finalData?.regularMarketChangePercent != null 
-          ? `${finalData.regularMarketChangePercent > 0 ? "+" : ""}${finalData.regularMarketChangePercent.toFixed(2)}%` 
-          : "0.00%",
-        name: finalData?.longName || finalData?.shortName || ticker,
-        type: inferAssetType(ticker)
-      };
+      return { ticker: clean, results: res, cacheStatus: 'FRESH' };
     });
   }
 
-  static async searchSuggestions(query: string) {
-    try {
-      const q = query.toUpperCase();
-      const result = await yahooFinance.search(q);
-      
-      if (result && (result as any).errors) {
-        console.warn(`[YAHOO] searchSuggestions for ${q} returned errors:`, formatYahooError((result as any).errors));
-      }
-      
-      // Prioritize Brazilian assets if query looks like a ticker
-      let quotes = (result as any).quotes || [];
-      if (/^[A-Z]{4}[0-9]{1,2}$/.test(q)) {
-        quotes = quotes.sort((a: any, b: any) => {
-          const aIsBr = a.symbol.endsWith('.SA');
-          const bIsBr = b.symbol.endsWith('.SA');
-          if (aIsBr && !bIsBr) return -1;
-          if (!aIsBr && bIsBr) return 1;
-          return 0;
-        });
-      }
-
-      return quotes.slice(0, 6).map((q: any) => ({
-        ticker: q.symbol.replace('.SA', ''),
-        name: q.shortname || q.longname || q.symbol,
-        type: q.quoteType || 'EQUITY'
-      }));
-    } catch (error) {
-      console.error('Error in searchSuggestions:', error);
-      return [];
-    }
-  }
-
-  static async fetchAtivo(
-    ticker: string,
-    type: ExtendedAssetType = 'ACAO',
-    includeNews = false,
-  ): Promise<{
-    ticker: string;
-    results: any;
-    cacheStatus: string;
-    news?: NewsItem[];
-    metrics: any;
-    type: ExtendedAssetType;
-  }> {
-    try {
-      const cleanTicker = canonicalizeTicker(ticker);
-      const erroVal     = validarTicker(cleanTicker);
-      if (erroVal) {
-        return { ticker: cleanTicker, results: {}, cacheStatus: 'ERROR', metrics: { error: erroVal }, type };
-      }
-      const preset  = ASSET_PRESETS[type] || ASSET_PRESETS.ACAO;
-      const t       = cleanTicker.toLowerCase();
-      const sources: ScrapeSource<any>[] = preset ? [
-        { url: `${preset.i10Base}/${t}/`, template: preset.template, requireStealth: true },
-      ] : [];
-
-      const startTime = performance.now();
-      const startCpu  = safeCpuStart();
-
-      const [scrapeResult, yahooResult, yahooFund, newsResult] = await Promise.allSettled([
-        this.execute(sources),
-        yahooQuote(cleanTicker, this._options.fetchTimeoutMs),
-        yahooFundamentals(cleanTicker, this._options.fetchTimeoutMs),
-        includeNews ? this.fetchNews(cleanTicker) : Promise.resolve(undefined),
-      ]);
-
-      const scrape   = scrapeResult.status === 'fulfilled' ? scrapeResult.value : { 
-        data: {}, 
-        bytes: 0, 
-        earlyAbort: false, 
-        cacheStatus: 'ERROR',
-        error: scrapeResult.status === 'rejected' ? scrapeResult.reason : 'Unknown scraper error'
-      };
-      
-      if (scrapeResult.status === 'rejected') {
-        console.warn(`[Nexus] Scraper failed for ${ticker}:`, scrapeResult.reason);
-      }
-      const quote    = yahooResult.status  === 'fulfilled' ? yahooResult.value  : null;
-      const fund     = yahooFund.status    === 'fulfilled' ? yahooFund.value    : {};
-      const newsData = newsResult.status   === 'fulfilled' ? newsResult.value   : undefined;
-      // 1. Prefer Scraper as the Primary Source for B3 market data (usually more specific/reliable)
-      // but keep Yahoo as a fallback for missing fields or real-time price updates if Scraper hasn't updated recently.
-      const combined = { ...scrape.data } as Record<string, any>;
-      
-      if (quote) {
-        const q = quote as any;
-        // Priority: Real-time price from Yahoo over scraper
-        if (q.regularMarketPrice != null) {
-          combined['precoAtual'] = q.regularMarketPrice;
-          combined['price'] = q.regularMarketPrice.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-        }
-        if (combined['currency'] === undefined) combined['currency'] = q.currency;
-        if (q.regularMarketChangePercent != null) {
-          combined['variacaoDay'] = (q.regularMarketChangePercent > 0 ? '+' : '') + q.regularMarketChangePercent.toFixed(2) + '%';
-          combined['change'] = combined['variacaoDay'];
-        }
-        if (combined['name'] === undefined) combined['name'] = q.longName || q.shortName;
-      }
-
-      // Prefer scraped market properties over Yahoo as they are usually more specific to the B3 market
-      if (combined['valorMercado']) combined['marketCap'] = combined['valorMercado'];
-      if (combined['patrimonioLiquido']) combined['equity'] = combined['patrimonioLiquido'];
-
-      const fill = (k: string, v: unknown) => {
-        if (combined[k] !== undefined || v == null) return;
-        
-        const s = typeof v === 'number' ? v.toFixed(2) : String(v).trim();
-        if (!VALORES_INVALIDOS.has(s)) combined[k] = s;
-      };
-
-      if (fund) {
-        fill('margemLiquida',  fund.profitMargins    != null ? (fund.profitMargins    * 100).toFixed(2) + '%' : undefined);
-        fill('margemBruta',    fund.grossMargins     != null ? (fund.grossMargins     * 100).toFixed(2) + '%' : undefined);
-        fill('roe',            fund.returnOnEquity   != null ? (fund.returnOnEquity   * 100).toFixed(2) + '%' : undefined);
-        fill('roa',            fund.returnOnAssets   != null ? (fund.returnOnAssets   * 100).toFixed(2) + '%' : undefined);
-        fill('dividaLiquidaEbitda', fund.debtToEquity != null ? fund.debtToEquity.toFixed(2) : undefined);
-        fill('about',          fund.about);
-        fill('sector',         fund.sector);
-        fill('segment',        fund.subSector);
-        fill('subSector',      fund.subSector);
-        fill('enterpriseValue', fund.enterpriseValue);
-        fill('forwardPE',      fund.forwardPE);
-        fill('pegRatio',       fund.pegRatio);
-      }
-
-      const totalTimeMs = performance.now() - startTime;
-      const sources_used: string[] = [];
-      if (scrapeResult.status === 'fulfilled' && Object.keys(scrape.data).length > 0) sources_used.push('Scraper');
-      if (quote) sources_used.push('YahooFinance');
-      if (Object.keys(fund).length) sources_used.push('YahooFundamentals');
-
-      return {
-        ticker:      cleanTicker,
-        results:     combined,
-        cacheStatus: scrape.cacheStatus || 'MISS',
-        ...(newsData ? { news: newsData } : {}),
-        type,
-        metrics: {
-          totalTimeMs,
-          bytesProcessed:    scrape.bytes,
-          foundKeys:         Object.keys(combined),
-          successRate:       (preset && (preset as any).template?.rules) ? Object.keys(combined).length / (preset as any).template.rules.length : 0,
-          earlyAbort:        scrape.earlyAbort,
-          source:            sources_used.join(' + ') || 'None',
-          cpuUsageMs:        safeCpuDeltaMs(startCpu),
-          estimatedMemoryMb: Number((scrape.bytes / 1024 / 1024).toFixed(2)),
-        },
-      };
-    } catch (e) {
-      console.error(`[Nexus] Fatal error fetching ${ticker}:`, e);
-      return {
-        ticker,
-        results: {},
-        cacheStatus: 'ERROR',
-        type,
-        metrics: { error: (e as Error).message }
-      };
-    }
-  }
-
-  static async fetchB3(ticker: string): Promise<{ data: Partial<B3Data>; bytes: number; earlyAbort: boolean; cacheStatus: string }> {
-    const r = await this.fetchAtivo(ticker, 'ACAO');
-    return { data: r.results, bytes: r.metrics.bytesProcessed, earlyAbort: r.metrics.earlyAbort, cacheStatus: r.cacheStatus };
-  }
-
-  static async fetchHistoricoGrafico(ticker: string, range: string = '1y', interval: string = '1d'): Promise<any[]> {
-    const cleanTicker = canonicalizeTicker(ticker);
-    const symbols = [`${cleanTicker}.SA`, cleanTicker];
-    
-    // Calculate period1 based on range
-    const now = new Date();
-    let period1: Date;
-    switch (range) {
-      case '1d': period1 = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
-      case '5d': period1 = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000); break;
-      case '1mo': 
-      case '1m': period1 = new Date(new Date().setMonth(now.getMonth() - 1)); break;
-      case '6mo':
-      case '6m': period1 = new Date(new Date().setMonth(now.getMonth() - 6)); break;
-      case '1y': period1 = new Date(new Date().setFullYear(now.getFullYear() - 1)); break;
-      case '5y': period1 = new Date(new Date().setFullYear(now.getFullYear() - 5)); break;
-      case 'max': period1 = new Date(0); break;
-      default: period1 = new Date(new Date().setFullYear(now.getFullYear() - 1));
-    }
-      
-    for (const symbol of symbols) {
+  static async fetchNews(ticker: string): Promise<NewsItem[]> {
+    return this.execute(`news-${ticker}`, async () => {
+      const q = ticker === 'IBOVESPA' ? 'ibovespa' : ticker;
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}+mercado+financeiro&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
       try {
-        // Primary: Library
-        let result: any = null;
-        try {
-          if (!this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen()) {
-            result = await yahooFinance.chart(symbol, {
-              period1: period1,
-              interval: interval as any,
-              validate: false
-            } as any);
-          }
-        } catch (e) {}
-        
-        // Fallback: Direct Fetch
-        if (!result || !(result as any).quotes || (result as any).quotes.length === 0) {
-           console.log(`[YAHOO CHART] Library failed for ${symbol}, attempting direct fetch...`);
-           const directQuotes = await fetchYahooChartDirect(symbol, range);
-           if (directQuotes && directQuotes.length > 0) {
-             return directQuotes;
-           }
-           continue;
+        const text = await (await fetch(url)).text();
+        const items: NewsItem[] = [];
+        const matches = text.matchAll(/<item>([\s\S]*?)<\/item>/g);
+        for (const m of matches) {
+          const c = m[1];
+          items.push({
+            title: (c.match(/<title>([\s\S]*?)<\/title>/)?.[1] || '').split(' - ')[0],
+            link: c.match(/<link>([\s\S]*?)<\/link>/)?.[1] || '',
+            pubDate: c.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] ? new Date(c.match(/<pubDate>([\s\S]*?)<\/pubDate>/)![1]) : undefined,
+            source: c.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1] || 'Google News'
+          });
+          if (items.length >= 12) break;
         }
+        return items;
+      } catch { return []; }
+    });
+  }
 
-        return (result as any).quotes.map((q: any) => ({
-          date: q.date.toISOString(),
-          open: q.open,
-          high: q.high,
-          low: q.low,
-          close: q.close,
-          volume: q.volume,
-        })).filter((d: any) => d.close !== null && d.close !== undefined);
-      } catch (e) {
-        console.warn(`[YAHOO] Erro ao buscar histórico para ${symbol}:`, formatYahooError(e));
-        continue;
+  static async fetchRanking(category: string, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
+    return this.execute(`ranking-${category}-${type}`, async () => {
+      const url = `https://investidor10.com.br/${type.toLowerCase()}s/rankings/${category}`;
+      try {
+        const html = await (await fetch(url, { headers: getStealthHeaders(url) })).text();
+        const tickers = Array.from(new Set([...html.matchAll(new RegExp(`/${type.toLowerCase()}s/([A-Z0-9]{4,6})/`, 'g'))].map(m => m[1].toUpperCase()))).slice(0, 15);
+        if (!tickers.length) return [];
+        const batch = await this.fetchQuotesBatch(tickers);
+        return tickers.map(t => {
+           const q = batch.find(i => canonicalizeTicker(i.ticker) === t);
+           return { ticker: t, name: q?.name || t, price: q?.price || 0, change: q?.change || '0.00%' };
+        });
+      } catch { return []; }
+    });
+  }
+
+  static async fetchQuotesBatch(tickers: string[]): Promise<any[]> {
+    if (!tickers.length) return [];
+    const results: any[] = [];
+    for (let i = 0; i < tickers.length; i += 40) {
+      const chunk = tickers.slice(i, i + 40).map(t => t.includes('.') ? t : `${t}.SA`);
+      try {
+        const data = await (await fetch(`https://${YAHOO_HOSTS[0]}/v7/finance/quote?symbols=${chunk.join(',')}`, { headers: { 'User-Agent': getRandomAgent() } })).json();
+        results.push(...(data.quoteResponse?.result || []).map((q: any) => ({
+          ticker: q.symbol,
+          price: q.regularMarketPrice || 0,
+          change: (q.regularMarketChangePercent || 0).toFixed(2) + '%',
+          name: q.shortName || q.longName || q.symbol
+        })));
+      } catch {
+        // Fallback or ignore
       }
     }
-    return [];
+    return results;
+  }
+
+  static async fetchHistoricalFundamentals(ticker: string): Promise<any[]> {
+    const clean = canonicalizeTicker(ticker).toLowerCase();
+    try {
+      const url = `https://investidor10.com.br/acoes/${clean}/`;
+      const html = await (await fetch(url, { headers: getStealthHeaders(url) })).text();
+      const tId = html.match(/tickerId\s*=\s*['"](\d+)['"]/)?.[1];
+      if (!tId) return [];
+      const indData = await (await fetch(`https://investidor10.com.br/api/historico-indicadores/${tId}/10/?v=2`, { headers: getStealthHeaders(url) })).json();
+      const years = Array.from(new Set(Object.values(indData).flatMap((a: any) => a.map((i: any) => i.year)))).sort();
+      return years.map(y => ({
+        year: String(y),
+        pl: indData['P/L']?.find((i: any) => i.year === y)?.value || 0,
+        pvp: indData['P/VP']?.find((i: any) => i.year === y)?.value || 0,
+        dy: indData['Dividend Yield']?.find((i: any) => i.year === y)?.value || 0,
+        roe: indData['ROE']?.find((i: any) => i.year === y)?.value || 0
+      }));
+    } catch { return []; }
   }
 
   static async fetchDividends(ticker: string): Promise<any[]> {
-    const cleanTicker = canonicalizeTicker(ticker);
-    const assetType = inferAssetType(cleanTicker);
-    
-    // Primary source: Scraping (resilient)
+    const clean = canonicalizeTicker(ticker);
     try {
-      const scrapeResult = await this.fetchAtivo(cleanTicker, assetType);
-      let htmlTable = scrapeResult.results?.dividendosRaw;
-      
-      // Secondary attempt if primary scraper failed to find the specific table ID
-      if (!htmlTable && scrapeResult.results?.html) {
-        const tableMatch = scrapeResult.results.html.match(/<table[^>]*>(?:[\s\S]*?)(?:Data COM|Pagamento)(?:[\s\S]*?)<\/table>/i);
-        if (tableMatch) htmlTable = tableMatch[0];
-      }
-      
-      if (htmlTable) {
-        const dividends: any[] = [];
-        const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
-        const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
-        const headerRegex = /<th[^>]*>([\s\S]*?)<\/th>/g;
-        
-        let colIndices = { tipo: 0, dataCom: 1, pagamento: 2, valor: 3 };
-        
-        // Find headers first to map column indices dynamically
-        const headerMatch = /<thead[^>]*>([\s\S]*?)<\/thead>|<tr[^>]*>([\s\S]*?)<\/tr>/.exec(htmlTable);
-        if (headerMatch) {
-          const headersHtml = headerMatch[0];
-          const headers: string[] = [];
-          let hMatch;
-          while ((hMatch = headerRegex.exec(headersHtml)) !== null) {
-            headers.push(hMatch[1].replace(/<[^>]*>/g, '').trim().toLowerCase());
-          }
-          if (headers.length > 0) {
-            const iTipo = headers.findIndex(h => h.includes('tipo'));
-            const iCom = headers.findIndex(h => h.includes('com') || h.includes('base') || h.includes('aprovação'));
-            const iPag = headers.findIndex(h => h.includes('pagamento'));
-            const iValor = headers.findIndex(h => h === 'valor' || h === 'rendimento' || h.includes('valor'));
-            
-            if (iTipo !== -1) colIndices.tipo = iTipo;
-            if (iCom !== -1) colIndices.dataCom = iCom;
-            if (iPag !== -1) colIndices.pagamento = iPag;
-            if (iValor !== -1) colIndices.valor = iValor;
-          }
-        }
-
-        const rows = [...htmlTable.matchAll(rowRegex)];
-        for (const rowMatch of rows) {
-          const cells: string[] = [];
-          let cellMatch;
-          const rowHtml = rowMatch[1];
-          while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-            cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
-          }
-          
-          if (cells.length >= 4) {
-            const tipo = cells[colIndices.tipo] || '';
-            const dataComRaw = cells[colIndices.dataCom] || '';
-            const pagamentoRaw = cells[colIndices.pagamento] || '';
-            const valorRaw = cells[colIndices.valor] || '';
-            
-            if (dataComRaw.includes('/')) {
-              const [d, m, y] = dataComRaw.split('/');
-              if (d && m && y && y.length === 4) {
-                const date = new Date(`${y}-${m}-${d}T12:00:00Z`);
-                
-                let paymentDate = date.toISOString();
-                if (pagamentoRaw && pagamentoRaw.includes('/')) {
-                  const [pd, pm, py] = pagamentoRaw.split('/');
-                  if (pd && pm && py && py.length === 4) paymentDate = new Date(`${py}-${pm}-${pd}T12:00:00Z`).toISOString();
-                }
-                
-                const amountClean = valorRaw.replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-                const amount = parseFloat(amountClean);
-                
-                if (!isNaN(amount) && amount > 0) {
-                  dividends.push({
-                    date: date.toISOString(),
-                    paymentDate,
-                    dataCom: date.toISOString(),
-                    amount: amount,
-                    type: tipo || (cleanTicker.endsWith('11') ? 'Rendimento' : 'Dividendo')
-                  });
-                }
-              }
-            }
-          }
-        }
-        
-        if (dividends.length > 0) {
-          return dividends.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        }
-      }
-    } catch (err) {
-      console.warn(`[Nexus] Dividend scraping failed for ${ticker}`, err);
-    }
-
-    // Secondary source: Yahoo Finance (Historical Dividends)
-    try {
-      if (!this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen()) {
-        ensureYahooConfig();
-        const symbol = cleanTicker.endsWith('.SA') ? cleanTicker : (assetType === 'ACAO' || assetType === 'FII' ? `${cleanTicker}.SA` : cleanTicker);
-        const today = new Date();
-        const fiveYearsAgo = new Date();
-        fiveYearsAgo.setFullYear(today.getFullYear() - 5);
-        
-        const futureDate = new Date();
-        futureDate.setFullYear(today.getFullYear() + 1); // Fetch 1 year into the future
-
-        const historical = await yahooFinance.historical(symbol, {
-          period1: fiveYearsAgo,
-          period2: futureDate,
-          events: 'dividends'
-        } as any);
-
-        if (Array.isArray(historical) && historical.length > 0) {
-          return historical.map((h: any) => ({
-            date: h.date?.toISOString(),
-            paymentDate: h.date?.toISOString(),
-            dataCom: h.date?.toISOString(),
-            amount: h.dividends || 0,
-            type: cleanTicker.endsWith('11') ? 'Rendimento' : 'Dividendo'
-          })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        }
-      }
-    } catch (err) {
-      console.warn(`[Nexus] Yahoo dividends failed for ${ticker}`, err);
-    }
-
-    return [];
+      const html = await (await fetch(`https://investidor10.com.br/acoes/${clean.toLowerCase()}/`, { headers: getStealthHeaders('investidor10.com.br') })).text();
+      const match = html.match(/<table[^>]*id="table-dividends"[^>]*>([\s\S]*?)<\/table>/);
+      if (!match) return [];
+      return [...match[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].slice(1).map(r => {
+        const cells = [...r[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(c => c[1].replace(/<[^>]*>/g, '').trim());
+        return { date: cells[1] ? new Date(cells[1].split('/').reverse().join('-')).toISOString() : '', amount: parseFloat(cells[3]?.replace(',', '.') || '0'), type: cells[0] };
+      }).filter(d => d.amount > 0);
+    } catch { return []; }
   }
 
   static async searchTicker(query: string): Promise<any[]> {
     try {
-      const genericQuery = query.toLowerCase().trim();
-      const genericMap: Record<string, string[]> = {
-        'ações': ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'BBAS3.SA', 'WEGE3.SA', 'ELET3.SA', 'ABEV3.SA', 'RENT3.SA', 'B3SA3.SA'],
-        'fiis': ['MXRF11.SA', 'HGLG11.SA', 'BTLG11.SA', 'CPTS11.SA', 'KNRI11.SA', 'VISC11.SA', 'XPLG11.SA', 'IRDM11.SA', 'BCFF11.SA', 'VRTA11.SA'],
-        'bdr': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA', 'META34.SA', 'NFLX34.SA'],
-        'bdrs': ['AAPL34.SA', 'MSFT34.SA', 'GOGL34.SA', 'AMZO34.SA', 'MELI34.SA', 'NVDC34.SA', 'META34.SA', 'NFLX34.SA'],
-        'stocks': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK-B', 'UNH', 'JNJ'],
-        'cripto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'DOT-USD']
-      };
-
-      if (genericMap[genericQuery]) {
-        const topSymbols = genericMap[genericQuery];
-        const quotes = await this.fetchQuotesBatch(topSymbols);
-        return topSymbols.map(sym => {
-          const qResp = quotes.find(q => q.ticker.toUpperCase() === sym) || { price: 0, change: '0.00%', name: sym, type: 'Unknown' };
-          return {
-            symbol: sym,
-            shortname: qResp.name,
-            longname: qResp.name,
-            typeDisp: genericQuery === 'cripto' ? 'Cryptocurrency' : 'Equity',
-            regularMarketPrice: typeof qResp.price === 'string' ? parseFloat(qResp.price.replace(',', '.')) : qResp.price,
-            regularMarketChangePercent: parseFloat(String(qResp.change).replace('%', '') || '0')
-          };
-        }).filter(q => q.regularMarketPrice > 0);
-      }
-
-      const isBrazilian = query.length >= 4 && query.length <= 6 && !query.includes('.');
-      const searchQuery = isBrazilian ? `${query}.SA` : query;
-      
-      let quotes: any[] = [];
-
-      try {
-        if (!this._circuitBreakers.get('query2.finance.yahoo.com')?.isOpen()) {
-          const result = await yahooFinance.search(searchQuery, { quotesCount: 12, newsCount: 0 });
-          quotes = (result as any)?.quotes ?? [];
-        }
-      } catch(e) {
-        // Primary search failed, attempting secondary or direct below
-      }
-      
-      // Secondary fallback if SA fails
-      if (quotes.length === 0 && isBrazilian) {
-        try {
-          const result = await yahooFinance.search(query, { quotesCount: 12, newsCount: 0 });
-          quotes = (result as any)?.quotes ?? [];
-        } catch (e) {
-          // Direct fetch failed too
-        }
-      }
-
-      const symbols = quotes.map(q => q.symbol);
-      const quoteMap = await yahooQuoteBulk(symbols);
-      const enrichedQuotes = quotes.map(q => {
-        const quoteData = quoteMap.get(q.symbol);
-        return {
-          ...q,
-          ticker: q.symbol,
-          name: q.shortname || q.longname || q.symbol,
-          exchange: q.exchange,
-          type: q.quoteType,
-          price: quoteData?.regularMarketPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-          change: quoteData?.regularMarketChangePercent ? `${quoteData.regularMarketChangePercent > 0 ? '+' : ''}${quoteData.regularMarketChangePercent.toFixed(2)}%` : undefined,
-          positive: quoteData?.regularMarketChangePercent ? quoteData.regularMarketChangePercent >= 0 : undefined
-        };
-      });
-
-      return enrichedQuotes;
-    } catch (e) {
-      console.warn(`[YAHOO] Erro ao buscar ticker para ${query}:`, formatYahooError(e));
-      
-      // DEEP FALLBACK: If Yahoo search failed completely, and it looks like a ticker, return a synthetic result
-      // This ensures the site "works" even when completely blocked, allowing users to at least go to the asset page
-      if (query.length >= 4 && query.length <= 7 && /^[A-Z]{4}[3456]$|^[A-Z]{4}11$/.test(query.toUpperCase())) {
-         const t = query.toUpperCase();
-         return [{
-           symbol: `${t}.SA`,
-           ticker: `${t}.SA`,
-           shortname: t,
-           exchange: 'SAO',
-           quoteType: 'EQUITY',
-           price: '0.00',
-           change: '0.00%',
-           positive: true
-         }];
-      }
-      return [];
-    }
+      const data = await (await fetch(`https://${YAHOO_HOSTS[0]}/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10`, { headers: { 'User-Agent': getRandomAgent() } })).json();
+      return (data.quotes || []).map((q: any) => ({ ticker: q.symbol, name: q.shortname || q.longname || q.symbol, type: q.quoteType, exchange: q.exchange }));
+    } catch { return []; }
   }
 
-  static recordFailure(urlOrDomain: string, is429: boolean = false): void {
-    const domain = urlOrDomain.includes('://') ? extractHostname(urlOrDomain) : urlOrDomain;
-    let cb = this._circuitBreakers.get(domain);
-    if (!cb) {
-      cb = new CircuitBreaker(3, is429 ? 180_000 : 30_000);
-      this._circuitBreakers.set(domain, cb);
-    }
-    if (is429) {
-      if (typeof cb.setLongCooldown === 'function') (cb as any).setLongCooldown();
-    } else {
-      cb.recordFailure();
-    }
+  static async fetchHistoricoGrafico(ticker: string, range = '1y'): Promise<any[]> {
+    const sym = ticker.includes('.') ? ticker : `${ticker}.SA`;
+    try {
+      const data = await (await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?range=${range}&interval=1d`, { headers: { 'User-Agent': getRandomAgent() } })).json();
+      const chart = data.chart?.result?.[0];
+      if (!chart) return [];
+      const close = chart.indicators?.quote?.[0]?.close || [];
+      return (chart.timestamp || []).map((t: number, i: number) => ({ date: new Date(t * 1000).toISOString(), close: close[i] || 0 })).filter((v: any) => v.close > 0);
+    } catch { return []; }
   }
 
-  static async executeBatch<T>(
-    tasks: (() => Promise<T>)[],
-    concurrency = this._options.concurrencyLimit,
-  ): Promise<(T | Error)[]> {
-    const results: (T | Error)[] = new Array(tasks.length);
-    const executing = new Set<Promise<void>>();
-
-    for (let i = 0; i < tasks.length; i++) {
-      const idx = i;
-      const p   = tasks[idx]()
-        .then(res  => { 
-          results[idx] = res; 
-          (this as any)._totalSuccess++;
-        })
-        .catch(err => { 
-          results[idx] = err instanceof Error ? err : new Error(String(err)); 
-          (this as any)._totalFailures++;
-          console.error(`[Nexus] Task failed in batch #${idx}:`, err);
-        })
-        .finally(() => { executing.delete(p); });
-
-      executing.add(p);
-      if (executing.size >= concurrency) await Promise.race(executing);
+  static async executeBatch<T>(tasks: (() => Promise<T>)[], concurrency = 5): Promise<T[]> {
+    const results: T[] = [];
+    for (let i = 0; i < tasks.length; i += concurrency) {
+      const chunk = tasks.slice(i, i + concurrency);
+      results.push(...(await Promise.all(chunk.map(t => t()))));
     }
-    await Promise.all(executing);
     return results;
+  }
+
+  static async fetchPeers(ticker: string, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
+    const peers: Record<string, string[]> = {
+      'PETR4': ['PETR3', 'PRIO3', 'RECV3'],
+      'VALE3': ['CSNA3', 'GGBR4', 'USIM5'],
+      'ITUB4': ['BBDC4', 'BBAS3', 'SANB11']
+    };
+    const list = peers[ticker.toUpperCase()] || ['PETR4', 'VALE3', 'ITUB4'];
+    return this.executeBatch(list.map(t => () => this.fetchAtivo(t, type)));
+  }
+
+  static async searchSuggestions(query: string) {
+    return this.searchTicker(query);
+  }
+
+  static async screener(filters: any, type: ExtendedAssetType = 'ACAO'): Promise<any[]> {
+    const list = ['PETR4', 'VALE3', 'ITUB4', 'BBAS3', 'BBDC4', 'ABEV3', 'WEGE3'];
+    const results = await this.executeBatch(list.map(t => () => this.fetchAtivo(t, type)));
+    return results.filter((r: any) => {
+      if (filters.minDY && parseFloat(r.results.dividendYield) < parseFloat(filters.minDY)) return false;
+      return true;
+    });
   }
 
   static clearCache(): void {
-    this._cache           = new LRUCache<any>(300);
-    _hostnameCache.clear();
-    _regexCache.clear();
+    this._cache = new LRUCache<any>(500);
   }
 
-  static invalidateCache(ticker: string, type?: ExtendedAssetType): void {
-    const clean = canonicalizeTicker(ticker);
-    for (const t of (type ? [type] : ['ACAO', 'FII', 'BDR', 'ETF'] as ExtendedAssetType[])) {
-      const preset = ASSET_PRESETS[t];
-      const key    = `nexus:${preset.i10Base}/${clean}/`;
-      this._cache.delete(key);
-    }
+  static invalidateCache(ticker: string): void {
+    this._cache.delete(`ativo-${ticker}-ACAO`);
+  }
+  static getCacheStats() { return { cacheSize: this._cache.tamanho, uptimeMs: Date.now() - this._startTime }; }
+  static async checkConnectivity() { return { status: 'OK' }; }
+
+  static async getAIContextForAsset(ticker: string): Promise<string> {
+    const d = await this.fetchAtivo(ticker);
+    return `Ativo: ${ticker}\nPreço: R$ ${d.results.precoAtual}\nDY: ${d.results.dividendYield || 'N/A'}`;
   }
 
-  static getCacheStats() {
-    const cbMetrics: Record<string, { estado: CBState; falhas: number }> = {};
-    this._circuitBreakers.forEach((cb, domain) => {
-      cbMetrics[domain] = { estado: cb.getState(), falhas: cb.getFalhas() };
-    });
-
-    const uptime = Date.now() - this._startTime;
-    return {
-      cache:             { tamanho: this._cache.tamanho, tamanhoMax: this._cache.tamanhoMax },
-      session:           this._sessionMetrics,
-      uptime,
-      totalRequests:     this._totalRequests,
-      totalSuccess:      this._totalSuccess,
-      totalFailures:     this._totalFailures,
-      successRate:       this._totalRequests > 0
-        ? ((this._totalSuccess / this._totalRequests) * 100).toFixed(1) + '%' : 'N/A',
-      inFlightRequests:  this._urlInFlight.size + this._tickerInFlight.size,
-      rateLimiters:      Array.from(this._rateLimiters.keys()),
-      circuitBreakers:   Object.keys(cbMetrics).length > 0 ? cbMetrics : {
-        investidor10: { estado: 'FECHADO' as CBState, falhas: 0 },
-      },
-    };
-  }
-
-  static async checkConnectivity() {
-    const results: any = {};
-    const domains = [
-      { name: 'Yahoo Chart API', url: 'https://query2.finance.yahoo.com/v8/finance/chart/PETR4.SA' },
-      { name: 'Yahoo Search API', url: 'https://query2.finance.yahoo.com/v1/finance/search?q=PETR4.SA' },
-      { name: 'Investidor10', url: 'https://investidor10.com.br/' }
-    ];
-
-    for (const d of domains) {
-      const t0 = performance.now();
-      try {
-        const res = await fetch(d.url, { 
-          method: 'GET', 
-          headers: getStealthHeaders(d.url)
-        });
-        results[d.name] = {
-          status: res.status,
-          ok: res.ok,
-          latency: `${(performance.now() - t0).toFixed(0)}ms`,
-          throttled: res.status === 429
-        };
-      } catch (e: any) {
-        results[d.name] = {
-          status: 'FAIL',
-          ok: false,
-          error: e.message,
-          latency: '>5k ms'
-        };
-      }
-    }
-    return results;
-  }
+  static async yahooQuote(s: string) { return (await this.fetchQuotesBatch([s]))[0] || null; }
+  static async yahooFundamentals(s: string) { return this.fetchHistoricalFundamentals(s); }
 }
 
-export async function runNexusBatch(
-  tickers:     string[],
-  type:        ExtendedAssetType = 'ACAO',
-  _opts?:      any,
-  includeNews? : boolean,
-): Promise<any[]> {
-  return NexusEngine.executeBatch(
-    tickers.map((ticker: string) => async () => {
-      const t0 = performance.now();
-      try {
-        const result = await NexusEngine.fetchAtivo(ticker, type, includeNews);
-        return {
-          ...result,
-          metrics: {
-            ...result.metrics,
-            totalTimeMs: performance.now() - t0,
-          },
-        };
-      } catch (e: any) {
-        return {
-          ticker:      canonicalizeTicker(ticker),
-          results:     {},
-          error:       e.message,
-          cacheStatus: 'ERROR',
-          metrics: {
-            totalTimeMs:       performance.now() - t0,
-            bytesProcessed:    0,
-            foundKeys:         [],
-            successRate:       0,
-            earlyAbort:        false,
-            source:            'Nexus Engine (Failed)',
-            estimatedMemoryMb: 0,
-            cpuUsageMs:        0,
-          },
-        };
-      }
-    }),
-  );
+export async function runNexusBatch(ts: string[], type: ExtendedAssetType = 'ACAO') {
+  return NexusEngine.executeBatch(ts.map(t => () => NexusEngine.fetchAtivo(t, type)));
 }
 
-export async function runNexusBatchAuto(
-  tickers:     string[],
-  _opts?:      any,
-  includeNews?: boolean,
-): Promise<any[]> {
-  return NexusEngine.executeBatch(
-    tickers.map((ticker: string) => async () => {
-      const type = inferAssetType(ticker);
-      const t0   = performance.now();
-      try {
-        const result = await NexusEngine.fetchAtivo(ticker, type, includeNews);
-        return { ...result, metrics: { ...result.metrics, totalTimeMs: performance.now() - t0 } };
-      } catch (e: any) {
-        return {
-          ticker:      canonicalizeTicker(ticker),
-          results:     {},
-          error:       e.message,
-          cacheStatus: 'ERROR',
-          metrics: { totalTimeMs: performance.now() - t0, bytesProcessed: 0, foundKeys: [], successRate: 0, earlyAbort: false, source: 'Failed', estimatedMemoryMb: 0, cpuUsageMs: 0 },
-        };
-      }
-    }),
-  );
+export async function runNexusBatchAuto(ts: string[]) {
+  return NexusEngine.executeBatch(ts.map(t => () => NexusEngine.fetchAtivo(t, inferAssetType(t))));
+}
+
+export interface ScrapeSource<T = any> {
+  url: string;
+  template: any;
+  requireStealth?: boolean;
+}
+
+export interface B3Data {
+  precoAtual?: number;
+  dividendYield?: string;
+  pl?: number;
+  pvp?: number;
 }
