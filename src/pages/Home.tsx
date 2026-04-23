@@ -1,3 +1,5 @@
+import * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, ArrowRight, Zap, Shield, BarChart3, Award, Calendar, Search, 
   Briefcase, Newspaper, ChevronRight, Loader2, GitCompare, Gauge, Info, 
@@ -8,7 +10,6 @@ import { NewsWidget } from '../components/NewsWidget';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useState, useEffect, useMemo } from 'react';
 import { financeService } from '../services/financeService';
 import { usePortfolio } from '../hooks/usePortfolio';
 

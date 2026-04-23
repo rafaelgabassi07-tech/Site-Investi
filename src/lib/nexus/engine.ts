@@ -76,6 +76,12 @@ const RE_SA      = /\.SA$/i;
 const RE_BDR     = /3[2-5]$/;
 const RE_TICKER  = /^[A-Z0-9\.\-=^]{2,20}$/;
 
+const TICKER_MAPPINGS: Record<string, string> = {
+  'RRRP3': 'BRAV3',
+  'VIIA3': 'BHIA3',
+  'VVAR3': 'BHIA3',
+};
+
 export const VALORES_INVALIDOS = new Set([
   '-', '—', '–', 'N/A', 'n/a', 'nd', '', 'null', 'undefined',
   '--', '---', '--%', '0%',
@@ -257,7 +263,8 @@ export function inferAssetType(ticker: string): ExtendedAssetType {
 }
 
 export function canonicalizeTicker(raw: string): string {
-  return raw.trim().replace(/\s+/g, '').replace(RE_SA, '').toUpperCase();
+  const clean = raw.trim().replace(/\s+/g, '').replace(RE_SA, '').toUpperCase();
+  return TICKER_MAPPINGS[clean] || clean;
 }
 
 export async function fetchNews(ticker: string): Promise<NewsItem[]> {
@@ -745,35 +752,42 @@ interface YahooFundamentalsData {
 }
 
 async function fetchYahooChartDirect(symbol: string, range: string = '1y'): Promise<any[]> {
-    // Range mapping for direct API
     const rangeMap: Record<string, string> = { '1m': '1mo', '6m': '6mo', '1y': '1y', '5y': '5y', 'max': 'max', '1d': '1d', '5d': '5d' };
     const r = rangeMap[range.toLowerCase()] || range;
     
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${r}&interval=1d&includePrePost=false`;
-    try {
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': 'application/json'
+    const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
+    for (const domain of domains) {
+        const url = `https://${domain}/v8/finance/chart/${encodeURIComponent(symbol)}?range=${r}&interval=1d&includePrePost=false`;
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    'User-Agent': getRandomAgent(),
+                    'Accept': 'application/json',
+                    'Referer': 'https://finance.yahoo.com/',
+                    'Origin': 'https://finance.yahoo.com'
+                }
+            });
+            if (!res.ok) {
+                console.warn(`[YAHOO CHART DIRECT] Fetch failed for ${symbol} on ${domain} with status ${res.status}`);
+                continue;
             }
-        });
-        if (!res.ok) return [];
-        const data = await res.json();
-        const result = data?.chart?.result?.[0];
-        if (!result || !result.timestamp) return [];
-        
-        return result.timestamp.map((t: number, i: number) => ({
-            date: new Date(t * 1000).toISOString(),
-            close: result.indicators?.quote?.[0]?.close?.[i],
-            open: result.indicators?.quote?.[0]?.open?.[i],
-            high: result.indicators?.quote?.[0]?.high?.[i],
-            low: result.indicators?.quote?.[0]?.low?.[i],
-            volume: result.indicators?.quote?.[0]?.volume?.[i],
-        })).filter((p: any) => p.close != null);
-    } catch (err) {
-        console.error(`[YAHOO CHART DIRECT] Error:`, err);
-        return [];
+            const data = await res.json();
+            const result = data?.chart?.result?.[0];
+            if (!result || !result.timestamp) continue;
+            
+            return result.timestamp.map((t: number, i: number) => ({
+                date: new Date(t * 1000).toISOString(),
+                close: result.indicators?.quote?.[0]?.close?.[i],
+                open: result.indicators?.quote?.[0]?.open?.[i],
+                high: result.indicators?.quote?.[0]?.high?.[i],
+                low: result.indicators?.quote?.[0]?.low?.[i],
+                volume: result.indicators?.quote?.[0]?.volume?.[i],
+            })).filter((p: any) => p.close != null);
+        } catch (err) {
+            console.error(`[YAHOO CHART DIRECT] Error fetching ${symbol} from ${domain}:`, err);
+        }
     }
+    return [];
 }
 
 async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Promise<any> {
@@ -782,10 +796,15 @@ async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Pr
         const res = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Referer': 'https://finance.yahoo.com/',
+                'Origin': 'https://finance.yahoo.com'
             }
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            console.warn(`[YAHOO SEARCH DIRECT] Fetch failed for ${query} with status ${res.status}`);
+            return null;
+        }
         return await res.json();
     } catch (err) {
         console.error(`[YAHOO SEARCH DIRECT] Error:`, err);
@@ -794,27 +813,35 @@ async function fetchYahooSearchDirect(query: string, newsCount: number = 10): Pr
 }
 
 async function fetchYahooQuoteDirect(symbol: string): Promise<any> {
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache'
+  // Use query2 as primary for direct fetch, it's often more lenient than query1
+  const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
+  
+  for (const domain of domains) {
+    const url = `https://${domain}/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': getRandomAgent(),
+          'Accept': 'application/json',
+          'Referer': 'https://finance.yahoo.com/',
+          'Origin': 'https://finance.yahoo.com',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (!res.ok) {
+        console.warn(`[YAHOO DIRECT] Fetch failed for ${symbol} on ${domain} with status ${res.status}`);
+        continue;
       }
-    });
 
-    if (!res.ok) {
-      console.warn(`[YAHOO DIRECT] Fetch failed for ${symbol} with status ${res.status}`);
-      return null;
+      const data = await res.json();
+      const quote = data?.quoteResponse?.result?.[0];
+      if (quote) return quote;
+    } catch (err) {
+      console.error(`[YAHOO DIRECT] Error fetching ${symbol} from ${domain}:`, err);
     }
-
-    const data = await res.json();
-    return data?.quoteResponse?.result?.[0] || null;
-  } catch (err) {
-    console.error(`[YAHOO DIRECT] Error fetching ${symbol}:`, err);
-    return null;
   }
+  return null;
 }
 
 async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuoteData | null> {
@@ -865,22 +892,31 @@ async function yahooQuote(ticker: string, _timeoutMs: number): Promise<YahooQuot
 }
 
 async function fetchYahooBulkDirect(symbols: string[]): Promise<any[]> {
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'application/json'
-      }
-    });
+  const domains = ['query2.finance.yahoo.com', 'query1.finance.yahoo.com'];
+  
+  for (const domain of domains) {
+    const url = `https://${domain}/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': getRandomAgent(),
+          'Accept': 'application/json',
+          'Referer': 'https://finance.yahoo.com/',
+          'Origin': 'https://finance.yahoo.com'
+        }
+      });
 
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.quoteResponse?.result || [];
-  } catch (err) {
-    console.error(`[YAHOO BULK DIRECT] Error:`, err);
-    return [];
+      if (!res.ok) {
+        console.warn(`[YAHOO BULK DIRECT] Fetch failed on ${domain} with status ${res.status}`);
+        continue;
+      }
+      const data = await res.json();
+      return data?.quoteResponse?.result || [];
+    } catch (err) {
+      console.error(`[YAHOO BULK DIRECT] Error fetching from ${domain}:`, err);
+    }
   }
+  return [];
 }
 
 async function yahooQuoteBulk(tickers: string[]): Promise<Map<string, YahooQuoteData>> {
@@ -1785,6 +1821,32 @@ export class NexusEngine {
     return filtered;
   }
 
+  static async fetchQuotesBatch(tickers: string[]): Promise<any[]> {
+    const quoteMap = await yahooQuoteBulk(tickers);
+    return tickers.map(ticker => {
+      const data = quoteMap.get(ticker.toUpperCase());
+      const isBRLSymbol = ticker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(ticker);
+      
+      // Fallback search if exact match fails
+      let finalData = data;
+      if (!finalData) {
+          const sym = isBRLSymbol ? `${ticker.replace(RE_SA, '')}.SA` : ticker.toUpperCase();
+          finalData = quoteMap.get(sym);
+      }
+
+      return {
+        ticker: ticker,
+        price: finalData?.regularMarketPrice ?? 0,
+        currency: finalData?.currency || "BRL",
+        change: finalData?.regularMarketChangePercent != null 
+          ? `${finalData.regularMarketChangePercent > 0 ? "+" : ""}${finalData.regularMarketChangePercent.toFixed(2)}%` 
+          : "0.00%",
+        name: finalData?.longName || finalData?.shortName || ticker,
+        type: inferAssetType(ticker)
+      };
+    });
+  }
+
   static async searchSuggestions(query: string) {
     try {
       const q = query.toUpperCase();
@@ -1980,7 +2042,7 @@ export class NexusEngine {
         } as any);
         
         // Fallback: Direct Fetch
-        if (!result || !result.quotes || result.quotes.length === 0) {
+        if (!result || !(result as any).quotes || (result as any).quotes.length === 0) {
            console.log(`[YAHOO CHART] Library failed for ${symbol}, attempting direct fetch...`);
            const directQuotes = await fetchYahooChartDirect(symbol, range);
            if (directQuotes && directQuotes.length > 0) {

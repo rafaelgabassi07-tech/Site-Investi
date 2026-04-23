@@ -80,24 +80,7 @@ app.get("/api/quotes/batch", async (req, res) => {
   if (!tickers || typeof tickers !== "string") return res.status(400).json({ error: "Tickers parameter is required." });
   const tickerList = tickers.split(",").map(t => t.trim().toUpperCase()).filter(t => t.length > 0);
   try {
-    const querySyms = tickerList.map(t => (t.includes("^") || t.includes("=") || t.includes("-USD") || t.endsWith(".SA")) ? t : `${t}.SA`);
-    const quotes = await yahooFinance.quote(querySyms);
-    const quoteList = Array.isArray(quotes) ? quotes : [quotes];
-
-    const results = tickerList.map((originalTicker) => {
-      const isBRLSymbol = originalTicker.endsWith('.SA') || /^[A-Z]{4}[0-9]{1,2}$/.test(originalTicker);
-      const searchSym = isBRLSymbol ? `${originalTicker.replace(/\.SA$/i, '')}.SA` : originalTicker.toUpperCase();
-      
-      const data = quoteList.find((q: any) => q.symbol.toUpperCase() === searchSym.toUpperCase() || q.symbol.toUpperCase().startsWith(originalTicker.toUpperCase()));
-      return {
-        ticker: originalTicker,
-        price: data?.regularMarketPrice ?? data?.postMarketPrice ?? 0,
-        currency: data?.currency || "BRL",
-        change: data?.regularMarketChangePercent != null ? `${data.regularMarketChangePercent > 0 ? "+" : ""}${data.regularMarketChangePercent.toFixed(2)}%` : "0.00%",
-        name: data?.longName || data?.shortName || originalTicker,
-        type: inferAssetType(originalTicker)
-      };
-    });
+    const results = await NexusEngine.fetchQuotesBatch(tickerList);
     res.json(results);
   } catch (error: any) {
     res.status(500).json({ error: formatYahooError(error) });

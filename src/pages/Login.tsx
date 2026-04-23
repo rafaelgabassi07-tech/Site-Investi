@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { TrendingUp, Mail, Lock, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';

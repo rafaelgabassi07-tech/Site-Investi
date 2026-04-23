@@ -154,9 +154,9 @@ export default function News() {
             >
               <div className="h-32 overflow-hidden relative border-b border-white/5 bg-slate-800/50 flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent z-10" />
-                {item.thumbnail ? (
+                {item.thumbnail?.resolutions?.[0]?.url ? (
                   <img
-                    src={item.thumbnail.resolutions[0]?.url}
+                    src={item.thumbnail.resolutions[0].url}
                     alt={displayTitle}
                     className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 opacity-60 group-hover:opacity-100"
                     referrerPolicy="no-referrer"
